@@ -4,7 +4,7 @@
 決策：直接自製，略過第三方工具評估  
 瀏覽器優先序：Firefox 桌面版為 P0；Chrome／Edge 為 P1 後續相容目標  
 本次交付：產品規格、技術決策、可行性驗證、任務順序與驗收條件  
-目前狀態：使用者已恢復功能開發。Firefox v0.1實驗原型已建置，核心12項、原生導航8組、選用權限／背景生命週期6組自測通過，包含自然休眠後保留目錄與撤權清理；新SHA的sub-agent獨立複驗進行中。Git每功能／30分鐘commit、每次push與遠端SHA核對持續執行。真實ChatGPT長歷史／容器／工作區／ESR／簽章仍待驗證。第12–15節為具體開發與驗收約束，優先於前文較概括的描述。
+目前狀態：使用者已恢復功能開發。Firefox v0.1實驗原型已建置；核心、原生導航、權限／背景生命週期，以及原生停用再啟用唯一目錄與管理CSS清理已有實测。各固定來源／套件hash與最新自測／獨立結果見原型驗收報告。Git每功能／30分鐘commit、每次push與遠端SHA核對持續執行。真實ChatGPT長歷史／容器／工作區／ESR／簽章仍待驗證。第12–15節為具體開發與驗收約束，優先於前文較概括的描述。
 版本管理：Git；雲端目標已由使用者指定為 GitHub 私人儲存庫。  
 Sub-agent 設定：GPT-6.1 Sol，reasoning effort = high，獨立驗收。
 
@@ -311,6 +311,8 @@ T01 真實觀察必須有：可使用的原生 Firefox、獨立測試設定檔�
 ### 12.4 停用清理與輸入處理
 
 `dispose()` 明確清理 observer、timer、event listener、UI 根節點、導航 task 與暫存引用。啟動兩次只保留一個實例；撤回權限後既有頁面也停止索引與捲動，並透過訊息／頁面生命週期清理。
+
+Firefox event page自然idle會斷開runtime port，不能據此dispose本機頁面UI。原生停用／移除附加元件會銷毀content context，無法保證該context再執行JS清DOM；管理CSS隨附加元件移除，目錄與高亮必須不再可見。可能保留的隱藏且不運作DOM由重整移除，重新啟用的新context也先清舊節點，確保僅一個可操作目錄。明確網站撤權／單頁停用仍須直接清DOM；三種情境分開驗收。
 
 摘要以 `textContent` 顯示；page bridge／runtime 訊息有固定 schema、sender／origin（適用時）、conversation 與 epoch 檢查。頁面 bridge 只交付資料，不接受任意 URL、任意腳本或特權 command。同頁來源檢查不能證明 bridge 資料可信，仍需資料結構與數值驗證。
 

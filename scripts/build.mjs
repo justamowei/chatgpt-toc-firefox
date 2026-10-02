@@ -15,7 +15,8 @@ if (fixture) {
 }
 await writeFile(resolve(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 await copyFile('src/options.html', resolve(out, 'options.html'));
+await copyFile('src/host.css', resolve(out, 'host.css'));
 const hashes = {};
-for (const file of ['background.js', 'content.js', 'options.js', 'options.html', 'manifest.json']) hashes[file] = createHash('sha256').update(await readFile(resolve(out, file))).digest('hex');
+for (const file of ['background.js', 'content.js', 'options.js', 'options.html', 'host.css', 'manifest.json']) hashes[file] = createHash('sha256').update(await readFile(resolve(out, file))).digest('hex');
 await writeFile(resolve(out, 'build-info.json'), JSON.stringify({ version: manifest.version, fixture, hashes }, null, 2) + '\n');
 console.log(JSON.stringify({ output: out, fixture, hashes }));

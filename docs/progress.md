@@ -75,3 +75,14 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 新增原生自然idle案例：35秒無extension API、background確實stopped、兩UI保留且新增訊息20→21。接續由options喚醒並撤權，兩個頁面皆清理，reload不重注入。權限／生命週期6組PASS。
 - 主要8組關聯回歸PASS；20/20定位、0失敗，p95 122.62ms，返回最大偏移0px。核心及background來源未改，沿用已通過的對應核心證據。
 - 本組立即commit／push並核對；交付新固定SHA給sub-agent複驗。整個Firefox重啟、真實ChatGPT、ESR、容器／工作區與簽章仍PENDING。
+
+## 2026-10-02 20:36：原生停用再啟用唯一目錄與CSS生命週期
+
+- 2cfe1e712c58da57975c5d1154e4f1bc64cc1daf已push且远端一致；sub-agent主要8/8、權限6/6、自然與強制active UI休眠／喚醒PASS，修復上一缺陷。
+- 新獨立FAIL：原生addon.disable銷毀content context但舊DOM殘留；enable後工具列再啟動生成2個root，違反唯一實例。uninstall殘留DOM另列觀察限制。
+- 修正：新content context啟動前清理孤兒root與舊高亮標籤；目錄預設隱藏，host.css由Firefox scripting插入／自動註冊管理，原生停用／移除時樣式自動移除。高亮改用同一管理CSS，不遺留inline outline。自然background idle不移除管理CSS。
+- 更新既有auto註冊缺少host.css的協調路徑，加入原生registration-upgrade回歸。
+- 主測：主要8/8，20/20定位p95 113.50ms、0失敗、返回0px；權限／生命週期7/7；addon disable／enable唯一可操作root／uninstall隱藏且reload無root 3/3。Typecheck／build／lint／package均退出0。
+- 測試初輪highlight helper誤收合持久expanded面板，定位按鈕不可見；保留run1-toggle失敗證據，改為只有收合時才展開，不改產品行為或門檻。
+- 浏览器卸載context後不能執行JS清理；隱藏且不運作DOM需reload或新context清掉，文件明記。明確網站撤權／單頁停用仍直接清DOM。
+- 本組完成後立即commit／push／核對，交新固定SHA重新驗受影響的background、CSS、DOM及原生流程。核心未變，舊獨立核心證據明記重用；LIVE／ESR／容器／簽章仍PENDING。

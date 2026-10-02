@@ -26,7 +26,10 @@ function syncRegistration(): Promise<void> {
     const s = await settings();
     const registered = await browser.scripting.getRegisteredContentScripts({ ids: ['chatgpt-toc'] });
     if (s.auto && granted && !registered.length) await browser.scripting.registerContentScripts([
-      { id: 'chatgpt-toc', matches: HOSTS, js: ['content.js'], runAt: 'document_idle' },
+      { id: 'chatgpt-toc', matches: HOSTS, js: ['content.js'], css: ['host.css'], runAt: 'document_idle' },
+    ]);
+    if (s.auto && granted && registered.length && !registered[0].css?.includes('host.css')) await browser.scripting.updateContentScripts([
+      { id: 'chatgpt-toc', matches: HOSTS, js: ['content.js'], css: ['host.css'], runAt: 'document_idle' },
     ]);
     if ((!s.auto || !granted) && registered.length) await browser.scripting.unregisterContentScripts({ ids: ['chatgpt-toc'] });
   });
@@ -48,6 +51,7 @@ browser.action.onClicked.addListener(async tab => {
     return;
   }
   try {
+    await browser.scripting.insertCSS({ target: { tabId: tab.id }, files: ['host.css'] });
     await browser.scripting.executeScript({ target: { tabId: tab.id }, files: ['content.js'] });
     await browser.action.setBadgeText({ tabId: tab.id, text: '' });
   } catch { await browser.action.setBadgeText({ tabId: tab.id, text: '!'}); }

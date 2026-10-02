@@ -66,11 +66,12 @@ export class DomAdapter implements NavigationAdapter {
     const bottom = Math.min(innerHeight, this.scroller(node).getBoundingClientRect().bottom);
     if (rect.bottom <= top || rect.top >= bottom) return false;
     this.highlightCleanup?.();
-    const before = { outline: node.style.outline, outlineOffset: node.style.outlineOffset, marker: node.getAttribute('data-toc-located') };
-    node.style.outline = '3px solid #159c9b'; node.style.outlineOffset = '6px'; node.setAttribute('data-toc-located', id);
+    const before = { marker: node.getAttribute('data-toc-located'), owner: node.getAttribute('data-chatgpt-toc-highlight') };
+    node.setAttribute('data-toc-located', id); node.setAttribute('data-chatgpt-toc-highlight', id);
     const timer = setTimeout(() => this.highlightCleanup?.(), 1600);
     this.highlightCleanup = () => {
-      clearTimeout(timer); node.style.outline = before.outline; node.style.outlineOffset = before.outlineOffset;
+      clearTimeout(timer);
+      if (before.owner === null) node.removeAttribute('data-chatgpt-toc-highlight'); else node.setAttribute('data-chatgpt-toc-highlight', before.owner);
       if (before.marker === null) node.removeAttribute('data-toc-located'); else node.setAttribute('data-toc-located', before.marker);
       this.highlightCleanup = null;
     };

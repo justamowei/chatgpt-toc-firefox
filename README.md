@@ -23,6 +23,6 @@
 
 ## 驗證狀態
 
-已完成 typecheck、Firefox 建置、零警告 lint、12 項核心回歸、8 組原生 Firefox 導航流程及 6 組權限／背景生命週期測試，包含自然休眠後保留目錄。sub-agent 正以固定 SHA 獨立驗收；真實 ChatGPT 長對話與簽章驗收尚未完成。
+已完成typecheck、Firefox建置、零警告lint、12項核心回歸、8組原生Firefox導航、7組權限／背景生命週期及3組原生附加元件停用／重新啟用／移除測試。sub-agent正以固定SHA獨立驗收；真實ChatGPT長對話與簽章驗收尚未完成。
 
 私人 GitHub 首次同步已完成。持續依每功能／30 分鐘節奏 commit、push 並核對 SHA；sub-agent 以固定 commit SHA 獨立驗收。

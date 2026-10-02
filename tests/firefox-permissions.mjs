@@ -10,7 +10,7 @@ const results = [], metadata = { date: new Date().toISOString(), executor: proce
 const evaluate = (script, ...args) => driver.executeScript(script, ...args);
 const api = script => driver.executeAsyncScript(`const done=arguments[arguments.length-1];(async()=>{${script}})().then(done,error=>done({error:String(error)}));`);
 async function wait(test, message) { return driver.wait(test, 8000, message); }
-async function hasRoot() { return evaluate('return !!document.getElementById("chatgpt-toc-root")'); }
+async function hasRoot() { return evaluate('const h=document.getElementById("chatgpt-toc-root");return !!h&&getComputedStyle(h).display!=="none";'); }
 async function choosePermission(allow) {
   await driver.setContext(firefox.Context.CHROME);
   try {
@@ -42,8 +42,12 @@ try {
     await driver.findElement(By.id('enable')).click(); await choosePermission(true);
     await wait(async () => /已啟用/.test(await driver.findElement(By.id('status')).getText()));
     const s = await api('return {settings:await browser.runtime.sendMessage({kind:"settings:get"}),granted:await browser.permissions.contains({origins:["http://127.0.0.1/*"]}),scripts:await browser.scripting.getRegisteredContentScripts()};');
-    assert.equal(s.settings.auto, true); assert.equal(s.granted, true); assert.equal(s.scripts.length, 1);
+    assert.equal(s.settings.auto, true); assert.equal(s.granted, true); assert.equal(s.scripts.length, 1); assert.deepEqual(s.scripts[0].css, ['host.css']);
     return s;
+  });
+  await test('FF-05:registration-upgrade', 'An existing script registration without the managed CSS is reconciled to the new bundle', async () => {
+    const s = await api('await browser.scripting.updateContentScripts([{id:"chatgpt-toc",css:[]}]);await browser.runtime.sendMessage({kind:"auto:set",enabled:true});return await browser.scripting.getRegisteredContentScripts();');
+    assert.equal(s.length, 1); assert.deepEqual(s[0].css, ['host.css']); return { registrations: 1, css: s[0].css };
   });
   await test('FF-05:event-page-sleep-wake', 'Observed stopped background wakes from runtime message, preserves permission/settings and automatic registration', async () => {
     // Firefox's own test helper uses extension.terminateBackground and backgroundState:
@@ -83,7 +87,7 @@ try {
   await driver.switchTo().newWindow('tab'); const optionsTab = await driver.getWindowHandle(); await driver.get(optionsUrl);
   await test('FF-05:revoke-two-tabs', 'Direct optional-host revoke disposes existing non-activeTab pages and unregisters auto script', async () => {
     const removed = await api('return await browser.permissions.remove({origins:["http://127.0.0.1/*"]});'); assert.equal(removed, true);
-    for (const handle of [first, second]) { await driver.switchTo().window(handle); await wait(async () => !await hasRoot(), 'Revoked page still active'); }
+    for (const handle of [first, second]) { await driver.switchTo().window(handle); await wait(async () => !await hasRoot(), 'Revoked page still active'); assert.equal(await evaluate('return document.querySelectorAll("#chatgpt-toc-root").length'), 0); }
     await driver.switchTo().window(first); await driver.navigate().refresh(); await driver.sleep(300); assert.equal(await hasRoot(), false);
     await driver.switchTo().window(optionsTab); const s = await api('return {settings:await browser.runtime.sendMessage({kind:"settings:get"}),scripts:await browser.scripting.getRegisteredContentScripts(),stored:await browser.storage.local.get(null)};');
     assert.equal(s.settings.auto, false); assert.equal(s.scripts.length, 0); assert.deepEqual(Object.keys(s.stored), ['settings']);

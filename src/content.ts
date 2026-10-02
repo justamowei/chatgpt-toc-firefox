@@ -13,6 +13,12 @@ function start(): Instance {
   let returnPosition: Position | null = null, returnEpoch = -1, refreshTimer: ReturnType<typeof setTimeout> | undefined;
   const events = new AbortController();
   const store = new IndexStore();
+  // A disabled Firefox content context cannot run teardown JavaScript. Remove
+  // its inert DOM when a new context starts, before creating the single root.
+  for (const stale of document.querySelectorAll('#chatgpt-toc-root')) stale.remove();
+  for (const stale of document.querySelectorAll('[data-chatgpt-toc-highlight]')) {
+    stale.removeAttribute('data-chatgpt-toc-highlight'); stale.removeAttribute('data-toc-located');
+  }
   const host = document.createElement('div'); host.id = 'chatgpt-toc-root';
   const shadow = host.attachShadow({ mode: 'open' });
   function make<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {

@@ -10,6 +10,7 @@
     "test:core": "node --test tests/core.test.mjs",
     "test:firefox-fixture": "node tests/firefox-fixture.mjs",
     "test:firefox-permissions": "node tests/firefox-permissions.mjs",
+    "test:firefox-addon-lifecycle": "node tests/firefox-addon-lifecycle.mjs",
     "package:firefox": "node scripts/package.mjs"
   },
   "devDependencies": {
