@@ -66,3 +66,12 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 背景測試使用Firefox自身測試用terminateBackground，僅作用隔離profile本附加元件；自然閒置與整個Firefox重啟仍未驗證。
 - 已支援TOC_TEST_EXECUTOR，獨立測試結果不再固定標為primary-agent。
 - 本組修正／測試完成後立即commit、push、核對遠端SHA，交sub-agent固定新快照。LIVE-01–07／REL-01保持PENDING。
+
+## 2026-10-02 20:19：自然背景休眠不移除目錄
+
+- 9afa2c9b2602b51f0088b57ae59317c6b9e3d19d已push、遠端SHA一致；其後計畫文件a7e682bb80662f1974d85c0a41e93578ee6be486也已push並核對。
+- sub-agent對9afa獨立主要8組、權限5組與額外邊界3組PASS，另找到阻擋缺陷：兩個auto頁面、關閉options後35秒自然idle，background stopped且兩個UI消失；喚醒後不復原。保留該FAIL證據。
+- 修正：runtime port斷線只清除port參考，不再誤判為停用。內容UI與索引在頁面本機持續運作；明確停用／撤權仍透過dispose訊息，背景tabs.sendMessage fallback能處理已無port的頁面。
+- 新增原生自然idle案例：35秒無extension API、background確實stopped、兩UI保留且新增訊息20→21。接續由options喚醒並撤權，兩個頁面皆清理，reload不重注入。權限／生命週期6組PASS。
+- 主要8組關聯回歸PASS；20/20定位、0失敗，p95 122.62ms，返回最大偏移0px。核心及background來源未改，沿用已通過的對應核心證據。
+- 本組立即commit／push並核對；交付新固定SHA給sub-agent複驗。整個Firefox重啟、真實ChatGPT、ESR、容器／工作區與簽章仍PENDING。

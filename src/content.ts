@@ -49,7 +49,10 @@ function start(): Instance {
   });
   let port: browser.runtime.Port | null = browser.runtime.connect({ name: 'toc-lifecycle' });
   port.onMessage.addListener(message => { if (isDispose(message)) dispose(); });
-  port.onDisconnect.addListener(dispose);
+  // Firefox closes ports when its event page idles; that is not permission revocation.
+  // The content instance remains local. Explicit dispose messages also reach pages
+  // without a live port through background.ts's tabs.sendMessage fallback.
+  port.onDisconnect.addListener(() => { port = null; });
   function isDispose(message: unknown): boolean { return !!message && typeof message === 'object' && Object.keys(message).length === 1 && (message as { kind?: string }).kind === 'dispose'; }
   const runtimeListener = (message: unknown, sender: browser.runtime.MessageSender) => {
     if (sender.id === browser.runtime.id && isDispose(message)) dispose();

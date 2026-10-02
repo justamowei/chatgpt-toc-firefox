@@ -67,6 +67,19 @@ try {
   });
   const first = await driver.getWindowHandle();
   await driver.switchTo().newWindow('tab'); const second = await driver.getWindowHandle(); await driver.get(url + '?second'); await wait(hasRoot);
+  await test('FF-05:natural-idle-two-tabs', 'Natural event-page idle preserves both content UIs and observers without keeping the background awake', async () => {
+    // Neither tab is an extension view. No extension API is invoked during idle.
+    await driver.sleep(35000);
+    await driver.setContext(firefox.Context.CHROME);
+    let idle;
+    try { idle = await driver.executeScript('return WebExtensionPolicy.getByID(arguments[0]).extension.backgroundState;', addon); }
+    finally { await driver.setContext(firefox.Context.CONTENT); }
+    assert.equal(idle, 'stopped');
+    for (const handle of [first, second]) { await driver.switchTo().window(handle); assert.equal(await hasRoot(), true, 'Natural idle removed a content UI'); }
+    await evaluate('window.fixture.append()');
+    await wait(() => evaluate('return document.getElementById("chatgpt-toc-root").shadowRoot.querySelectorAll("#toc-list button").length===21'), 'Observer stopped after background idle');
+    return { background: idle, surviving_tabs: 2, post_idle_entries: 21 };
+  });
   await driver.switchTo().newWindow('tab'); const optionsTab = await driver.getWindowHandle(); await driver.get(optionsUrl);
   await test('FF-05:revoke-two-tabs', 'Direct optional-host revoke disposes existing non-activeTab pages and unregisters auto script', async () => {
     const removed = await api('return await browser.permissions.remove({origins:["http://127.0.0.1/*"]});'); assert.equal(removed, true);
