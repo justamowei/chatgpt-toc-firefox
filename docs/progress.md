@@ -182,3 +182,7 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 僅 paginated page-bytes 超限時縮 num_turns 100→50→25→12→6→3→1，同 cursor與同總deadline／已讀bytes。最小頁仍超限明確失敗；head重新核對保持首次成功大小，older縮頁不改head邊界；session/legacy/總量/正文等不套用縮頁。未擴張原上限。
 - 主端 history/full-index/direction 34/34＋core12/12合成PASS；typecheck/build/lint PASS（0/0/0）。隔離Firefox157 localhost原生FULL18/18 PASS，新增真正HTTP gzip壓縮頭頁decoded超2MiB：縮100→50後四頁收齊200、只有7mounted、捲動後200維持；單題262145超限精準診斷且導航後保留。這仍不是使用者真實ChatGPT驗收。
 - 新renderer診斷回歸正在執行；固定SHA後sub-agent作獨立審查。使用者真實超限kind/size仍待network無內容metadata；LIVE FAIL保持，不重包／替換已交付v0.2.0，也不宣稱已解決。
+
+## 2026-10-03：3bedace 縮頁修正合成複验完成，真實驗收仍未完成
+
+主端固定runtime3bedace的renderer8/8已PASS，連同FULL18/18及單元46/46。GPT-6.1 Sol high固定archive獨立typecheck與history34/34 PASS，自主5/5合成probe PASS，包括真HTTP gzip的head50/older25/recheck50、舊95c相同樣本limit拒絕、失敗bytes計入總量、頭頁重讀不縮、忽略signal晚串流取消。詳見docs/history-limit-debug.md。沒有新增synthetic阻擋；不能改為真實PASS。使用者network metadata與真實Firefox長對話測試仍待完成；無新包交付，已交付v0.2.0 content/ZIP未變。文件與安全JSON結果同步outputs。
