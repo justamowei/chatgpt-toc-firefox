@@ -88,5 +88,12 @@ try {
     const root=await (await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();assert.equal(await (await root.findElement(By.id('toc-back'))).isEnabled(),false,'Empty sentinel must not turn the shared user wrapper into an assistant return anchor');
     return {phantom_assistant_anchor:false,back_disabled:true};
   });
+  await test('NEW-08:empty-sentinel-shared-turn-shell',async()=>{
+    await evaluate(`const m=document.querySelector('main');m.innerHTML='<section data-turn-key="shell-user"><div style="min-height:1600px"><section data-testid="conversation-turn-0" data-turn="user" data-turn-id="shell-user-id" style="height:100px">只有舊殼提問</section><span data-chatgpt-agent-turn-start></span></div></section><section data-turn-key="far-shell" style="min-height:400px"><div data-user-message-bubble>遠方提問</div></section>';m.scrollTop=700;`);
+    await wait(async()=>(await state()).items.length===2&&(await state()).items[0].id==='turn-key:user:shell-user');
+    await click('#toc-list button[data-entry-id="turn-key:user:far-shell"]');await wait(async()=>(await state()).nav==='located');
+    const root=await (await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();assert.equal(await (await root.findElement(By.id('toc-back'))).isEnabled(),false,'Turn-shell user content must not supply an assistant return anchor');
+    return {phantom_assistant_anchor:false,back_disabled:true};
+  });
 } catch(error) { console.error(error);process.exitCode=1; }
 finally {const caps=await driver.getCapabilities();await writeFile(resolve(artifacts,'results.json'),JSON.stringify({date:new Date().toISOString(),executor:process.env.TOC_TEST_EXECUTOR||'primary-agent',firefox:caps.get('browserVersion'),build:JSON.parse(await readFile('dist/fixture/build-info.json','utf8')),results},null,2));await session.close();}

@@ -119,3 +119,9 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 修正：sentinel候選內容本身或後代含user marker時不建assistant錨點；新增NEW-07檢查wrapper空白可視但user不可視的返回disabled情況。
 - New7／typecheck PASS；測試NEW-01改用整個main的原始legacy queryall，確認真正0→6，不用預先過濾composer。runtime此次仅sentinel處理改變。
 - 首個快照legacy8／addon生命週期3 PASS；本修復立即commit／push／核對，接續新固定SHA獨立複驗及正式包替換。
+
+## 2026-10-03：新舊混合 user marker 一致排除
+
+- c1e833771073506fd528858bd2d4b498bb5b6fa4 已push／遠端一致；獨立stock7 PASS、原9 probe全PASS，IND08修復。追加純turn shell後代共用空sentinel之IND09 FAIL，10組為9PASS／1FAIL。
+- 原因是matches已包含data-turn=user，但querySelector後代判斷漏掉；統一userMarker常數供兩者使用，新增NEW08；保留c1 FAIL結果／截圖。
+- 最後來源new8／typecheck PASS。此修復僅變更sentinel排除marker集合，其他runtime不變。立即commit／push／核對，再以固定SHA獨立重跑stock8＋既有10probe、主測legacy8／lifecycle3與最終交付hash核對。

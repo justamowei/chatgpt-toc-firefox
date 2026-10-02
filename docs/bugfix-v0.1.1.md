@@ -28,4 +28,5 @@
 - 首輪新測試在 0→6 通過後遇到 helper 的 Promise 點擊錯誤；修正 await 後六組重跑 PASS，保留初輪失敗證據。
 - GPT-6.1 Sol high 對首個修復 SHA `6a67fbfe240d838335e517ecd3e0e96c54f0e2fb`：新版六組 PASS，獨立九組 probe 為 8 PASS／1 FAIL。空 assistant sentinel 與 user bubble 共用內層 wrapper 時，user 文字被當作 assistant 內容，誤建返回錨點；保留 FAIL 證據。已增加排除共享 user 內容的 sentinel 判斷與 NEW-07 回歸，待新 SHA 複驗，不以首個套件作最終交付。
 - 首個修復快照的既有八組原生導航與三組 addon 生命週期均 PASS；20/20 定位，p95 140.24ms，返回 0px。最後修復與正式包核對紀錄另補。
+- 第二個快照 `c1e833771073506fd528858bd2d4b498bb5b6fa4`：獨立新版七組 PASS、原九個 probe 全 PASS，已修復 IND-08；追加純 `data-turn=user` 殼的共享 wrapper 案例 IND-09 FAIL。本身判斷有此 marker，後代判斷卻漏掉；已統一 `userMarker` 規則並加入 NEW-08。此快照的既有八組／三組生命週期也 PASS，20/20 p95 160.04ms，返回 0px；仍不作最終交付。
 - 真實頁面修復結果仍待使用者確認。Windows Firefox 電腦操作因工具不支援網址安全策略而停止，未直接查看聊天；隔離合成測試不受此限制。
