@@ -33,3 +33,13 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 不使用 force-push。首次同步後沒有待推送的程式快照；本段文件將另建 docs commit 推送 main，再將該文件更新合併及推送至開發分支。
 - 後續文件／合併 commit 的完整 SHA 與最後遠端核對結果記於 outputs 的《GitHub 建立結果.md》，Git log 亦可核對，避免文件把自身 commit SHA 寫成不存在的值。
 - 功能開發維持暫停。下一步為等待使用者恢復開發，再依固定 commit 提供 sub-agent 驗收。
+
+## 2026-10-02 18:45：恢復功能開發，核心第一組修正
+
+- 分支：feat/firefox-prototype；使用者已授權恢復功能開發。
+- 修正：未知分支不保留卸載歷史、增量文字更新保留其他提問、順序與明確分支失效、完整度證據撤銷、強制單批／總逾時，以及取消後丟棄晚到結果。
+- 驗證：npm run typecheck PASS；npm run test:core 11/11 PASS。CORE-04 合成 1,000 提問，20 次，p95 3.05 ms，0 次失敗。
+- 首次沙箱核心測試因 esbuild 父目錄讀取被拒失敗；核准環境重跑成功。這是環境限制，原失敗保留於當輪執行紀錄。
+- sub-agent：對固定 0e8d6a0 快照做了獨立審查及 scratch probe；本組修正尚待新 SHA 的獨立回歸。
+- 推送：本組完成後立即 commit／push 並比對遠端 SHA，確切 SHA 以 Git log 與雲端紀錄核對。
+- 下一步：Firefox 建置、DOM adapter、Shadow DOM 目錄、選用權限設定與原生附加元件 fixture。LIVE／REL 保持 PENDING。

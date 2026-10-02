@@ -1,12 +1,13 @@
 export type Completeness = 'unknown' | 'partial' | 'verified-complete';
 export interface Entry { id: string; text: string; stable: boolean; slot?: string; }
-export interface Snapshot { entries: Entry[]; context: string; branch: string | null; }
+export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; }
 export interface CompleteProof { source: 'conversation-structure'; branch: string; exhausted: boolean; orderedIds: string[]; }
 export interface Settings { auto: boolean; expanded: boolean; }
 export const DEFAULT_SETTINGS: Settings = { auto: false, expanded: false };
 
 export function validSettings(value: unknown): value is Settings {
-  return !!value && typeof value === 'object' && typeof (value as Settings).auto === 'boolean' && typeof (value as Settings).expanded === 'boolean';
+  return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 2 &&
+    typeof (value as Settings).auto === 'boolean' && typeof (value as Settings).expanded === 'boolean';
 }
 export function normalize(value: string): string { return value.normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, ' ').trim(); }
 export class IndexStore {
@@ -20,25 +21,33 @@ export class IndexStore {
     this.epoch++; this.entries = []; this.mounted.clear(); this.completeness = 'unknown'; this.context = context; this.branch = branch;
   }
   merge(snapshot: Snapshot, direction: 'older' | 'newer' | 'observe' = 'observe'): boolean {
-    let reset = this.context !== snapshot.context || this.branch !== snapshot.branch;
+    let reset = snapshot.invalidated === true || this.context !== snapshot.context || this.branch !== snapshot.branch;
     if (!reset) {
       const byId = new Map(this.entries.map(e => [e.id, e]));
       const slots = new Map(this.entries.filter(e => e.slot).map(e => [e.slot!, e.id]));
       reset = snapshot.entries.some(e => {
-        const old = byId.get(e.id);
-        return (old && old.text !== e.text && old.stable && e.stable) || (e.slot && slots.has(e.slot) && slots.get(e.slot) !== e.id);
+        return e.slot && slots.has(e.slot) && slots.get(e.slot) !== e.id;
       });
+      const previousCommon = this.entries.filter(e => snapshot.entries.some(item => item.id === e.id)).map(e => e.id);
+      const nextCommon = snapshot.entries.filter(e => byId.has(e.id)).map(e => e.id).filter((id, i, ids) => ids.indexOf(id) === i);
+      reset ||= previousCommon.some((id, i) => nextCommon[i] !== id);
+      if (this.entries.length && snapshot.entries.length && !previousCommon.length && direction === 'observe') reset = true;
+      if (this.branch === null && this.entries.some(e => !snapshot.entries.some(item => item.id === e.id))) reset = true;
     }
     if (reset) this.reset(snapshot.context, snapshot.branch);
-    this.mounted = new Set(snapshot.entries.map(e => e.id));
-    // Transient identities never survive virtualization.
-    this.entries = this.entries.filter(e => e.stable || this.mounted.has(e.id));
     const unique = new Map<string, Entry>();
     for (const e of snapshot.entries) {
       if (!e.id || typeof e.text !== 'string') continue;
       unique.set(e.id, { ...e });
     }
     const items = [...unique.values()];
+    this.mounted = new Set(items.map(e => e.id));
+    // Unknown branch identities cannot safely retain offscreen history.
+    this.entries = this.entries.filter(e => this.mounted.has(e.id) || (e.stable && this.branch !== null));
+    if (this.entries.length && items.length && !items.some(item => this.entries.some(e => e.id === item.id))) {
+      if (direction === 'observe') { this.reset(snapshot.context, snapshot.branch); reset = true; this.mounted = new Set(items.map(e => e.id)); }
+      else { this.entries = direction === 'older' ? [...items, ...this.entries] : [...this.entries, ...items]; }
+    }
     for (const item of items) {
       const existing = this.entries.findIndex(e => e.id === item.id);
       if (existing >= 0) { this.entries[existing] = item; continue; }
@@ -48,19 +57,19 @@ export class IndexStore {
       else {
         const prevAnchor = items.slice(0, index).reverse().find(e => this.entries.some(known => known.id === e.id));
         if (prevAnchor) this.entries.splice(this.entries.findIndex(e => e.id === prevAnchor.id) + 1, 0, item);
-        else if (direction === 'older') this.entries.unshift(item);
         else this.entries.push(item);
       }
     }
-    if (this.completeness !== 'verified-complete') this.completeness = this.entries.length ? 'partial' : 'unknown';
+    // Any observation can change the verified set; require fresh structural proof.
+    this.completeness = this.entries.some(e => e.stable) ? 'partial' : 'unknown';
     return !!reset;
   }
   verifyComplete(proof: CompleteProof): boolean {
     const ids = this.entries.map(e => e.id);
-    const valid = proof.source === 'conversation-structure' && !!proof.branch && proof.branch === this.branch && proof.exhausted &&
+    const valid = proof.source === 'conversation-structure' && !!proof.branch && proof.branch === this.branch && proof.exhausted && ids.length > 0 &&
       this.entries.every(e => e.stable) && new Set(proof.orderedIds).size === proof.orderedIds.length &&
       proof.orderedIds.length === ids.length && proof.orderedIds.every((id, i) => id === ids[i]);
-    this.completeness = valid ? 'verified-complete' : this.entries.length ? 'partial' : 'unknown';
+    this.completeness = valid ? 'verified-complete' : this.entries.some(e => e.stable) ? 'partial' : 'unknown';
     return valid;
   }
   search(query: string): Entry[] {
@@ -89,7 +98,7 @@ export class Navigator {
     if (this.state === 'loading') this.setState('cancelled');
   }
   private setState(state: NavState): void { this.state = state; this.changed(state); }
-  async run(id: string): Promise<NavState> {
+  async run(id: string | null): Promise<NavState> {
     this.cancel();
     const generation = ++this.generation, controller = new AbortController(); this.controller = controller;
     const live = () => generation === this.generation && !controller.signal.aborted;
@@ -100,17 +109,21 @@ export class Navigator {
       let stalls = 0;
       for (let batch = 0; batch <= this.limits.batches; batch++) {
         if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : this.state;
-        if (this.adapter.mounted(id)) return this.finish(this.adapter.locate(id, controller.signal) ? 'located' : 'not-found', generation);
+        if (id !== null && this.adapter.mounted(id)) return this.finish(this.adapter.locate(id, controller.signal) ? 'located' : 'not-found', generation);
         if (batch === this.limits.batches || performance.now() - started >= this.limits.totalMs) return this.finish('timed-out', generation);
-        const progressed = await this.adapter.load(this.adapter.direction(id), controller.signal, Math.min(this.limits.batchMs, this.limits.totalMs - (performance.now() - started)));
+        const timeout = Math.min(this.limits.batchMs, this.limits.totalMs - (performance.now() - started));
+        const progressed = await boundedLoad(
+          () => this.adapter.load(id === null ? 'older' : this.adapter.direction(id), controller.signal, timeout), controller.signal, timeout,
+        );
         if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : this.state;
+        if (id !== null && this.adapter.mounted(id)) return this.finish(this.adapter.locate(id, controller.signal) ? 'located' : 'not-found', generation);
         stalls = progressed ? 0 : stalls + 1;
-        if (stalls >= this.limits.noProgress) return this.finish('not-found', generation);
+        if (stalls >= this.limits.noProgress) return this.finish(id === null ? 'idle' : 'not-found', generation);
       }
       return this.finish('timed-out', generation);
-    } catch {
+    } catch (error) {
       if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : this.state;
-      return this.finish('unsupported', generation);
+      return this.finish(error instanceof DeadlineError ? 'timed-out' : 'unsupported', generation);
     } finally {
       clearTimeout(totalTimer);
       if (generation === this.generation) this.controller = null;
@@ -120,6 +133,20 @@ export class Navigator {
     if (generation === this.generation) this.setState(state);
     return this.state;
   }
+}
+
+class DeadlineError extends Error {}
+async function boundedLoad(load: () => Promise<boolean>, signal: AbortSignal, timeout: number): Promise<boolean> {
+  if (signal.aborted) throw new DeadlineError();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let aborted: (() => void) | undefined;
+  try {
+    return await Promise.race([Promise.resolve().then(() => { if (signal.aborted) throw new DeadlineError(); return load(); }), new Promise<never>((_, reject) => {
+      aborted = () => reject(new DeadlineError());
+      signal.addEventListener('abort', aborted, { once: true });
+      timer = setTimeout(() => reject(new DeadlineError()), timeout);
+    })]);
+  } finally { clearTimeout(timer); if (aborted) signal.removeEventListener('abort', aborted); }
 }
 
 export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean };
