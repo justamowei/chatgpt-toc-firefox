@@ -134,3 +134,11 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 交付outputs/Firefox-原型-v0.1.1、ChatGPT-對話導航器-v0.1.1-未簽章.zip、bugfix-v0.1.1.md與Firefox-sub-agent-v0.1.1驗收.md；manifest正式origin僅chatgpt.com、無測試origin。
 - 同步安裝說明／計畫與v0.1歷史報告註記，最後文件commit／push／核對。核心沿用12/12且blob未改；舊權限7組保留歷史证據，不當作本輪獨立重跑。
 - 使用者真實頁面更新後的收錄／定位仍PENDING，請先移除舊暫時addon、載入新版manifest、reload ChatGPT再用工具列啟動；若仍0，回覆頁面診斷數量即可。無法直接操作Firefox是目前工具網址政策限制，不繞過；LIVE／長歷史／ESR／容器／簽章維持PENDING。
+
+## 2026-10-03：使用者確認辨識成功，完整索引需求核查
+
+- 使用者回報v0.1.1已能抓取真實對話，約6–7題；仅記錄辨識回饋，不把LIVE完整度或十個遠距目標改PASS。
+- 核對沒有七題硬上限。production branch=null，卸載撤銷原索引；load直接頂／底也不能覆蓋中間虛擬內容。
+- 完成docs/full-history-plan.md与FULL01–12門檻，原計畫§4.2允許正常登入同來源唯讀探索，建議以可靠歷史來源及DOM按需定位分離。資料端、分頁、分支、取消與失敗均有明確契約。
+- GPT-6.1 Sol high唯讀審查已交outputs/Firefox-完整對話索引-唯讀設計審查.md；沒有改產品source或取用真實帳號／Firefox profile。
+- 本組僅需求／設計，沒有接入網站API或更改v0.1.1行為；不宣稱完整載入已開發。文件低影響變更不新增鏡像測試，立即commit／push／核對。
