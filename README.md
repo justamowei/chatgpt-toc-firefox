@@ -12,6 +12,8 @@
 - [進度與同步紀錄](docs/progress.md)：目前快照、測試狀態與雲端同步結果。
 - [Firefox 安裝與驗證](docs/install-firefox.md)：原型暫時安裝、指令與限制。
 - [可行性紀錄](docs/feasibility.md)：合成／真實資料来源與可承諾範圍。
+- [原型驗收報告](docs/prototype-acceptance.md)：交付來源、測試結果、套件hash與未完成項目。
+- [sub-agent獨立驗收](docs/acceptance-final.md)：固定快照重建、原生回歸與canonical套件核對。
 
 ## 版本管理
 
@@ -23,6 +25,6 @@
 
 ## 驗證狀態
 
-已完成typecheck、Firefox建置、零警告lint、12項核心回歸、8組原生Firefox導航、7組權限／背景生命週期及3組原生附加元件停用／重新啟用／移除測試。sub-agent正以固定SHA獨立驗收；真實ChatGPT長對話與簽章驗收尚未完成。
+已完成typecheck、Firefox建置、零警告lint、12項核心回歸、8組原生Firefox導航、7組權限／背景生命週期及3組原生附加元件停用／重新啟用／移除測試。GPT-6.1 Sol high已完成固定SHA獨立複驗及canonical重建，已測v0.1範圍無剩餘阻擋缺陷；真實ChatGPT長對話與簽章驗收尚未完成。
 
 私人 GitHub 首次同步已完成。持續依每功能／30 分鐘節奏 commit、push 並核對 SHA；sub-agent 以固定 commit SHA 獨立驗收。

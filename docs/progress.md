@@ -76,7 +76,7 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 主要8組關聯回歸PASS；20/20定位、0失敗，p95 122.62ms，返回最大偏移0px。核心及background來源未改，沿用已通過的對應核心證據。
 - 本組立即commit／push並核對；交付新固定SHA給sub-agent複驗。整個Firefox重啟、真實ChatGPT、ESR、容器／工作區與簽章仍PENDING。
 
-## 2026-10-02 20:36：原生停用再啟用唯一目錄與CSS生命週期
+## 2026-10-02 20:33：原生停用再啟用唯一目錄與CSS生命週期
 
 - 2cfe1e712c58da57975c5d1154e4f1bc64cc1daf已push且远端一致；sub-agent主要8/8、權限6/6、自然與強制active UI休眠／喚醒PASS，修復上一缺陷。
 - 新獨立FAIL：原生addon.disable銷毀content context但舊DOM殘留；enable後工具列再啟動生成2個root，違反唯一實例。uninstall殘留DOM另列觀察限制。
@@ -87,8 +87,17 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 浏览器卸載context後不能執行JS清理；隱藏且不運作DOM需reload或新context清掉，文件明記。明確網站撤權／單頁停用仍直接清DOM。
 - 本組完成後立即commit／push／核對，交新固定SHA重新驗受影響的background、CSS、DOM及原生流程。核心未變，舊獨立核心證據明記重用；LIVE／ESR／容器／簽章仍PENDING。
 
-## 2026-10-02 20:42：固定建置資產換行
+## 2026-10-02 20:39：固定建置資產換行
 
-- fb5bfa0fbad4c011d05583d89e947a6112f28370已push且遠端一致。sub-agent固定快照原生回歸進行中，發現host.css raw copy因工作樹CRLF／git archive LF而有不同hash；JS bundle相同。
+- fb5bfa0fbad4c011d05583d89e947a6112f28370已push且遠端一致。sub-agent固定快照原生回歸進行中，發現host.css raw copy因工作樹與git archive資產換行不一致而有不同hash；JS bundle相同。字節核查：獨立archive raw CRLF hash=f3ac96f93a29de3bed06affeee5d902baf1cb4706f032d337a2fbb318a992ad4，canonical LF hash=5dfc4c888918275eb536a33e22a37f3153d8a1d273d60feb83a453c864bdc8bb。
 - 修正build對options.html與host.css固定UTF-8／LF，不修改runtime功能。正式及fixture重新build、lint、package並比對hash；新的canonical CSS預期與sub-agent先前LF資產相同。
 - 原CSS差異保留記錄，不能聲稱fb5當時所有輸出byte一致。新快照需獨立重建核對；只有runtime JS、CSS與manifest皆byte-identical的原生證據才明記重用，不將舊整包hash套用新ZIP。
+
+## 2026-10-02 20:50：v0.1原型交付與獨立驗收完成
+
+- 交付建置來源5cf4764741cca11cf9b52310007cb656fd5b9606已push，遠端SHA一致；最後只追加文件，不改runtime。
+- GPT-6.1 Sol high獨立fb5主要8/8、權限7/7、addon生命週期3/3、額外SPA／未知分支／可信輸入3/3、自然及強制idle／喚醒PASS。20/20定位p95 208.96ms、返回0px；實際窄視窗500px。
+- 獨立5cf：offline npm ci／typecheck／build／lint／package退出0；canonical addon lifecycle3/3與原生grant／兩auto可見UI／force／wake PASS。JS與manifest byte-identical、HTML/CSS經換行normalization等價，關聯回歸有直接canonical證據，不冒稱raw assets byte-identical。
+- 七個ZIP members逐一對應dist；主交付ZIP SHA862fe1bfe7e7ebbca31d47e2ab15a45c196deceef5f446615b3a19cea5df0162。獨立ZIP timestamp不同，整包hash另記最終報告，檔案hash一致。
+- T07a原型範圍PASS，無已知剩餘阻擋缺陷。歷史FAIL均保留。LIVE-01–07／ESR／容器工作區／REL-01仍PENDING，未稱作原長對話問題全部已解決或正式日常版。
+- 安裝目錄、ZIP、預覽與中文驗收／安裝說明已放outputs；兩份獨立報告同步repo docs與outputs。最後文件commit後立即push、核對遠端SHA，確切最後文件SHA以Git log為準。
