@@ -30,3 +30,22 @@
 - 首個修復快照的既有八組原生導航與三組 addon 生命週期均 PASS；20/20 定位，p95 140.24ms，返回 0px。最後修復與正式包核對紀錄另補。
 - 第二個快照 `c1e833771073506fd528858bd2d4b498bb5b6fa4`：獨立新版七組 PASS、原九個 probe 全 PASS，已修復 IND-08；追加純 `data-turn=user` 殼的共享 wrapper 案例 IND-09 FAIL。本身判斷有此 marker，後代判斷卻漏掉；已統一 `userMarker` 規則並加入 NEW-08。此快照的既有八組／三組生命週期也 PASS，20/20 p95 160.04ms，返回 0px；仍不作最終交付。
 - 真實頁面修復結果仍待使用者確認。Windows Firefox 電腦操作因工具不支援網址安全策略而停止，未直接查看聊天；隔離合成測試不受此限制。
+
+## 最後交付來源與主測
+
+程式來源：`5aa5102e2cc5e605196f6edfce2fb6d6b4faf649`，已 push 私人 GitHub 並核對遠端一致。前兩個修復快照不是最後交付版；最後套件已重新建置與替換。
+
+| 檢查 | 最後結果 |
+|---|---|
+| Typecheck | PASS |
+| 新版／混合 renderer 原生 Firefox | 8/8 PASS；原始舊 role queryAll 真正 0 → 新版 6 |
+| 既有原生導航 | 8/8 PASS；20/20 定位、p95 135.09ms、返回最大偏移 0px |
+| 原生 disable／enable／uninstall | 3/3 PASS |
+| 正式 build／web-ext lint／package | PASS，lint 0 errors／0 notices／0 warnings |
+| 核心 | 12/12 PASS；沿用首修復通過證據，後兩次修復未改 src/core.ts |
+| GPT-6.1 Sol high 最後固定 SHA 複驗 | 新版 8/8、自主 10/10 PASS，原 IND-08／09 已轉 PASS；交付六 runtime 與 ZIP 七個成員均與獨立 canonical 重建相符 |
+| 使用者真實 chatgpt.com | 待更新後確認；未以合成頁面代替 LIVE 驗收 |
+
+ZIP SHA-256：`7f6b70e09178c7a0cd73f7d5ed8419546c24f1b4c4fd739ed90cf719e7dca3d7`。
+
+正式 content.js SHA-256：`0f2d006125a6c643f0354fdeeeebab728dd431014f4cccb6cbace60e89be766b`。其他檔案見套件 build-info.json；正式 manifest 只含 chatgpt.com 網域，沒有 localhost 測試權限。

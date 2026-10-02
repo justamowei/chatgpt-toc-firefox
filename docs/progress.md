@@ -125,3 +125,12 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - c1e833771073506fd528858bd2d4b498bb5b6fa4 已push／遠端一致；獨立stock7 PASS、原9 probe全PASS，IND08修復。追加純turn shell後代共用空sentinel之IND09 FAIL，10組為9PASS／1FAIL。
 - 原因是matches已包含data-turn=user，但querySelector後代判斷漏掉；統一userMarker常數供兩者使用，新增NEW08；保留c1 FAIL結果／截圖。
 - 最後來源new8／typecheck PASS。此修復僅變更sentinel排除marker集合，其他runtime不變。立即commit／push／核對，再以固定SHA獨立重跑stock8＋既有10probe、主測legacy8／lifecycle3與最終交付hash核對。
+
+## 2026-10-03：v0.1.1 最後交付與獨立 PASS
+
+- 最後runtime來源5aa5102e2cc5e605196f6edfce2fb6d6b4faf649已push／遠端一致。主測新8、legacy8、addon生命週期3均PASS；20/20定位p95 135.0866ms、返回最大偏移0px。Typecheck／正式build／lint 0/0/0／package均PASS。
+- GPT-6.1 Sol high獨立固定archive：ci／build／typecheck／lint／package／verify退出0；原生new8/8、自主probe10/10 PASS。6a67 IND08及c1e833 IND09相同sample皆轉PASS；前兩個FAIL報告、logs／JSON／截圖另保留。
+- 正式交付六runtime與獨立canonical一致；交付ZIP含build-info之7members也全相符。ZIP SHA256 7f6b70e09178c7a0cd73f7d5ed8419546c24f1b4c4fd739ed90cf719e7dca3d7，prodcontent 0f2d006125a6c643f0354fdeeeebab728dd431014f4cccb6cbace60e89be766b。
+- 交付outputs/Firefox-原型-v0.1.1、ChatGPT-對話導航器-v0.1.1-未簽章.zip、bugfix-v0.1.1.md與Firefox-sub-agent-v0.1.1驗收.md；manifest正式origin僅chatgpt.com、無測試origin。
+- 同步安裝說明／計畫與v0.1歷史報告註記，最後文件commit／push／核對。核心沿用12/12且blob未改；舊權限7組保留歷史证據，不當作本輪獨立重跑。
+- 使用者真實頁面更新後的收錄／定位仍PENDING，請先移除舊暫時addon、載入新版manifest、reload ChatGPT再用工具列啟動；若仍0，回覆頁面診斷數量即可。無法直接操作Firefox是目前工具網址政策限制，不繞過；LIVE／長歷史／ESR／容器／簽章維持PENDING。
