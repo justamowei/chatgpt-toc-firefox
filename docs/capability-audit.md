@@ -5,7 +5,7 @@
 修訂計畫：v1.2  
 本次範圍：規格審查與環境能力檢查；未開發擴充功能
 
-**後續狀態更新（2026-10-02）：已開始建立專案、安裝依賴與撰寫未驗證的核心／背景程式，現依使用者要求暫停。最新計畫為 v1.3，追加 Git 初始化、GitHub 私人 repo、每個功能／30 分鐘 commit 及每次 commit 後 push 的規則。後續已另獲使用者授權完成 Git 初始化與私人 GitHub 首次同步：https://github.com/justamowei/chatgpt-toc-firefox ，兩分支 SHA 已核對。功能保持暫停；以下保留原次審查的環境證據。**
+**後續狀態更新（2026-10-02）：使用者已恢復開發，Firefox v0.1原型已建置及原生合成自測；固定SHA的GPT-6.1 Sol high sub-agent獨立複驗進行中。最新計畫v1.4保留Git每功能／30分鐘commit、每次push與SHA核對。私人儲存庫：https://github.com/justamowei/chatgpt-toc-firefox 。真實ChatGPT長歷史與簽章仍PENDING；以下保留原次審查的環境證據，後續結果見原型驗收報告。**
 
 ## 結論
 

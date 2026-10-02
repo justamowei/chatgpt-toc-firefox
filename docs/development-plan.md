@@ -1,10 +1,10 @@
-# ChatGPT 自製對話導航器：開發規劃 v1.3（Firefox 優先）
+# ChatGPT 自製對話導航器：開發規劃 v1.4（Firefox 優先）
 
 規劃日期：2026-10-02（Asia/Taipei）  
 決策：直接自製，略過第三方工具評估  
 瀏覽器優先序：Firefox 桌面版為 P0；Chrome／Edge 為 P1 後續相容目標  
 本次交付：產品規格、技術決策、可行性驗證、任務順序與驗收條件  
-目前狀態：使用者已恢復功能開發。已完成可建置的 Firefox v0.1 實驗原型、核心回歸與原生 Firefox 合成附加元件主要流程；Git commit／push 持續執行。選用權限與新 SHA 的 sub-agent 驗收進行中，真實 ChatGPT 長歷史／容器／工作區／簽章仍待驗證。第 12–15 節為具體開發與驗收約束，優先於前文較概括的描述。
+目前狀態：使用者已恢復功能開發。Firefox v0.1 實驗原型已建置，核心12項、原生導航8組、選用權限／背景生命週期5組自測通過；新SHA的sub-agent獨立複驗進行中。Git每功能／30分鐘commit、每次push與遠端SHA核對持續執行。真實ChatGPT長歷史／容器／工作區／ESR／簽章仍待驗證。第12–15節為具體開發與驗收約束，優先於前文較概括的描述。
 版本管理：Git；雲端目標已由使用者指定為 GitHub 私人儲存庫。  
 Sub-agent 設定：GPT-6.1 Sol，reasoning effort = high，獨立驗收。
 
@@ -218,6 +218,7 @@ chatgpt-toc/
 | 任務 | 內容 | 完成條件 | 估計投入 |
 |---|---|---|---|
 | GIT-00 | Git 初始化與 GitHub 私人儲存庫 | 確認身份／分支／忽略規則，建立初始 commit、origin、首次 push，核對雲端 SHA 與 private 狀態 | 恢復開發後先完成 |
+| T00 | 環境、依賴與可重現指令 | 鎖檔、原生Firefox與驅動探測、建置／型別／lint／測試指令有實際結果 | 已完成原型環境 |
 | T01 | Firefox 真實頁面探索與樣本整理 | 版本、來源、穩定 ID、分支、容器及遠距跳轉有可重現紀錄 | 1–2 人日 |
 | T02 | Firefox MV3 啟動、事件頁面與 adapter 骨架 | 可在 Firefox 暫時載入、啟動／停用；重複啟動不重複注入 | 0.5 人日 |
 | T03 | 索引、搜尋、完整度與資料更新 | 重複提問不錯併、部分索引不誤標完整 | 1 人日 |
@@ -231,7 +232,7 @@ Firefox 首版開發投入暫估約 6–9 人日。Mozilla 簽章／審查的等
 
 ## 9. 驗收門檻
 
-以下是目標，尚未量測。短、中、長樣本都要留下實際結果；合成測試不能取代 ChatGPT 真實頁面驗收。
+以下是驗收目標；目前已完成的合成量測見原型驗收報告，真實短、中、長樣本仍待取得。合成測試不能取代ChatGPT真實頁面驗收。
 
 | 驗收項目 | 測試 | 通過標準 |
 |---|---|---|
@@ -279,7 +280,7 @@ Firefox manifest 設定固定 Gecko add-on ID，最低版本由實際 API 需求
 
 T00 環境準備先記錄 Node／npm／Firefox 版本、路徑、開發依賴鎖檔、工作目錄及瀏覽器測試方法。開發依賴只安裝在專案，npm 暫存留在 work；不進行全域套件安裝。
 
-T00 建立可重現指令：`npm ci`、`npm run typecheck`、`npm run build:firefox`、`npm run lint:firefox`、`npm run test:core`、`npm run test:firefox-fixture`、`npm run package:firefox`。package.json 已建立 script 名稱，相關建置／測試腳本尚待完成，不能視為目前已可執行成功。每個指令的輸出位置與退出碼寫入開發文件。fixture 若用 localhost，使用獨立測試 manifest／adapter；正式 manifest 不包含測試來源。Firefox 擴充功能案例必須實際載入附加元件，不能只把同一份 JS 放進普通網頁當作已驗證權限與生命週期。
+T00的可重現指令已完成：`npm ci`、`npm run typecheck`、`npm run build:firefox`、`npm run lint:firefox`、`npm run test:core`、`npm run test:firefox-fixture`、`npm run test:firefox-permissions`、`npm run package:firefox`。原型自測均退出0；固定快照的獨立結果另列，不把指令存在等同通過。正式建置輸出dist/firefox，合成建置dist/fixture，原生證據artifacts，打包artifacts/packages。fixture使用獨立測試manifest／adapter；正式manifest不包含測試來源。Firefox擴充功能案例必須實際載入附加元件，不能只把同一份JS放進普通網頁當作已驗證權限與生命週期。
 
 T01 真實觀察必須有：可使用的原生 Firefox、獨立測試設定檔、該設定檔中的 ChatGPT 登入狀態，以及固定長對話樣本。未具備的項目標為待驗證，允許核心與 fixture 開發繼續，不把合成結果算成 T01 通過。
 
@@ -377,7 +378,7 @@ T07a 可交付誠實標示範圍的實驗原型；只有 LIVE-01–07 與相關 
 
 本次已確認：Node.js 24.12.0、npm 11.6.2、Firefox 157.0。Firefox 已以獨立工作目錄設定檔渲染本機測試頁並產生可檢視截圖；沙箱內首次執行失敗，經核准的沙箱外隔離測試成功。這只證明本機渲染可執行，不代表擴充功能載入或真實 ChatGPT 已驗收。
 
-開發啟動後已安裝 TypeScript、esbuild、web-ext、Firefox／Node 型別、selenium-webdriver 與 geckodriver npm 套件，並產生 package-lock.json。尚未完成 typecheck、lint、建置、geckodriver 執行檔探測與互動驅動驗證。已提供 Playwright 套件，但其 Firefox 執行檔未安裝，不能據此宣稱有完整 Firefox 自動化環境。
+已安裝並鎖定TypeScript、esbuild、web-ext、Firefox／Node型別、selenium-webdriver與geckodriver npm套件。typecheck／lint／建置及官方geckodriver 0.37.1原生互動已驗證；獨立profile可載入實際MV3附加元件、點工具列與原生權限視窗。這些能力不代表已取得ChatGPT登入或真實長對話樣本。
 
 可以承接：Firefox 優先原型開發、資料核心與 UI、測試建立、套件打包、錯誤修復、sub-agent 獨立審查與可執行案例驗收。需實際驗證才可承諾結果：真實長對話全量來源、所有遠距目標、分支／容器、登入測試環境與 Mozilla 簽章。
 
@@ -387,7 +388,7 @@ T07a 可交付誠實標示範圍的實驗原型；只有 LIVE-01–07 與相關 
 
 ### 15.1 Git 環境與首次上雲
 
-此節為使用者追加要求。功能開發保持暫停；使用者已另行授權建立 GitHub 私人儲存庫與首次同步。GIT-00 已完成：私人 repo https://github.com/justamowei/chatgpt-toc-firefox ，main 與 feat/firefox-prototype 首次 push 成功且 SHA 一致。以下為已執行且後續必須持續遵守的程序：
+此節為使用者追加要求。暫停期間已獲授權完成GitHub私人儲存庫與首次同步；後續使用者已恢復功能開發。GIT-00已完成：私人repo https://github.com/justamowei/chatgpt-toc-firefox ，main與feat/firefox-prototype首次push成功且SHA一致。以下為已執行且後續必須持續遵守的程序：
 
 1. 以 `outputs/chatgpt-toc` 作為獨立專案儲存庫根目錄，先確認不在另一個既有儲存庫內，避免把整個 Documents／Codex 目錄納入。
 2. 建立 `.gitignore`，排除 node_modules、建置產物、未簽章／簽章套件、暫存、測試 profile、真實聊天樣本、原始日誌、憑證與 `.env`。追蹤 source、manifest、package.json、package-lock.json、可重現腳本、合成／去識別化測試 fixture，以及必要文件。
@@ -441,8 +442,22 @@ T07a 可交付誠實標示範圍的實驗原型；只有 LIVE-01–07 與相關 
 
 進度文件至少記錄：時間（Asia/Taipei）、branch、commit SHA、功能／WIP 摘要、測試結果、push 結果、遠端 SHA、下一步與未解除限制。
 
-### 15.6 本次暫停快照
+### 15.6 暫停時的歷史快照與恢復後狀態
 
-目前已有：package.json／package-lock.json、tsconfig.json、Firefox manifest、初步 .gitignore、src/core.ts 與 src/background.ts；開發依賴已安裝。核心與背景程式尚未 typecheck、建置或驗收，導航介面、DOM adapter、建置腳本與測試尚未完成。
+暫停時已有package.json／package-lock.json、tsconfig.json、Firefox manifest、.gitignore、未驗證的core.ts與background.ts，均已保存。恢復後已完成DOM adapter、導航介面、設定、建置／測試／打包腳本，結果以docs/progress.md與原型驗收報告核對；保留歷史失敗，不以目前結果回填舊快照。
 
 GitHub private 儲存庫已建立：https://github.com/justamowei/chatgpt-toc-firefox 。main 文件／專案基線與 feat/firefox-prototype 未驗證程式 WIP 均已保存、push 並核對 SHA。詳細紀錄在 docs/progress.md；最後文件更新後的分支 SHA 記於 outputs/GitHub 建立結果.md。功能開發已獲使用者恢復授權，後續結果依 docs/progress.md 與原型驗收報告更新。
+
+### 15.7 目前任務狀態與下一階段
+
+| 任務 | 原型狀態 | 尚缺條件 |
+|---|---|---|
+| GIT-00／T00 | PASS | 維持每次commit的push／SHA核對 |
+| T01 | PENDING | 獨立Firefox內由使用者登入、至少一段受影響長對話、固定預期ID／分支與十個未掛載目標 |
+| T02–T04 | 原型合成自測PASS | 真實ChatGPT adapter selector與定位LIVE-01仍待驗證 |
+| T05 | 合成有限載入／取消／返回PASS | 真實完整分支來源、全量索引與十個遠距目標尚未完成 |
+| T06 | 原生權限自測PASS | 真實編輯／重新生成／容器／工作區與背景連線邊界持續複驗 |
+| T07a | 打包完成、獨立複驗中 | 所有原型阻擋缺陷修正後，報告固定來源／套件hash與未執行案例 |
+| T07b | PENDING | Mozilla帳號／簽章授權、簽章後重啟及升版驗收 |
+
+未具備T01條件時繼續可獨立執行的原型修正與文件工作；不以增加自動捲動重試替代可信全量來源。正式長對話版需依13.1案例逐一通過。
