@@ -50,7 +50,8 @@ try {
     assert.deepEqual(s.items.map(e=>e.id),Array.from({length:6},(_,i)=>'turn-key:user:key-'+i));
     assert.match(s.scope,/歷史尚未完整/);
     await click('#toc-diagnose');const diagnostic=JSON.parse(await evaluate(`return document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-diagnosis').textContent`));
-    assert.equal(diagnostic.version,version);assert.equal(diagnostic.collected,6);assert.ok(Object.values(diagnostic).every(v=>typeof v==='number'||v===version));
+    assert.equal(diagnostic.version,version);assert.equal(diagnostic.mountedCount,6);assert.equal(diagnostic.fullCount,0);assert.deepEqual(diagnostic.lastHistory,{outcome:'not-started',pages:0});
+    assert.deepEqual(Object.keys(diagnostic).sort(),['version','diagnosticSchema','mountedCount','fullCount','binding','matchedCount','lastHistory','main','legacyRole','turnShell','turnKey','userBubble','conversationRole','agentStart'].sort());
     return {legacy_visible_prompts:0,fixed:6,unknown_history:true,diagnostic_counts_only:true};
   });
   await test('NEW-02:target-highlight-return', async () => {

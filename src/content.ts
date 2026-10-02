@@ -3,7 +3,7 @@ import { DomAdapter } from './dom';
 import { supported } from './config';
 import { styles } from './styles';
 import { FullHistoryIndex } from './full-index';
-import { HistoryError, loadHistory } from './history';
+import { HistoryError, loadHistory, type HistoryLimitFailure } from './history';
 import { FIXTURE } from './config';
 type Instance = { show(): void; dispose(): void };
 const world = globalThis as typeof globalThis & { __chatgptToc?: Instance };
@@ -18,6 +18,9 @@ function start(): Instance {
   const store = new IndexStore();
   const full = new FullHistoryIndex();
   let historyController: AbortController | null = null, historyToken = 0, historyContext = '';
+  // Sticky, allowlisted metadata for the last explicit read. Navigation/DOM
+  // refresh must not erase the failure that explains a mounted-only index.
+  let historyResult: { outcome: 'not-started' | 'loading' | 'installed' | 'failed' | 'cancelled' | 'revoked'; pages: number; error?: string; limit?: HistoryLimitFailure } = { outcome: 'not-started', pages: 0 };
   // A disabled Firefox content context cannot run teardown JavaScript. Remove
   // its inert DOM when a new context starts, before creating the single root.
   for (const stale of document.querySelectorAll('#chatgpt-toc-root')) stale.remove();
@@ -57,7 +60,7 @@ function start(): Instance {
     // Counts only; no conversation text, IDs, URLs, or account information.
     const counts: Record<string, number> = {};
     for (const [label, selector] of Object.entries({ main: 'main', legacyRole: '[data-message-author-role]', turnShell: '[data-testid^="conversation-turn-"][data-turn]', turnKey: '[data-turn-key]', userBubble: '[data-user-message-bubble]', conversationRole: '[data-conversation-role]', agentStart: '[data-chatgpt-agent-turn-start]' })) counts[label] = document.querySelectorAll(selector).length;
-    diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, collected: store.entries.length, ...counts }, null, 2); diagnosis.hidden = false;
+    diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, diagnosticSchema: 2, mountedCount: store.entries.length, fullCount: full.snapshot ? full.entries().length : 0, binding: full.binding, matchedCount: full.matched, lastHistory: historyResult, ...counts }, null, 2); diagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
   footer.append(complete, earlier, back, stop, settings, disable, diagnose);
   const hint = make('div', 'hint', 'Alt＋Shift＋O 開啟 · Esc 收合');
@@ -84,7 +87,7 @@ function start(): Instance {
     stop.hidden = !loading; earlier.disabled = loading; complete.disabled = loading;
     host.dataset.history = historyController ? 'loading' : full.snapshot ? 'loaded' : 'idle';
   }
-  function cancelHistory(): void { historyToken++; historyController?.abort(); historyController = null; historyContext = ''; adapter.endHistoryRead(); busy(); }
+  function cancelHistory(): void { if (historyController) historyResult = { outcome: 'cancelled', pages: historyResult.pages }; historyToken++; historyController?.abort(); historyController = null; historyContext = ''; adapter.endHistoryRead(); busy(); }
   function cancel(): void {
     const loading = !!historyController;
     navigationToken++; navigator.cancel(); cancelHistory();
@@ -99,23 +102,26 @@ function start(): Instance {
     full.clear(); adapter.useHistory(null, full.revision); returnPosition = null; returnEpoch = -1;
     const controller = new AbortController(), token = ++historyToken;
     historyController = controller; historyContext = context;
+    historyResult = { outcome: 'loading', pages: 0 };
     adapter.beginHistoryRead();
     status.textContent = '正在讀取目前對話的完整歷史…'; busy(); render();
     try {
       const snapshot = await loadHistory(location.href, controller.signal, pages => {
-        if (alive && token === historyToken && !controller.signal.aborted) status.textContent = `正在讀取完整歷史：已核對 ${pages} 頁…`;
+        if (alive && token === historyToken && !controller.signal.aborted) { historyResult.pages = pages; status.textContent = `正在讀取完整歷史：已核對 ${pages} 頁…`; }
       }, FIXTURE ? { origin: location.origin } : undefined);
       if (!alive || token !== historyToken || controller.signal.aborted || context !== location.origin + location.pathname) return;
       const current = adapter.read();
       if (!full.install(snapshot, initial) || full.observe(current)) {
-        full.clear(); status.textContent = '讀取期間對話或分支已變更，未套用完整目錄，請重新載入。';
+        full.clear(); historyResult = { outcome: 'failed', pages: snapshot.pages, error: 'binding-changed' }; status.textContent = '讀取期間對話或分支已變更，未套用完整目錄，請重新載入。';
       } else {
+        historyResult = { outcome: 'installed', pages: snapshot.pages };
         adapter.useHistory(full.entries(), full.revision, full.snapshot?.messageIds);
         status.textContent = full.binding === 'subset-matched' ? '完整歷史已讀取。未掛載提問會按需尋找；若無法掛載，請手動捲動。' : '完整歷史已讀取，但尚未核對畫面訊息身分；可搜尋，定位暫停。';
       }
       render();
     } catch (error) {
       if (!alive || token !== historyToken || controller.signal.aborted) return;
+      historyResult = { outcome: 'failed', pages: historyResult.pages, error: error instanceof HistoryError ? error.code : 'unknown', ...(error instanceof HistoryError && error.limit ? { limit: error.limit } : {}) };
       const messages: Record<string, string> = {
         'unsupported-url': '請先開啟已儲存的對話；新對話須先送出提問並取得對話網址。',
         timeout: '完整歷史讀取逾時，未套用部分結果，請稍後重試。',
@@ -126,6 +132,11 @@ function start(): Instance {
         schema: '網站歷史格式尚未支援，完整目錄未套用；仍可使用已掛載目錄。',
       };
       status.textContent = error instanceof HistoryError ? messages[error.code] ?? '完整歷史讀取失敗，仍可使用已掛載目錄，請稍後重試。' : '完整歷史讀取失敗，仍可使用已掛載目錄，請稍後重試。';
+      if (error instanceof HistoryError && error.limit) {
+        const reason: Record<HistoryLimitFailure['kind'], string> = { configuration: '載入設定', 'session-bytes': '登入回應大小', 'page-bytes': '單筆歷史回應大小', 'total-bytes': '累計讀取量', 'text-chars': '單則提問字元數', depth: '資料巢狀深度', nodes: '資料結構數', messages: '訊息數', pages: '分頁數' };
+        const unit = error.limit.measurement === 'count' ? '' : ' bytes';
+        status.textContent = `${reason[error.limit.kind]}超出上限（${error.limit.observed}${unit}／${error.limit.maximum}${unit}），完整目錄未載入。可按「頁面診斷」查看不含聊天內容的原因。`;
+      }
     } finally {
       if (token === historyToken) { historyController = null; historyContext = ''; adapter.endHistoryRead(); busy(); }
     }
@@ -178,6 +189,7 @@ function start(): Instance {
     if (revoked || historyChanged || (reset && !hadHistory)) {
       navigationToken++; navigator.cancel();
       if (historyChanged || revoked) cancelHistory();
+      if (revoked) historyResult = { outcome: 'revoked', pages: historyResult.pages, error: 'observation-changed' };
       adapter.clearHighlight(); returnPosition = null; returnEpoch = -1;
       status.textContent = revoked ? '對話內容或分支已變更，完整目錄已撤銷，請重新載入。' : '對話或分支已變更，已重建目前目錄。';
     }

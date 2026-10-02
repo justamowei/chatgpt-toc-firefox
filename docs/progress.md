@@ -175,3 +175,10 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 ## 2026-10-03：v0.2.0 使用者真實超限失敗，交付門檻收緊
 
 使用者回報仍隨掛載數變動，完整載入提示為「對話超出本次載入上限，未宣稱完整；仍可使用已掛載目錄。」已確認 HistoryError limit，但頁大小、總量、文字／深度等具體類型待證據。產品目標 LIVE FAIL；舊合成 PASS 保留，不能抵銷實際失敗。新增 docs/live-history-failure.md，完整目錄數、穩定搜尋、全集合／分支与遠距定位必須真實 Firefox 驗收後才可交付修正版。目前沒有受允許 Firefox 分頁控制通道，不繞過先前網址政策限制；已請使用者提供無內容 network 大小／狀態 metadata。新 runtime 尚未改動。
+
+## 2026-10-03：超限縮頁與具體診斷開發（未交付）
+
+- 增加固定 limit enum 與數值，分辨 session/page/total bytes、單提問字元、depth/nodes/messages/pages；頁面診斷分開 mountedCount/fullCount，最後讀取結果不被正常導航／刷新覆寫。診斷不含內容、token、cookies、IDs、URL或hash。
+- 僅 paginated page-bytes 超限時縮 num_turns 100→50→25→12→6→3→1，同 cursor與同總deadline／已讀bytes。最小頁仍超限明確失敗；head重新核對保持首次成功大小，older縮頁不改head邊界；session/legacy/總量/正文等不套用縮頁。未擴張原上限。
+- 主端 history/full-index/direction 34/34＋core12/12合成PASS；typecheck/build/lint PASS（0/0/0）。隔離Firefox157 localhost原生FULL18/18 PASS，新增真正HTTP gzip壓縮頭頁decoded超2MiB：縮100→50後四頁收齊200、只有7mounted、捲動後200維持；單題262145超限精準診斷且導航後保留。這仍不是使用者真實ChatGPT驗收。
+- 新renderer診斷回歸正在執行；固定SHA後sub-agent作獨立審查。使用者真實超限kind/size仍待network無內容metadata；LIVE FAIL保持，不重包／替換已交付v0.2.0，也不宣稱已解決。
