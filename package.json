@@ -1,0 +1,23 @@
+{
+  "name": "chatgpt-toc-firefox",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build:firefox": "node scripts/build.mjs",
+    "lint:firefox": "web-ext lint --source-dir dist/firefox --warnings-as-errors",
+    "test:core": "node --test tests/core.test.mjs",
+    "test:firefox-fixture": "node tests/firefox-fixture.mjs",
+    "package:firefox": "node scripts/package.mjs"
+  },
+  "devDependencies": {
+    "@types/firefox-webext-browser": "143.0.1",
+    "@types/node": "26.6.4",
+    "esbuild": "0.28.2",
+    "geckodriver": "7.0.0",
+    "selenium-webdriver": "4.50.0",
+    "typescript": "7.0.2",
+    "web-ext": "10.7.0"
+  }
+}

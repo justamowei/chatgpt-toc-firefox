@@ -1,0 +1,23 @@
+node_modules/
+dist/
+artifacts/
+test-results/
+*.log
+
+# Local secrets and browser/test data
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials/
+secrets/
+profiles/
+*-profile/
+real-chat-samples/
+raw-evidence/
+work/
+tmp/
+.cache/
+*.xpi
+*.zip
