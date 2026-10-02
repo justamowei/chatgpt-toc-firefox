@@ -188,3 +188,15 @@ test('HIST-17: cancellation from progress stops before further requests; no shar
   const p = page(); const a = (await run([p, p])).snapshot; a.entries[0].text = 'caller mutation';
   const b = (await run([p, p])).snapshot; assert.equal(b.entries[0].text, 'u1'); assert.equal(a.branch, b.branch);
 });
+
+test('HIST-18: newest must not advertise unread newer pages; older has_next=true is legitimate', async () => {
+  for (const next of [true, null, 'false', 0]) {
+    const p=page();p.page_info.has_next_page=next;const calls=await reject([p], 'schema');
+    assert.equal(calls.length,2,'Never fall back or succeed with a known unread/newer or malformed head');
+  }
+  const newest=page([msg('u2'),msg('a2','assistant')],true,'older');newest.page_info.has_next_page=false;
+  const older=page([msg('u1'),msg('a1','assistant')]);older.page_info.has_next_page=true;
+  const {snapshot}=await run([newest,older,newest]);assert.deepEqual(snapshot.entries.map(e=>e.id),['u1','u2']);
+  const head=page();head.page_info.has_next_page=false;
+  const changed=page();changed.page_info.has_next_page=true;await reject([head,changed],'changed');
+});

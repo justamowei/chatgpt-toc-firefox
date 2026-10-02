@@ -23,7 +23,7 @@ const session=await fixtureSession(process.env.TOC_TEST_ARTIFACTS||'artifacts/fi
     if(mode==='denied'){res.writeHead(403,{'Content-Type':'application/json'});res.end('{}');return true;}
     if(mode==='slow')await new Promise(r=>setTimeout(r,900));
     const older=url.searchParams.has('before');
-    res.setHeader('Content-Type','application/json');res.end(JSON.stringify({conversation_id:conversation,current_node:'a-199',update_time:123,messages:older?messages.slice(0,200):messages.slice(200),page_info:{has_previous_page:mode==='malformed'?true:!older,start_cursor:mode==='malformed'?null:older?'start':'older-200'}}));return true;
+    res.setHeader('Content-Type','application/json');res.end(JSON.stringify({conversation_id:conversation,current_node:'a-199',update_time:123,messages:older?messages.slice(0,200):messages.slice(200),page_info:{has_previous_page:mode==='malformed'?true:!older,has_next_page:older||mode==='newer',start_cursor:mode==='malformed'?null:older?'start':'older-200'}}));return true;
   }
   return false;
 }});
@@ -122,6 +122,12 @@ try {
     assert.equal((await state()).history,'loaded');assert.equal((await state()).items.length,200);
     await evaluate(`document.querySelector('[data-user-message-bubble]').textContent='完整目錄 第193則提問 Firefox';`);await driver.sleep(250);
     assert.equal((await state()).history,'loaded');assert.equal((await state()).items.length,200);return {emptyIsUnmounted:true,completeRetained:200};
+  });
+  await reset();
+  await test('FULL-NATIVE-16:known-newer-page-refuses-complete',async()=>{
+    mode='newer';await click('#toc-complete');await wait(async()=>(await state()).history==='idle');
+    assert.equal((await state()).items.length,7);assert.doesNotMatch((await state()).scope,/已讀取完整歷史/);
+    return {unreadNewerPageRejected:true,mountedFallback:7};
   });
 }catch(error){console.error(error);process.exitCode=1;await session.screenshot('full-history-fail.png').catch(()=>{});}
 finally{await writeFile(resolve(artifacts,'results.json'),JSON.stringify({date:new Date().toISOString(),executor:process.env.TOC_TEST_EXECUTOR||'primary-agent',firefox:(await driver.getCapabilities()).get('browserVersion'),sample:'synthetic-200-prompts-localhost-no-real-account',build:JSON.parse(await readFile('dist/fixture/build-info.json','utf8')),results},null,2));await session.close();}

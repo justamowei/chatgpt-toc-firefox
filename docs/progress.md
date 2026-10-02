@@ -157,3 +157,9 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 審查發現並修正：完全換分支後失效、slotless assistant 新ID、pending／loaded 的跨卸載回答 witness、角色錨點方向與純空 user hydration。附件文字與檔名索引分開核對；已有實際媒體才用非文字提問占位。
 - 單元37/37 PASS：history17＋fullIndex7＋direction1＋既有core12；原生FULL13/13先前快照PASS，新增14/15在本快照等待結果。原生舊renderer8/8、fixture8/8已PASS，但最终SHA需固定後獨立回歸。正式build/lint初次PASS，最终source另重建核對。
 - manifest/package升0.2.0，正式權限與origin沒有擴張；文件明示未簽章實驗版、固定大小／時間上限、真實內部API與長對話PENDING。此功能commit鎖定後交獨立sub-agent，不把未跑項目記PASS。
+
+## 2026-10-03：完整索引分頁新頁邊界修復
+
+- 22cc60b 固定獨立單元37／FULL15／renderer8／fixture8均PASS，但只讀審查發現未檢查可選has_next_page；該快照不作最終交付來源。
+- 新est首次與重讀head若明示仍有更新頁，不套用完整結果；可選欄位需boolean，older頁has_next=true仍合法。新增HIST-18與FULL-NATIVE-16回歸。
+- 主端38/38合成單元PASS；最終原生16組正在執行，修復commit交sub-agent重新固定SHA驗收，前一次PASS保留但不冒充最終。

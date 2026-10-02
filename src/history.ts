@@ -33,7 +33,7 @@ export class HistoryError extends Error {
 }
 type JsonRecord = Record<string, unknown>;
 interface ApiMessage { id: string; role: string; visible: boolean; text: string; screenText: string; signature: string; parent?: string | null; }
-interface Page { messages: ApiMessage[]; previous: boolean; cursor: string | null; revision: string; hasRevision: boolean; }
+interface Page { messages: ApiMessage[]; previous: boolean; next?: boolean; cursor: string | null; revision: string; hasRevision: boolean; }
 const uuid = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
 const path = new RegExp(`^/(?:g/[A-Za-z0-9_-]+/)?c/(${uuid})/?$`);
 const internalTypes = new Set(['thoughts', 'reasoning', 'reasoning_recap', 'model_editable_context', 'user_editable_context', 'tether_browsing_display', 'tether_quote']);
@@ -127,11 +127,12 @@ function revision(payload: JsonRecord, conversation: string): { revision: string
 function page(value: unknown, conversation: string, limits: HistoryLimits): Page {
   const p = record(value), info = record(p.page_info);
   if (!Array.isArray(p.messages) || !p.messages.length || p.messages.length > limits.maxMessages || typeof info.has_previous_page !== 'boolean') fail('schema');
+  if (Object.hasOwn(info, 'has_next_page') && typeof info.has_next_page !== 'boolean') fail('schema');
   const cursor = info.start_cursor === null || info.start_cursor === undefined ? null : identifier(info.start_cursor);
   if (info.has_previous_page && !cursor) fail('schema');
   const messages = p.messages.map(item => message(item, limits));
   if (new Set(messages.map(m => m.id)).size !== messages.length) fail('schema');
-  return { messages, previous: info.has_previous_page, cursor, ...revision(p, conversation) };
+  return { messages, previous: info.has_previous_page, ...(Object.hasOwn(info, 'has_next_page') ? { next: info.has_next_page as boolean } : {}), cursor, ...revision(p, conversation) };
 }
 function legacy(value: unknown, conversation: string, limits: HistoryLimits): { messages: ApiMessage[]; revision: string; hasRevision: boolean } {
   const p = record(value), mapping = record(p.mapping);
@@ -275,6 +276,7 @@ export async function loadHistory(url: string, signal: AbortSignal, progress?: (
       if (snapshot.revision !== checked.revision || canonical(messages.map(m => m.signature)) !== canonical(checked.messages.map(m => m.signature))) fail('changed');
     } else {
       source = 'paginated-api'; let current = page(first, conversation, limits);
+      if (current.next === true) fail('schema'); // A newest request cannot leave a known newer page unread.
       const head = current; messages = current.messages; hasRevision = current.hasRevision; pages = 1;
       const seenCursors = new Set<string>();
       active(controller.signal); progress?.(pages); active(controller.signal);
@@ -290,7 +292,7 @@ export async function loadHistory(url: string, signal: AbortSignal, progress?: (
       }
       checkParents(messages);
       const checked = page(await request(base, token), conversation, limits);
-      if (checked.revision !== head.revision || checked.previous !== head.previous || checked.cursor !== head.cursor || canonical(head.messages.map(m => m.signature)) !== canonical(checked.messages.map(m => m.signature))) fail('changed');
+      if (checked.next === true || checked.next !== head.next || checked.revision !== head.revision || checked.previous !== head.previous || checked.cursor !== head.cursor || canonical(head.messages.map(m => m.signature)) !== canonical(checked.messages.map(m => m.signature))) fail('changed');
     }
     active(controller.signal);
     const visible = messages.filter(m => m.visible);
