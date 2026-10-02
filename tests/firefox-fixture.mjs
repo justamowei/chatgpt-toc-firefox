@@ -10,7 +10,7 @@ const { driver, url, action, screenshot, artifacts } = session;
 const results = [];
 const caps = await driver.getCapabilities();
 const build = JSON.parse(await readFile('dist/fixture/build-info.json', 'utf8'));
-const metadata = { date: new Date().toISOString(), executor: 'primary-agent', node: process.version, os: `${os.platform()} ${os.release()}`, firefox: caps.get('browserVersion'), profile: caps.get('moz:profile'), sample: 'synthetic-mounted-20/virtual-20', build };
+const metadata = { date: new Date().toISOString(), executor: process.env.TOC_TEST_EXECUTOR || 'primary-agent', node: process.version, os: `${os.platform()} ${os.release()}`, firefox: caps.get('browserVersion'), profile: caps.get('moz:profile'), sample: 'synthetic-mounted-20/virtual-20', build };
 const evaluate = (code, ...args) => driver.executeScript(code, ...args);
 async function state() { return evaluate('const h=document.getElementById("chatgpt-toc-root");return h?{roots:document.querySelectorAll("#chatgpt-toc-root").length,nav:h.dataset.navigation,restored:h.dataset.restored,scope:h.shadowRoot.querySelector("#toc-scope").textContent,ids:Array.from(h.shadowRoot.querySelectorAll("#toc-list button")).map(b=>b.dataset.entryId),expanded:h.shadowRoot.querySelector(".toggle").getAttribute("aria-expanded"),status:h.shadowRoot.querySelector("#toc-status").textContent}:null'); }
 async function shadow() { return (await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot(); }
@@ -82,8 +82,14 @@ try {
     await evaluate('window.fixture.mode("mounted");window.fixture.branch("branch-B")');
     await waitFor(async () => (await state()).ids.every(id => id.startsWith('branch-B:')) && (await state()).ids.length === 20);
     assert.equal(await (await (await shadow()).findElement(By.id('toc-back'))).isEnabled(), false);
-    await evaluate('window.fixture.route("/c/new-context")'); await waitFor(async () => (await state()).ids.every(id => id.startsWith('/c/new-context:')));
+    await evaluate('window.fixture.route("/c/new-context")'); await waitFor(async () => (await state()).ids.length === 20 && (await state()).ids.every(id => id.startsWith('/c/new-context:')));
     return { stale_ids: 0, stale_anchor_disabled: true };
+  });
+  await test('FF-03:pending-refresh-route', 'A pending debounced refresh cannot disable observations after SPA change', async () => {
+    await evaluate('window.fixture.append();setTimeout(()=>window.fixture.route("/c/race-context"),20);');
+    await waitFor(async () => (await state()).ids.length === 20 && (await state()).ids.every(id => id.startsWith('/c/race-context:')));
+    await evaluate('window.fixture.append()'); await waitFor(async () => (await state()).ids.length === 21, 'Post-route insertion did not refresh');
+    return { context: '/c/race-context', before: 20, after: 21 };
   });
   await test('FF-01:dispose-and-restart', 'Dispose removes root/highlight and future DOM changes do not restart; toolbar action restarts once', async () => {
     await click('#toc-disable'); assert.equal(await state(), null); assert.equal(await evaluate('return document.querySelectorAll("[data-toc-located]").length'), 0);
@@ -92,7 +98,7 @@ try {
   });
   await driver.get(session.optionsUrl);
   console.log(JSON.stringify({ options_probe: await evaluate('return {browser:typeof browser,windowBrowser:typeof window.wrappedJSObject?.browser,status:document.querySelector("#status").textContent}') }));
-  results.push({ id: 'FF-05', status: 'PENDING', expected: 'Native optional permission grant/deny/revoke/reload/event-page wake', actual: 'Options page reached; permission lifecycle tests to follow.' });
+  results.push({ id: 'FF-05', status: 'NOT RUN IN THIS SUITE', expected: 'Native optional permission lifecycle', actual: 'Run npm run test:firefox-permissions; its separate results.json records these cases.' });
 } catch { process.exitCode = 1; }
 finally {
   await writeFile(resolve(artifacts, 'results.json'), JSON.stringify({ metadata, results }, null, 2));

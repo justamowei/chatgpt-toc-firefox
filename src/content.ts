@@ -101,7 +101,7 @@ function start(): Instance {
   }
   function queue(): void {
     if (!alive) return;
-    if (store.context !== location.origin + location.pathname) { clearTimeout(refreshTimer); refresh(); return; }
+    if (store.context !== location.origin + location.pathname) { clearTimeout(refreshTimer); refreshTimer = undefined; refresh(); return; }
     if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; refresh(); }, 120);
   }
   async function navigate(id: string | null): Promise<void> {

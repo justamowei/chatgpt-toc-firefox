@@ -9,6 +9,7 @@
     "lint:firefox": "web-ext lint --source-dir dist/firefox --warnings-as-errors",
     "test:core": "node --test tests/core.test.mjs",
     "test:firefox-fixture": "node tests/firefox-fixture.mjs",
+    "test:firefox-permissions": "node tests/firefox-permissions.mjs",
     "package:firefox": "node scripts/package.mjs"
   },
   "devDependencies": {

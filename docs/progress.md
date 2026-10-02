@@ -56,3 +56,13 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - FF-05：原生選用權限 grant／deny／revoke／reload／背景喚醒仍 PENDING，下一組測試補齊。LIVE-01–07／REL-01 PENDING。
 - sub-agent 已獨立指出核心單批逾時signal與舊promise返回結果缺陷，已修正並加入第12個測試；本快照將交固定SHA重新驗收。
 - 本組立即 commit／push 並核對SHA；node_modules、build、測試profile與原始artifact均忽略，使用者交付包另放outputs。
+
+## 2026-10-02 19:27：SPA 更新修正與原生權限回歸
+
+- sub-agent 在 fc02d697 固定快照獨立重建：typecheck／build／lint、核心12/12與原生主要7組 PASS；獨立20次定位p95 351.42ms，返回最大偏移0px。額外邊界probe為2 PASS、1 FAIL：對話切換取消刷新計時器後未清除handle，新訊息不再更新。
+- 已修正該handle，新增 FF-03 pending-refresh-route 原生案例：切換後目錄20→21，PASS。修正後主要8組全PASS；20次定位p95 212.71ms，0失敗，返回0px。
+- FF-05 原生5組PASS：直接點Firefox權限拒絕／允許、重新載入自動注入、背景 stopped→runtime訊息→running且設定與註冊保留、撤銷後兩個無activeTab頁面立即清理、未知／額外訊息欄位拒絕。
+- 權限測試早期Chrome上下文shadow API／moz-button scroll錯誤是測試操作FAIL；改為真實WebDriver指標點擊可見按鈕中心後通過，未以預先授權替代原生權限視窗。失敗artifact保留。
+- 背景測試使用Firefox自身測試用terminateBackground，僅作用隔離profile本附加元件；自然閒置與整個Firefox重啟仍未驗證。
+- 已支援TOC_TEST_EXECUTOR，獨立測試結果不再固定標為primary-agent。
+- 本組修正／測試完成後立即commit、push、核對遠端SHA，交sub-agent固定新快照。LIVE-01–07／REL-01保持PENDING。
