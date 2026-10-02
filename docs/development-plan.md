@@ -4,7 +4,7 @@
 決策：直接自製，略過第三方工具評估  
 瀏覽器優先序：Firefox 桌面版為 P0；Chrome／Edge 為 P1 後續相容目標  
 本次交付：產品規格、技術決策、可行性驗證、任務順序與驗收條件  
-目前狀態：依使用者要求暫停開發。已建立初步專案、安裝依賴並撰寫未驗證的核心／背景程式；尚未完成建置與功能驗收。恢復後先執行第 15 節的 Git 初始化、GitHub 私人儲存庫及首次 push，再繼續功能。第 12–15 節為具體開發與驗收約束，優先於前文較概括的描述。
+目前狀態：依使用者要求暫停功能開發。已建立初步專案、安裝依賴並保存未驗證的核心／背景程式；尚未完成建置與功能驗收。Git 初始化與 GitHub 私人儲存庫首次推送已完成，已核對兩分支 SHA；等待使用者恢復功能開發。第 12–15 節為具體開發與驗收約束，優先於前文較概括的描述。
 版本管理：Git；雲端目標已由使用者指定為 GitHub 私人儲存庫。  
 Sub-agent 設定：GPT-6.1 Sol，reasoning effort = high，獨立驗收。
 
@@ -387,7 +387,7 @@ T07a 可交付誠實標示範圍的實驗原型；只有 LIVE-01–07 與相關 
 
 ### 15.1 Git 環境與首次上雲
 
-此節為使用者追加要求。功能開發保持暫停；使用者已另行授權建立 GitHub 私人儲存庫與首次同步，目前執行 GIT-00。以下是必須遵守的建立與核對程序：
+此節為使用者追加要求。功能開發保持暫停；使用者已另行授權建立 GitHub 私人儲存庫與首次同步。GIT-00 已完成：私人 repo https://github.com/justamowei/chatgpt-toc-firefox ，main 與 feat/firefox-prototype 首次 push 成功且 SHA 一致。以下為已執行且後續必須持續遵守的程序：
 
 1. 以 `outputs/chatgpt-toc` 作為獨立專案儲存庫根目錄，先確認不在另一個既有儲存庫內，避免把整個 Documents／Codex 目錄納入。
 2. 建立 `.gitignore`，排除 node_modules、建置產物、未簽章／簽章套件、暫存、測試 profile、真實聊天樣本、原始日誌、憑證與 `.env`。追蹤 source、manifest、package.json、package-lock.json、可重現腳本、合成／去識別化測試 fixture，以及必要文件。
@@ -445,5 +445,4 @@ T07a 可交付誠實標示範圍的實驗原型；只有 LIVE-01–07 與相關 
 
 目前已有：package.json／package-lock.json、tsconfig.json、Firefox manifest、初步 .gitignore、src/core.ts 與 src/background.ts；開發依賴已安裝。核心與背景程式尚未 typecheck、建置或驗收，導航介面、DOM adapter、建置腳本與測試尚未完成。
 
-使用者已授權建立 GitHub private 儲存庫。Git 初始化、文件基線與 WIP 快照、首次雲端推送進行中；完成結果以 repo 的 docs/progress.md 與 outputs 的 GitHub 建立結果文件記錄。功能仍暫停，首次推送核對成功後亦須等待使用者恢復開發。
-
+GitHub private 儲存庫已建立：https://github.com/justamowei/chatgpt-toc-firefox 。main 文件／專案基線與 feat/firefox-prototype 未驗證程式 WIP 均已保存、push 並核對 SHA。詳細紀錄在 docs/progress.md；最後文件更新後的分支 SHA 記於 outputs/GitHub 建立結果.md。功能仍暫停，等待使用者恢復開發。
