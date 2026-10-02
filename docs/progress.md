@@ -86,3 +86,9 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 測試初輪highlight helper誤收合持久expanded面板，定位按鈕不可見；保留run1-toggle失敗證據，改為只有收合時才展開，不改產品行為或門檻。
 - 浏览器卸載context後不能執行JS清理；隱藏且不運作DOM需reload或新context清掉，文件明記。明確網站撤權／單頁停用仍直接清DOM。
 - 本組完成後立即commit／push／核對，交新固定SHA重新驗受影響的background、CSS、DOM及原生流程。核心未變，舊獨立核心證據明記重用；LIVE／ESR／容器／簽章仍PENDING。
+
+## 2026-10-02 20:42：固定建置資產換行
+
+- fb5bfa0fbad4c011d05583d89e947a6112f28370已push且遠端一致。sub-agent固定快照原生回歸進行中，發現host.css raw copy因工作樹CRLF／git archive LF而有不同hash；JS bundle相同。
+- 修正build對options.html與host.css固定UTF-8／LF，不修改runtime功能。正式及fixture重新build、lint、package並比對hash；新的canonical CSS預期與sub-agent先前LF資產相同。
+- 原CSS差異保留記錄，不能聲稱fb5當時所有輸出byte一致。新快照需獨立重建核對；只有runtime JS、CSS與manifest皆byte-identical的原生證據才明記重用，不將舊整包hash套用新ZIP。

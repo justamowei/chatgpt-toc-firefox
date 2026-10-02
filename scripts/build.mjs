@@ -1,5 +1,5 @@
 import { build } from 'esbuild';
-import { mkdir, readFile, writeFile, copyFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 const fixture = process.argv.includes('--fixture');
@@ -14,8 +14,10 @@ if (fixture) {
   manifest.optional_host_permissions = ['http://127.0.0.1/*'];
 }
 await writeFile(resolve(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
-await copyFile('src/options.html', resolve(out, 'options.html'));
-await copyFile('src/host.css', resolve(out, 'host.css'));
+// Git's Windows checkout may use CRLF; ship the same text bytes as git archive.
+for (const file of ['options.html', 'host.css']) {
+  await writeFile(resolve(out, file), (await readFile(`src/${file}`, 'utf8')).replace(/\r\n/g, '\n'), 'utf8');
+}
 const hashes = {};
 for (const file of ['background.js', 'content.js', 'options.js', 'options.html', 'host.css', 'manifest.json']) hashes[file] = createHash('sha256').update(await readFile(resolve(out, file))).digest('hex');
 await writeFile(resolve(out, 'build-info.json'), JSON.stringify({ version: manifest.version, fixture, hashes }, null, 2) + '\n');
