@@ -1,5 +1,6 @@
 import { IndexStore, type Entry, type NavigationAdapter, type Position, type Snapshot } from './core';
 import { FIXTURE } from './config';
+import { readTurns } from './turns';
 type Direction = 'older' | 'newer';
 export class DomAdapter implements NavigationAdapter {
   nodes = new Map<string, HTMLElement>();
@@ -16,18 +17,13 @@ export class DomAdapter implements NavigationAdapter {
     const context = location.origin + location.pathname;
     const entries: Entry[] = [], nodes = new Map<string, HTMLElement>(), slots = new Map<string, string>(), prompts = new Map<string, string>();
     const main = document.querySelector('main') ?? document.body;
-    for (const node of main.querySelectorAll<HTMLElement>('[data-message-author-role]')) {
-      const role = node.getAttribute('data-message-author-role');
-      if (role !== 'user' && role !== 'assistant') continue;
-      const stableId = node.getAttribute('data-message-id') ?? node.closest('[data-message-id]')?.getAttribute('data-message-id');
+    for (const { node, role, stableId, slot, text } of readTurns()) {
       let id = stableId;
       if (!id) { id = this.transient.get(node) ?? `transient-${++this.serial}`; this.transient.set(node, id); }
       if (nodes.has(id)) continue;
       nodes.set(id, node);
-      const slot = node.closest('[data-testid^="conversation-turn-"]')?.getAttribute('data-testid');
       if (slot && stableId) slots.set(`${role}:${slot}`, stableId);
       if (role === 'user') {
-        const text = node.textContent?.trim() || '〔附件或非文字提問〕';
         prompts.set(id, text); entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}) });
       }
     }

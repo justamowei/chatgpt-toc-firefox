@@ -1,4 +1,6 @@
-# Firefox v0.1 實驗原型
+# Firefox v0.1.1 修復原型
+
+2026-10-03：v0.1 的零索引回報已加入新版結構修復，請依[更新方式](bugfix-v0.1.1.md)移除舊暫時附加元件、載入 v0.1.1 並重整 ChatGPT。若仍無提問，使用目錄中的「頁面診斷」回覆標記數量即可。
 
 適用：Windows 桌面 Firefox。已在原生 Firefox 157.0 合成頁面載入實際 MV3 附加元件；真實 ChatGPT 與 ESR 尚未驗收。manifest 的最低版本是 API 下限，不能當作各版本實測承諾；Android 尚未驗收。
 

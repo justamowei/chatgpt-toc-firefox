@@ -44,9 +44,17 @@ function start(): Instance {
   const stop = button('停止', cancel); stop.id = 'toc-stop';
   const settings = button('設定', () => { void browser.runtime.sendMessage({ kind: 'options:open' }).catch(() => { if (alive) status.textContent = '無法開啟設定，請從 Firefox 附加元件頁開啟。'; }); });
   const disable = button('停用此頁', dispose); disable.id = 'toc-disable';
-  footer.append(earlier, back, stop, settings, disable);
+  const diagnosis = make('pre', 'diagnosis'); diagnosis.id = 'toc-diagnosis'; diagnosis.hidden = true;
+  diagnosis.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;user-select:text;max-height:150px;overflow:auto;margin:0 14px 12px';
+  const diagnose = button('頁面診斷', () => {
+    // Counts only; no conversation text, IDs, URLs, or account information.
+    const counts: Record<string, number> = {};
+    for (const [label, selector] of Object.entries({ main: 'main', legacyRole: '[data-message-author-role]', turnShell: '[data-testid^="conversation-turn-"][data-turn]', turnKey: '[data-turn-key]', userBubble: '[data-user-message-bubble]', conversationRole: '[data-conversation-role]', agentStart: '[data-chatgpt-agent-turn-start]' })) counts[label] = document.querySelectorAll(selector).length;
+    diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, collected: store.entries.length, ...counts }, null, 2); diagnosis.hidden = false;
+  }); diagnose.id = 'toc-diagnose';
+  footer.append(earlier, back, stop, settings, disable, diagnose);
   const hint = make('div', 'hint', 'Alt＋Shift＋O 開啟 · Esc 收合');
-  panel.append(header, searchWrap, scope, list, status, footer, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
+  panel.append(header, searchWrap, scope, list, status, footer, diagnosis, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
   const adapter = new DomAdapter(store, refresh);
   const labels: Record<NavState, string> = { idle: '請選取已收錄的提問。', loading: '正在尋找訊息…', located: '已定位並高亮正確訊息。', cancelled: '已停止導航。', 'timed-out': '已達載入上限；可稍後重試。', unsupported: '目前頁面無法完成導航，請更新導航器。', 'not-found': '尚未找到這則訊息，可繼續載入。' };
   const navigator = new Navigator(adapter, state => {
@@ -137,7 +145,7 @@ function start(): Instance {
     status.textContent = restored ? '已回到剛才的閱讀位置。' : '原閱讀錨點已改變，位置未能精準恢復。';
     host.dataset.restored = String(restored); updateCurrent();
   }
-  const observer = new MutationObserver(queue); observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'data-message-id', 'data-message-author-role', 'data-testid', 'data-fixture-branch'] });
+  const observer = new MutationObserver(queue); observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'data-message-id', 'data-message-author-role', 'data-testid', 'data-fixture-branch', 'data-turn', 'data-turn-id', 'data-turn-key', 'data-user-message-bubble', 'data-conversation-role', 'data-chatgpt-agent-turn-start'] });
   const routeTimer = setInterval(() => { if (alive && store.context !== location.origin + location.pathname) refresh(); }, 500);
   window.addEventListener('popstate', refreshRoute, { signal: events.signal });
   function refreshRoute(): void { refresh(); }

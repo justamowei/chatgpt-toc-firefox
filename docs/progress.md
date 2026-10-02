@@ -101,3 +101,13 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 七個ZIP members逐一對應dist；主交付ZIP SHA862fe1bfe7e7ebbca31d47e2ab15a45c196deceef5f446615b3a19cea5df0162。獨立ZIP timestamp不同，整包hash另記最終報告，檔案hash一致。
 - T07a原型範圍PASS，無已知剩餘阻擋缺陷。歷史FAIL均保留。LIVE-01–07／ESR／容器工作區／REL-01仍PENDING，未稱作原長對話問題全部已解決或正式日常版。
 - 安裝目錄、ZIP、預覽與中文驗收／安裝說明已放outputs；兩份獨立報告同步repo docs與outputs。最後文件commit後立即push、核對遠端SHA，確切最後文件SHA以Git log為準。
+
+## 2026-10-03：v0.1.1 零索引相容修復
+
+- 使用者真實 chatgpt.com／Firefox 157 一般視窗，有目錄但新舊對話 0 則；不保存完整對話 URL 或內容。
+- 新增 turn key／user bubble、角色 turn shell／turn ID 辨識，角色限定 ID、巢狀去重、排除控制文字／側欄／輸入框／空殼；新增屬性 observer 與新節點高亮。
+- 新增本機「頁面診斷」只提供版本及標記數量，無聊天文字、ID、URL、持久化或傳送。
+- Firefox 157 新結構六組 PASS：旧 selector 0→新版6、定位與實際3px outline、返回0px、去重／附件、hydration、殼、失效／未知分支。Typecheck、核心12/12、正式build／零警告lint PASS。
+- 首輪測試 helper Promise 呼叫失敗與核心 esbuild 沙箱權限失敗保留，修正測試 await／正常工具權限後通過；產品核心未改。
+- 本修復立即commit／push核對，接續 GPT-6.1 Sol high 固定SHA獨立原生驗收、受影響原生回歸與新交付包。LIVE仍待確認；不承諾全量長歷史。
+- 電腦操作因目前Windows瀏覽器未支援網址政策而停止；不繞過限制，合成瀏覽器與程式工作继续。
