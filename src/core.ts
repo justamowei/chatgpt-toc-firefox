@@ -108,35 +108,37 @@ export class Navigator {
     try {
       let stalls = 0;
       for (let batch = 0; batch <= this.limits.batches; batch++) {
-        if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : this.state;
+        if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : 'cancelled';
         if (id !== null && this.adapter.mounted(id)) return this.finish(this.adapter.locate(id, controller.signal) ? 'located' : 'not-found', generation);
         if (batch === this.limits.batches || performance.now() - started >= this.limits.totalMs) return this.finish('timed-out', generation);
         const timeout = Math.min(this.limits.batchMs, this.limits.totalMs - (performance.now() - started));
         const progressed = await boundedLoad(
-          () => this.adapter.load(id === null ? 'older' : this.adapter.direction(id), controller.signal, timeout), controller.signal, timeout,
+          () => this.adapter.load(id === null ? 'older' : this.adapter.direction(id), controller.signal, timeout), controller, timeout,
         );
-        if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : this.state;
+        if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : 'cancelled';
         if (id !== null && this.adapter.mounted(id)) return this.finish(this.adapter.locate(id, controller.signal) ? 'located' : 'not-found', generation);
         stalls = progressed ? 0 : stalls + 1;
         if (stalls >= this.limits.noProgress) return this.finish(id === null ? 'idle' : 'not-found', generation);
       }
       return this.finish('timed-out', generation);
     } catch (error) {
-      if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : this.state;
+      if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : 'cancelled';
       return this.finish(error instanceof DeadlineError ? 'timed-out' : 'unsupported', generation);
     } finally {
       clearTimeout(totalTimer);
+      controller.abort();
       if (generation === this.generation) this.controller = null;
     }
   }
   private finish(state: NavState, generation: number): NavState {
-    if (generation === this.generation) this.setState(state);
-    return this.state;
+    if (generation !== this.generation) return 'cancelled';
+    this.setState(state); return state;
   }
 }
 
 class DeadlineError extends Error {}
-async function boundedLoad(load: () => Promise<boolean>, signal: AbortSignal, timeout: number): Promise<boolean> {
+async function boundedLoad(load: () => Promise<boolean>, controller: AbortController, timeout: number): Promise<boolean> {
+  const signal = controller.signal;
   if (signal.aborted) throw new DeadlineError();
   let timer: ReturnType<typeof setTimeout> | undefined;
   let aborted: (() => void) | undefined;
@@ -144,16 +146,16 @@ async function boundedLoad(load: () => Promise<boolean>, signal: AbortSignal, ti
     return await Promise.race([Promise.resolve().then(() => { if (signal.aborted) throw new DeadlineError(); return load(); }), new Promise<never>((_, reject) => {
       aborted = () => reject(new DeadlineError());
       signal.addEventListener('abort', aborted, { once: true });
-      timer = setTimeout(() => reject(new DeadlineError()), timeout);
+      timer = setTimeout(() => { controller.abort(); reject(new DeadlineError()); }, timeout);
     })]);
   } finally { clearTimeout(timer); if (aborted) signal.removeEventListener('abort', aborted); }
 }
 
-export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean };
+export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean } | { kind: 'options:open' };
 export function validMessage(value: unknown): value is RuntimeMessage {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const v = value as Record<string, unknown>, keys = Object.keys(v);
-  if (v.kind === 'settings:get') return keys.length === 1;
+  if (v.kind === 'settings:get' || v.kind === 'options:open') return keys.length === 1;
   if (v.kind === 'settings:set') return keys.length === 2 && typeof v.expanded === 'boolean';
   if (v.kind === 'auto:set') return keys.length === 2 && typeof v.enabled === 'boolean';
   return false;

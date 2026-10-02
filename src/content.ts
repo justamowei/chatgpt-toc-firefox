@@ -1,0 +1,161 @@
+import { DEFAULT_SETTINGS, IndexStore, Navigator, validSettings, type NavState, type Position } from './core';
+import { DomAdapter } from './dom';
+import { supported } from './config';
+import { styles } from './styles';
+type Instance = { show(): void; dispose(): void };
+const world = globalThis as typeof globalThis & { __chatgptToc?: Instance };
+if (window === window.top && !browser.extension.inIncognitoContext && supported(location.href)) {
+  if (world.__chatgptToc) world.__chatgptToc.show();
+  else world.__chatgptToc = start();
+}
+function start(): Instance {
+  let alive = true, expanded = false, query = '', renderKey = '', navigationToken = 0, uiRevision = 0;
+  let returnPosition: Position | null = null, returnEpoch = -1, refreshTimer: ReturnType<typeof setTimeout> | undefined;
+  const events = new AbortController();
+  const store = new IndexStore();
+  const host = document.createElement('div'); host.id = 'chatgpt-toc-root';
+  const shadow = host.attachShadow({ mode: 'open' });
+  function make<K extends keyof HTMLElementTagNameMap>(tag: K, className = '', text = ''): HTMLElementTagNameMap[K] {
+    const node = document.createElement(tag); node.className = className; node.textContent = text; return node;
+  }
+  function button(text: string, action: () => void, className = '', persistent = true): HTMLButtonElement {
+    const node = make('button', className, text); node.type = 'button'; node.addEventListener('click', action, persistent ? { signal: events.signal } : undefined); return node;
+  }
+  const css = make('style'); css.textContent = styles; shadow.append(css);
+  const shell = make('div', 'shell'), panel = make('section', 'panel'), rail = make('nav', 'rail');
+  panel.id = 'toc-panel'; panel.setAttribute('aria-label', '對話目錄'); rail.setAttribute('aria-label', '提問快速導航');
+  const toggle = button('目錄', () => setExpanded(!expanded), 'toggle'); toggle.setAttribute('aria-controls', panel.id);
+  const markers = make('div', 'markers'); rail.append(toggle, markers);
+  const header = make('header'), title = make('h2', '', '對話目錄'), close = button('×', () => setExpanded(false), 'close'); close.setAttribute('aria-label', '收合目錄');
+  header.append(title, close);
+  const searchWrap = make('div', 'search'), label = make('label', '', '搜尋已收錄提問'), input = make('input');
+  input.id = 'toc-search'; input.type = 'search'; input.placeholder = '搜尋提問…'; label.htmlFor = input.id; searchWrap.append(label, input);
+  const scope = make('div', 'scope'), list = make('ul', 'list'), status = make('p', 'status');
+  scope.id = 'toc-scope'; list.id = 'toc-list'; status.id = 'toc-status'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
+  const footer = make('footer');
+  const earlier = button('載入較早訊息', () => { void navigate(null); }); earlier.id = 'toc-earlier';
+  const back = button('回到剛才位置', () => { void restore(); }); back.id = 'toc-back';
+  const stop = button('停止', cancel); stop.id = 'toc-stop';
+  const settings = button('設定', () => { void browser.runtime.sendMessage({ kind: 'options:open' }).catch(() => { if (alive) status.textContent = '無法開啟設定，請從 Firefox 附加元件頁開啟。'; }); });
+  const disable = button('停用此頁', dispose); disable.id = 'toc-disable';
+  footer.append(earlier, back, stop, settings, disable);
+  const hint = make('div', 'hint', 'Alt＋Shift＋O 開啟 · Esc 收合');
+  panel.append(header, searchWrap, scope, list, status, footer, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
+  const adapter = new DomAdapter(store, refresh);
+  const labels: Record<NavState, string> = { idle: '請選取已收錄的提問。', loading: '正在尋找訊息…', located: '已定位並高亮正確訊息。', cancelled: '已停止導航。', 'timed-out': '已達載入上限；可稍後重試。', unsupported: '目前頁面無法完成導航，請更新導航器。', 'not-found': '尚未找到這則訊息，可繼續載入。' };
+  const navigator = new Navigator(adapter, state => {
+    if (!alive) return;
+    host.dataset.navigation = state; status.textContent = labels[state]; stop.hidden = state !== 'loading'; earlier.disabled = state === 'loading';
+  });
+  let port: browser.runtime.Port | null = browser.runtime.connect({ name: 'toc-lifecycle' });
+  port.onMessage.addListener(message => { if (isDispose(message)) dispose(); });
+  port.onDisconnect.addListener(dispose);
+  function isDispose(message: unknown): boolean { return !!message && typeof message === 'object' && Object.keys(message).length === 1 && (message as { kind?: string }).kind === 'dispose'; }
+  const runtimeListener = (message: unknown, sender: browser.runtime.MessageSender) => {
+    if (sender.id === browser.runtime.id && isDispose(message)) dispose();
+  };
+  browser.runtime.onMessage.addListener(runtimeListener);
+  function cancel(): void { navigationToken++; navigator.cancel(); }
+  function setExpanded(value: boolean, focus = true, persist = true): void {
+    if (!alive) return;
+    expanded = value; panel.hidden = !expanded; toggle.setAttribute('aria-expanded', String(expanded));
+    if (focus) uiRevision++;
+    if (focus) (expanded ? input : toggle).focus({ preventScroll: true });
+    if (persist) void browser.runtime.sendMessage({ kind: 'settings:set', expanded }).catch(() => {});
+  }
+  function updateCurrent(): void {
+    if (!alive) return;
+    const prompt = [...adapter.nodes].filter(([id]) => store.entries.some(e => e.id === id)).sort((a, b) => Math.abs(a[1].getBoundingClientRect().top - 90) - Math.abs(b[1].getBoundingClientRect().top - 90))[0]?.[0];
+    for (const node of shadow.querySelectorAll<HTMLButtonElement>('[data-entry-id]')) node.setAttribute('aria-current', String(node.dataset.entryId === prompt));
+  }
+  function render(): void {
+    if (!alive) return;
+    const entries = store.search(query);
+    scope.textContent = `已收錄 ${store.entries.length} 則 · ${store.completeness === 'unknown' ? '訊息識別尚未確認' : '歷史尚未完整'}。搜尋只涵蓋已收錄提問。`;
+    back.disabled = !returnPosition || returnEpoch !== store.epoch;
+    const key = JSON.stringify([store.epoch, query, store.entries.map(e => [e.id, e.text, e.stable])]);
+    if (key !== renderKey) {
+      renderKey = key;
+      const focused = shadow.activeElement instanceof HTMLElement ? shadow.activeElement.dataset.entryId : undefined;
+      list.replaceChildren(); markers.replaceChildren();
+      for (const entry of entries) {
+        const row = make('li'); const choice = button(entry.text.slice(0, 180), () => { void navigate(entry.id); }, 'entry', false);
+        choice.dataset.entryId = entry.id; choice.title = entry.text; choice.disabled = !entry.stable; row.append(choice); list.append(row);
+      }
+      for (const entry of store.entries) {
+        const mark = button('', () => { void navigate(entry.id); }, 'mark', false); mark.dataset.entryId = entry.id;
+        mark.title = entry.text.slice(0, 180); mark.setAttribute('aria-label', `定位：${entry.text.slice(0, 180)}`); mark.disabled = !entry.stable; markers.append(mark);
+      }
+      if (!entries.length) list.append(make('li', 'empty', query ? '沒有符合的已收錄提問。' : '尚未辨識到提問；若已有對話，頁面版本可能尚未支援。'));
+      if (focused) [...list.querySelectorAll<HTMLButtonElement>('[data-entry-id]')].find(node => node.dataset.entryId === focused)?.focus({ preventScroll: true });
+    }
+    updateCurrent();
+  }
+  function refresh(direction?: 'older' | 'newer'): void {
+    if (!alive) return;
+    if (!supported(location.href)) { dispose(); return; }
+    const reset = store.merge(adapter.read(), direction ?? adapter.currentDirection() ?? 'observe');
+    if (reset) { cancel(); adapter.clearHighlight(); returnPosition = null; returnEpoch = -1; status.textContent = '對話或分支已變更，已重建目前目錄。'; }
+    host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
+    render();
+  }
+  function queue(): void {
+    if (!alive) return;
+    if (store.context !== location.origin + location.pathname) { clearTimeout(refreshTimer); refresh(); return; }
+    if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; refresh(); }, 120);
+  }
+  async function navigate(id: string | null): Promise<void> {
+    if (!alive) return;
+    refresh();
+    if (id !== null && !store.entries.some(entry => entry.id === id && entry.stable)) { status.textContent = '此目標已失效，請從目前目錄重新選取。'; return; }
+    returnPosition = adapter.capture(); returnEpoch = store.epoch; render();
+    delete host.dataset.restored;
+    const token = ++navigationToken;
+    const result = await navigator.run(id);
+    if (!alive || token !== navigationToken) return;
+    if (id === null && result === 'idle') status.textContent = '本次載入已停止。未核對完整歷史；可返回剛才位置或繼續。';
+    updateCurrent();
+  }
+  async function restore(): Promise<void> {
+    const position = returnPosition, epoch = returnEpoch;
+    if (!alive || !position || epoch !== store.epoch) { status.textContent = '原閱讀位置已失效，無法恢復。'; return; }
+    const token = ++navigationToken;
+    delete host.dataset.restored;
+    const result = await navigator.run(position.id);
+    if (!alive || token !== navigationToken || epoch !== store.epoch) return;
+    if (result !== 'located') { status.textContent = '原閱讀位置目前未掛載，尚未恢復。'; return; }
+    const restored = adapter.restore(position, events.signal);
+    status.textContent = restored ? '已回到剛才的閱讀位置。' : '原閱讀錨點已改變，位置未能精準恢復。';
+    host.dataset.restored = String(restored); updateCurrent();
+  }
+  const observer = new MutationObserver(queue); observer.observe(document.documentElement, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['class', 'data-message-id', 'data-message-author-role', 'data-testid', 'data-fixture-branch'] });
+  const routeTimer = setInterval(() => { if (alive && store.context !== location.origin + location.pathname) refresh(); }, 500);
+  window.addEventListener('popstate', refreshRoute, { signal: events.signal });
+  function refreshRoute(): void { refresh(); }
+  window.addEventListener('pagehide', dispose, { signal: events.signal });
+  document.addEventListener('scroll', updateCurrent, { capture: true, passive: true, signal: events.signal });
+  for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown', 'input']) document.addEventListener(type, event => {
+    if (navigator.state === 'loading' && event.isTrusted && !event.composedPath().includes(host)) cancel();
+  }, { capture: true, passive: true, signal: events.signal });
+  input.addEventListener('input', () => { query = input.value; render(); }, { signal: events.signal });
+  shadow.addEventListener('keydown', event => {
+    const key = event as KeyboardEvent;
+    if (key.key === 'Escape') { key.preventDefault(); cancel(); setExpanded(false); }
+    if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(key.key) || key.target === input) return;
+    const choices = [...list.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
+    const index = choices.indexOf(shadow.activeElement as HTMLButtonElement);
+    const next = key.key === 'Home' ? 0 : key.key === 'End' ? choices.length - 1 : Math.max(0, Math.min(choices.length - 1, index + (key.key === 'ArrowDown' ? 1 : -1)));
+    if (choices[next]) { key.preventDefault(); choices[next].focus(); }
+  }, { signal: events.signal });
+  input.addEventListener('keydown', event => { if (event.key === 'ArrowDown' || event.key === 'Enter') { event.preventDefault(); list.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus(); } }, { signal: events.signal });
+  function dispose(): void {
+    if (!alive) return;
+    alive = false; navigationToken++; navigator.cancel(); events.abort(); observer.disconnect(); clearTimeout(refreshTimer); clearInterval(routeTimer);
+    browser.runtime.onMessage.removeListener(runtimeListener); port?.disconnect(); port = null; adapter.dispose(); store.reset(); host.remove();
+    delete world.__chatgptToc;
+  }
+  panel.hidden = true; back.disabled = true; stop.hidden = true; status.textContent = labels.idle; toggle.setAttribute('aria-expanded', 'false');
+  refresh();
+  void browser.runtime.sendMessage({ kind: 'settings:get' }).then((value: unknown) => { if (alive && uiRevision === 0) setExpanded(validSettings(value) ? value.expanded : DEFAULT_SETTINGS.expanded, false, false); }).catch(() => {});
+  return { show: () => setExpanded(true), dispose };
+}

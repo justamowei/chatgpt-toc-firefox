@@ -84,6 +84,15 @@ test('navigation locates target that arrives in the third nominal no-progress ba
   const nav = new Navigator({ mounted: () => loads === 3, locate: () => { located++; return true; }, direction: () => 'older', load: async () => { loads++; return false; } }, () => {}, limits);
   assert.equal(await nav.run('target'), 'located'); assert.equal(located, 1);
 });
+test('batch timeout aborts adapter signal; superseded tasks report their own cancelled result', async () => {
+  let signal;
+  const adapter = { mounted: id => id === 'new', locate: () => true, direction: () => 'older', load: (_direction, value) => { signal = value; return new Promise(() => {}); } };
+  const timed = new Navigator(adapter, () => {}, limits);
+  assert.equal(await timed.run('old'), 'timed-out'); assert.equal(signal.aborted, true);
+  const nav = new Navigator(adapter, () => {}, limits);
+  const old = nav.run('old'); await new Promise(resolve => setTimeout(resolve, 5));
+  assert.equal(await nav.run('new'), 'located'); assert.equal(await old, 'cancelled');
+});
 test('CORE-04: NFKC case/whitespace search of 1,000 prompts, 20 repetitions p95 <=300ms', () => {
   const s = new IndexStore(); s.merge(snap(Array.from({ length: 1000 }, (_, i) => entry(`p-${i}`, `提問 ${i} Ｆｉｒｅｆｏｘ 測試`))));
   const timings = [];

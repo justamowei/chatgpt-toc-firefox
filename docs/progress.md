@@ -43,3 +43,16 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - sub-agent：對固定 0e8d6a0 快照做了獨立審查及 scratch probe；本組修正尚待新 SHA 的獨立回歸。
 - 推送：本組完成後立即 commit／push 並比對遠端 SHA，確切 SHA 以 Git log 與雲端紀錄核對。
 - 下一步：Firefox 建置、DOM adapter、Shadow DOM 目錄、選用權限設定與原生附加元件 fixture。LIVE／REL 保持 PENDING。
+
+## 2026-10-02 19:13：Firefox 可操作原型快照
+
+- 分支：feat/firefox-prototype；索引核心、Shadow DOM 目錄、搜尋、定位／高亮、返回、有限載入／取消、頁面與分支失效、設定頁與背景清理已實作。
+- Typecheck／正式 build／web-ext 零警告 lint／12 個核心回歸均 PASS；原生 Firefox 157.0 實際工具列注入合成頁面，7 組主要流程 PASS。
+- 原生合成 FF-02：20/20 目標精準且可見，0失敗；定位20次p95 147.75ms，返回同一u-6錨點最大偏移0px。
+- FF-04：搜尋、同文字不同ID、HTML文字、键盤、深淺色、500px實際窄視窗 PASS。初次窄視窗產品溢出 FAIL，調整寬度後重跑上述關聯案例 PASS；未隱藏該次失敗。
+- 早期fixture腳本的 WebDriver clear 不觸發input、JS字串與ShadowRoot Promise呼叫錯誤，保留run1–3失敗資料後修正測試呼叫，未改固定20目標或通過門檻。
+- FF-03：合成虛擬化收錄20、停止後無晚到捲動、branch／SPA失效 PASS；不標記完整。真實ChatGPT不採用合成分支信號。
+- FF-01：實際按鈕啟動／重複一個根節點／停用後觀察器不重新啟動／重新注入 PASS。
+- FF-05：原生選用權限 grant／deny／revoke／reload／背景喚醒仍 PENDING，下一組測試補齊。LIVE-01–07／REL-01 PENDING。
+- sub-agent 已獨立指出核心單批逾時signal與舊promise返回結果缺陷，已修正並加入第12個測試；本快照將交固定SHA重新驗收。
+- 本組立即 commit／push 並核對SHA；node_modules、build、測試profile與原始artifact均忽略，使用者交付包另放outputs。
