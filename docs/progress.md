@@ -111,3 +111,11 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 首輪測試 helper Promise 呼叫失敗與核心 esbuild 沙箱權限失敗保留，修正測試 await／正常工具權限後通過；產品核心未改。
 - 本修復立即commit／push核對，接續 GPT-6.1 Sol high 固定SHA獨立原生驗收、受影響原生回歸與新交付包。LIVE仍待確認；不承諾全量長歷史。
 - 電腦操作因目前Windows瀏覽器未支援網址政策而停止；不繞過限制，合成瀏覽器與程式工作继续。
+
+## 2026-10-03：獨立驗收返回錨點缺陷修復
+
+- 6a67fbfe240d838335e517ecd3e0e96c54f0e2fb 已push／遠端一致。GPT-6.1 Sol high於固定archive原生複驗：new6 PASS；獨立9 probe中8 PASS／1 FAIL。
+- IND-08：空assistant sentinel的parent中有user bubble，textOf誤讀user文字並建立assistant return anchor，提問離開viewport後仍錯誤啟用返回。FAIL結果與截圖保留。
+- 修正：sentinel候選內容本身或後代含user marker時不建assistant錨點；新增NEW-07檢查wrapper空白可視但user不可視的返回disabled情況。
+- New7／typecheck PASS；測試NEW-01改用整個main的原始legacy queryall，確認真正0→6，不用預先過濾composer。runtime此次仅sentinel處理改變。
+- 首個快照legacy8／addon生命週期3 PASS；本修復立即commit／push／核對，接續新固定SHA獨立複驗及正式包替換。

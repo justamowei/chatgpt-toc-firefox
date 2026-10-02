@@ -30,7 +30,7 @@ export function readTurns(): Turn[] {
     if (sentinel) {
       const content = candidate.closest<HTMLElement>('[data-conversation-role="assistant"], [data-message-author-role="assistant"]') ?? candidate.parentElement;
       // Empty sentinels and a shared user/assistant group are not return anchors.
-      if (!content || content === group || !textOf(content)) continue;
+      if (!content || content === group || !textOf(content) || content.matches('[data-user-message-bubble], [data-message-author-role="user"], [data-conversation-role="user"], [data-turn="user"]') || content.querySelector('[data-user-message-bubble], [data-message-author-role="user"], [data-conversation-role="user"]')) continue;
       node = content;
     }
     if (seen.has(node)) continue;

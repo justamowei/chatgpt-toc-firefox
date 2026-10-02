@@ -26,5 +26,6 @@
 - 原生 Firefox 157 六組新版結構回歸 PASS：舊 selector 0 → 新版 6、定位與 3px 高亮、返回偏移 0px、去重／附件、純屬性 hydration、turn shell、失效錨點／卸載不保留／無 ID 停用。
 - Typecheck PASS；核心 12/12 PASS。初次核心測試因 esbuild 沙箱目錄權限失敗，正常工具權限重跑通過；未修改核心。
 - 首輪新測試在 0→6 通過後遇到 helper 的 Promise 點擊錯誤；修正 await 後六組重跑 PASS，保留初輪失敗證據。
-- GPT-6.1 Sol high 固定 SHA 獨立驗收、正式包核對與受影響既有原生案例，待交付紀錄補齊。
+- GPT-6.1 Sol high 對首個修復 SHA `6a67fbfe240d838335e517ecd3e0e96c54f0e2fb`：新版六組 PASS，獨立九組 probe 為 8 PASS／1 FAIL。空 assistant sentinel 與 user bubble 共用內層 wrapper 時，user 文字被當作 assistant 內容，誤建返回錨點；保留 FAIL 證據。已增加排除共享 user 內容的 sentinel 判斷與 NEW-07 回歸，待新 SHA 複驗，不以首個套件作最終交付。
+- 首個修復快照的既有八組原生導航與三組 addon 生命週期均 PASS；20/20 定位，p95 140.24ms，返回 0px。最後修復與正式包核對紀錄另補。
 - 真實頁面修復結果仍待使用者確認。Windows Firefox 電腦操作因工具不支援網址安全策略而停止，未直接查看聊天；隔離合成測試不受此限制。

@@ -35,14 +35,14 @@ async function layout(kind) {
     }
     // These are unrelated UI and an empty virtualized shell, not prompts.
     const aside=document.createElement('aside');aside.innerHTML='<div data-turn-key="sidebar"><div data-user-message-bubble>側欄</div></div>';m.append(aside);
-    const form=document.createElement('form');form.innerHTML='<div data-message-author-role="user" data-message-id="composer">輸入框</div>';m.append(form);
+    const form=document.createElement('form');form.innerHTML='<div data-turn-key="composer"><div data-user-message-bubble>輸入框</div></div>';m.append(form);
     const empty=document.createElement('section');empty.setAttribute('data-testid','conversation-turn-99');empty.setAttribute('data-turn','user');empty.setAttribute('data-turn-id','unmounted');m.append(empty);
   `, kind);
 }
 try {
   await driver.get(url); await layout('group');
   await test('NEW-01:zero-regression', async () => {
-    const legacyCount = await evaluate(`return document.querySelector('main').querySelectorAll('[data-message-author-role]:not(form *)').length`);
+    const legacyCount = await evaluate(`return document.querySelector('main').querySelectorAll('[data-message-author-role]').length`);
     assert.equal(legacyCount, 0, 'This fixture must reproduce the old selector blind spot');
     await action(); await wait(async () => (await state())?.items.length === 6); await action();
     const s=await state(); assert.ok(s.items.every(e=>!e.disabled)); assert.ok(s.items.every(e=>!e.text.includes('複製編輯')));
@@ -80,6 +80,13 @@ try {
     await wait(async()=>(await state()).items.some(e=>e.id==='turn:user:replacement'));const root=await (await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();assert.equal(await (await root.findElement(By.id('toc-back'))).isEnabled(),false);
     await evaluate(`document.querySelector('[data-turn-id="turn-0"]').removeAttribute('data-turn-id');`);await wait(async()=>(await state()).items[0].disabled);
     await evaluate(`document.querySelector('[data-testid="conversation-turn-2"]').remove();`);await wait(async()=>(await state()).items.length===5);assert.ok(!(await state()).items.some(e=>e.id==='turn:user:turn-1'));return {unstable_disabled:true,unmounted_retained:false,return_invalidated:true};
+  });
+  await test('NEW-07:empty-sentinel-shared-wrapper',async()=>{
+    await evaluate(`window.fixture.mode('mounted');const m=document.querySelector('main');m.removeAttribute('data-fixture-branch');m.innerHTML='<section data-turn-key="only-user"><div style="min-height:1600px"><div data-user-message-bubble style="height:100px">只有提問</div><span data-chatgpt-agent-turn-start></span></div></section><section data-turn-key="far-user" style="min-height:400px"><div data-user-message-bubble>遠方提問</div></section>';m.scrollTop=700;`);
+    await wait(async()=>(await state()).items.length===2&&(await state()).items[0].id==='turn-key:user:only-user');
+    await click('#toc-list button[data-entry-id="turn-key:user:far-user"]');await wait(async()=>(await state()).nav==='located');
+    const root=await (await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();assert.equal(await (await root.findElement(By.id('toc-back'))).isEnabled(),false,'Empty sentinel must not turn the shared user wrapper into an assistant return anchor');
+    return {phantom_assistant_anchor:false,back_disabled:true};
   });
 } catch(error) { console.error(error);process.exitCode=1; }
 finally {const caps=await driver.getCapabilities();await writeFile(resolve(artifacts,'results.json'),JSON.stringify({date:new Date().toISOString(),executor:process.env.TOC_TEST_EXECUTOR||'primary-agent',firefox:caps.get('browserVersion'),build:JSON.parse(await readFile('dist/fixture/build-info.json','utf8')),results},null,2));await session.close();}
