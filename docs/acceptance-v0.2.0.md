@@ -1,5 +1,7 @@
 # v0.2.0 完整歷史實驗版驗收
 
+> 2026-10-03 更新：使用者真實 Firefox 完整載入回報「對話超出本次載入上限」，仍只顯示掛載目錄。因此目前產品目標為 **LIVE FAIL**。下文保留當時的合成驗收與套件來源紀錄，不能作為實際問題已解決的結論。修正版交付須通過[真實長對話門檻](live-history-failure.md)。
+
 日期：2026-10-03（Asia/Taipei）。最終實作 source：`95c2694e03185f66a1a0dc19a62bc8280b61420e`，branch `feat/firefox-prototype`。該 source 已 push，遠端 SHA 相同；後續文件 commit 不改產品 source。先前 `22cc60b` 的一般回歸通過，但獨立 has_next_page 反例失敗，已修復且不作最終交付來源。
 
 ## 結果

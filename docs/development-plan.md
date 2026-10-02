@@ -485,3 +485,7 @@ source 22cc60b 實作完整歷史來源與獨立索引；掛載目錄原保守�
 最終實作source 95c2694另修 has_next_page newest 邊界：明示還有新頁時不得套用完整结果，older頁有新頁是正常分頁。原source獨立反例FAIL與修正後結果均保留。交付source／套件hash以新版驗收報告為準。
 
 分支完全替換、slotless assistant新身分、跨卸載回答witness、回到較早錨點方向、附件正文／檔名與空user hydration均須回歸。真實完整expected集合、登入及內部API、UI分支與所有LIVE gate仍PENDING。僅交付未簽章實驗版，不把本輪合成通過當成正式全量保证。
+
+## 2026-10-03：v0.2.0 使用者真實超限失敗，交付門檻收緊
+
+使用者回報仍隨掛載數變動，完整載入提示為「對話超出本次載入上限，未宣稱完整；仍可使用已掛載目錄。」已確認 HistoryError limit，但頁大小、總量、文字／深度等具體類型待證據。產品目標 LIVE FAIL；舊合成 PASS 保留，不能抵銷實際失敗。新增 docs/live-history-failure.md，完整目錄數、穩定搜尋、全集合／分支与遠距定位必須真實 Firefox 驗收後才可交付修正版。目前沒有受允許 Firefox 分頁控制通道，不繞過先前網址政策限制；已請使用者提供無內容 network 大小／狀態 metadata。新 runtime 尚未改動。
