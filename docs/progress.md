@@ -142,3 +142,10 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 完成docs/full-history-plan.md与FULL01–12門檻，原計畫§4.2允許正常登入同來源唯讀探索，建議以可靠歷史來源及DOM按需定位分離。資料端、分頁、分支、取消與失敗均有明確契約。
 - GPT-6.1 Sol high唯讀審查已交outputs/Firefox-完整對話索引-唯讀設計審查.md；沒有改產品source或取用真實帳號／Firefox profile。
 - 本組僅需求／設計，沒有接入網站API或更改v0.1.1行為；不宣稱完整載入已開發。文件低影響變更不新增鏡像測試，立即commit／push／核對。
+
+## 2026-10-03：完整歷史來源模組
+
+- 使用者要求執行完整索引方案；新增同來源目前對話的唯讀 loadHistory，明確呼叫才請求 session 與歷史，不寫入 storage 或 log。
+- 新分頁協定需明確耗盡，舊 mapping 僅第一頁 404 後使用，沿 current_node 到真實 root；全部完成後重新核對 head，拒絕資料中途改變。
+- 固定來源、型別／ID／順序、隱藏訊息、串流大小、時間、頁數／訊息上限與取消晚到請求均有獨立測試。HIST-01–17 主端與模組作者均 17/17 PASS；既有 CORE 12/12、完整索引 4/4 PASS。此 commit 只包含可獨立測試的來源模組，前端整合仍在進行。
+- source 及憑證均未取用真實使用者 Firefox profile；候選網站協定與真實登入驗收仍 PENDING，不把 localhost 合成 cookie/token 當成真實帳號驗證。
