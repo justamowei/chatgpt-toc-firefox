@@ -149,3 +149,11 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 新分頁協定需明確耗盡，舊 mapping 僅第一頁 404 後使用，沿 current_node 到真實 root；全部完成後重新核對 head，拒絕資料中途改變。
 - 固定來源、型別／ID／順序、隱藏訊息、串流大小、時間、頁數／訊息上限與取消晚到請求均有獨立測試。HIST-01–17 主端與模組作者均 17/17 PASS；既有 CORE 12/12、完整索引 4/4 PASS。此 commit 只包含可獨立測試的來源模組，前端整合仍在進行。
 - source 及憑證均未取用真實使用者 Firefox profile；候選網站協定與真實登入驗收仍 PENDING，不把 localhost 合成 cookie/token 當成真實帳號驗證。
+
+## 2026-10-03：v0.2.0 完整目錄介面與回歸
+
+- 整合明確「載入完整目錄」、取消、重新載入、來源失敗降級與全提問搜尋；完整記憶體快照獨立於 IndexStore，正常 DOM 卸載不會縮小清單。
+- API raw ID 與角色相符的 DOM alias 核對，未知畫面只顯示伺服器分支、不提供未核對定位；實際已掛載 subset 不冒充整個 UI 分支證明。
+- 審查發現並修正：完全換分支後失效、slotless assistant 新ID、pending／loaded 的跨卸載回答 witness、角色錨點方向與純空 user hydration。附件文字與檔名索引分開核對；已有實際媒體才用非文字提問占位。
+- 單元37/37 PASS：history17＋fullIndex7＋direction1＋既有core12；原生FULL13/13先前快照PASS，新增14/15在本快照等待結果。原生舊renderer8/8、fixture8/8已PASS，但最终SHA需固定後獨立回歸。正式build/lint初次PASS，最终source另重建核對。
+- manifest/package升0.2.0，正式權限與origin沒有擴張；文件明示未簽章實驗版、固定大小／時間上限、真實內部API與長對話PENDING。此功能commit鎖定後交獨立sub-agent，不把未跑項目記PASS。

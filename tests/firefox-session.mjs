@@ -5,12 +5,12 @@ import { spawnSync } from 'node:child_process';
 import { download } from 'geckodriver';
 import { Builder, By } from 'selenium-webdriver';
 import firefox from 'selenium-webdriver/firefox.js';
-export async function fixtureSession(folder = 'artifacts/firefox-fixture') {
+export async function fixtureSession(folder = 'artifacts/firefox-fixture', options = {}) {
   const artifacts = resolve(folder); await mkdir(artifacts, { recursive: true });
   const built = spawnSync(process.execPath, ['scripts/build.mjs', '--fixture'], { stdio: 'inherit', windowsHide: true });
   if (built.status !== 0) throw new Error('Fixture build failed');
   const server = createServer(async (req, res) => {
-    try { const file = req.url === '/fixture.js' ? 'tests/fixtures/fixture.js' : 'tests/fixtures/conversation.html'; res.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : 'text/html'); res.end(await readFile(file)); }
+    try { if (options.handleRequest && await options.handleRequest(req, res)) return; const file = req.url === '/fixture.js' ? 'tests/fixtures/fixture.js' : 'tests/fixtures/conversation.html'; res.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : 'text/html'); res.end(await readFile(file)); }
     catch { res.writeHead(500); res.end(); }
   });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));

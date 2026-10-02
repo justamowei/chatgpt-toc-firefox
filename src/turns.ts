@@ -3,7 +3,7 @@ const shellSelector = '[data-testid^="conversation-turn-"], [data-turn-id][data-
 const selector = '[data-message-author-role], [data-conversation-role], [data-user-message-bubble], [data-chatgpt-agent-turn-start], [data-testid^="conversation-turn-"][data-turn], [data-turn-id][data-turn]';
 const userMarker = '[data-user-message-bubble], [data-message-author-role="user"], [data-conversation-role="user"], [data-turn="user"]';
 type Role = 'user' | 'assistant';
-export interface Turn { node: HTMLElement; role: Role; stableId: string | null; slot: string | null; text: string; }
+export interface Turn { node: HTMLElement; role: Role; stableId: string | null; apiId: string | null; slot: string | null; text: string; }
 function identity(node: Element | null, attribute: string): string | null { return node?.getAttribute(attribute)?.trim() || null; }
 function textOf(node: HTMLElement): string {
   const copy = node.cloneNode(true) as HTMLElement;
@@ -37,14 +37,15 @@ export function readTurns(): Turn[] {
     if (seen.has(node)) continue;
     const text = textOf(node);
     if (role === 'assistant' && !text) continue;
-    if (node === shell && !text && !node.querySelector('img, video, audio, [data-user-message-bubble]')) continue;
+    // Empty hydrated user bubbles are not evidence of an attachment prompt.
+    if (role === 'user' && !text && !node.querySelector('img, video, audio, [data-attachment-id], [data-file-id], a[download]')) continue;
     seen.add(node);
     const message = node.closest('[data-message-id]'), messageId = identity(message, 'data-message-id');
     const messageRole = message?.getAttribute('data-message-author-role') ?? message?.getAttribute('data-conversation-role') ?? message?.getAttribute('data-turn');
     const ownedMessage = message === node || messageRole === role || (role === 'user' && !!message?.hasAttribute('data-user-message-bubble'));
     const turnKey = identity(group, 'data-turn-key'), turnId = identity(shell, 'data-turn-id');
     const stableId = messageId && ownedMessage ? messageId : turnKey ? `turn-key:${role}:${turnKey}` : turnId ? `turn:${role}:${turnId}` : messageId ? `message:${role}:${messageId}` : null;
-    turns.push({ node, role, stableId, slot: identity(shell, 'data-testid'), text: text || '〔附件或非文字提問〕' });
+    turns.push({ node, role, stableId, apiId: ownedMessage ? messageId : null, slot: identity(shell, 'data-testid'), text: text || '〔附件或非文字提問〕' });
   }
   return turns;
 }

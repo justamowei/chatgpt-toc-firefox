@@ -122,7 +122,7 @@ test('HIST-10: hidden/system/tool/reasoning records never become entries or navi
     msg('reasoning', 'assistant', 'private', { content: { content_type: 'thoughts', parts: ['private'] } }),
     msg('directed', 'assistant', 'private', { recipient: 'python' }), msg('analysis', 'assistant', 'private', { channel: 'analysis' })];
   const p = page(list); const { snapshot } = await run([p, p]);
-  assert.deepEqual(snapshot.entries, [{ id: 'visible', text: '<img src=x onerror=alert(1)>', stable: true }]);
+  assert.deepEqual(snapshot.entries, [{ id: 'visible', text: '<img src=x onerror=alert(1)>', screenText: '<img src=x onerror=alert(1)>', stable: true }]);
   assert.deepEqual(snapshot.messageIds, ['visible', 'answer']); assert.deepEqual(snapshot.messages, [{ id: 'visible', role: 'user' }, { id: 'answer', role: 'assistant' }]);
   assert.ok(!JSON.stringify(snapshot).includes('private')); assert.ok(!('text' in snapshot.messages[1]));
 });

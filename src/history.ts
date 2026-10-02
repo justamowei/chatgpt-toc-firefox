@@ -3,7 +3,7 @@ import { FIXTURE } from './config';
 // Private website protocols, independently implemented from the public author's
 // source. This verifies a server snapshot, not the branch displayed by the UI.
 // https://github.com/sguzman/script-monkey/tree/main/userscripts/chatgpt.com/chatgpt-copy-entire-chat
-export interface HistoryEntry { id: string; text: string; stable: true; }
+export interface HistoryEntry { id: string; text: string; stable: true; screenText: string; }
 export interface HistorySnapshot {
   conversation: string;
   branch: string;
@@ -32,7 +32,7 @@ export class HistoryError extends Error {
   constructor(public readonly code: HistoryErrorCode) { super(`History ${code}`); this.name = 'HistoryError'; }
 }
 type JsonRecord = Record<string, unknown>;
-interface ApiMessage { id: string; role: string; visible: boolean; text: string; signature: string; parent?: string | null; }
+interface ApiMessage { id: string; role: string; visible: boolean; text: string; screenText: string; signature: string; parent?: string | null; }
 interface Page { messages: ApiMessage[]; previous: boolean; cursor: string | null; revision: string; hasRevision: boolean; }
 const uuid = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
 const path = new RegExp(`^/(?:g/[A-Za-z0-9_-]+/)?c/(${uuid})/?$`);
@@ -80,7 +80,7 @@ function message(value: unknown, limits: HistoryLimits): ApiMessage {
   if (typeof kind !== 'string' || !kind) fail('schema');
   const visible = (role === 'user' || role === 'assistant') && !metadata.is_visually_hidden_from_conversation && !metadata.is_visually_hidden &&
     m.weight !== 0 && (m.recipient === undefined || m.recipient === null || m.recipient === 'all') && m.channel !== 'analysis' && !internalTypes.has(kind);
-  let text = '';
+  let text = '', screenText = '';
   if (visible && role === 'user') {
     const pieces: string[] = []; let attachment = assets.has(kind);
     if (kind === 'text' || kind === 'multimodal_text') {
@@ -95,6 +95,7 @@ function message(value: unknown, limits: HistoryLimits): ApiMessage {
         }
       }
     } else if (!attachment) fail('schema');
+    screenText = pieces.join('\n\n').replace(/\r\n/g, '\n').trim() || '〔附件或非文字提問〕';
     if (metadata.attachments !== undefined) {
       if (!Array.isArray(metadata.attachments)) fail('schema');
       for (const item of metadata.attachments) {
@@ -115,7 +116,7 @@ function message(value: unknown, limits: HistoryLimits): ApiMessage {
     parent = p === null ? null : identifier(p);
     if (Object.hasOwn(m, 'parent') && Object.hasOwn(m, 'parent_id') && m.parent !== m.parent_id) fail('schema');
   }
-  return { id, role: role as string, visible, text, signature: canonical(m), ...(parent !== undefined ? { parent } : {}) };
+  return { id, role: role as string, visible, text, screenText, signature: canonical(m), ...(parent !== undefined ? { parent } : {}) };
 }
 function revision(payload: JsonRecord, conversation: string): { revision: string; hasRevision: boolean } {
   for (const key of ['conversation_id', 'id']) if (payload[key] !== undefined && (typeof payload[key] !== 'string' || payload[key].toLowerCase() !== conversation.toLowerCase())) fail('changed');
@@ -293,7 +294,7 @@ export async function loadHistory(url: string, signal: AbortSignal, progress?: (
     }
     active(controller.signal);
     const visible = messages.filter(m => m.visible);
-    const entries: HistoryEntry[] = visible.filter(m => m.role === 'user').map(m => ({ id: m.id, text: m.text, stable: true }));
+    const entries: HistoryEntry[] = visible.filter(m => m.role === 'user').map(m => ({ id: m.id, text: m.text, screenText: m.screenText, stable: true }));
     if (!entries.length) fail('schema');
     const branch = await fingerprint(messages, source, controller.signal); active(controller.signal);
     return { conversation, branch, source, entries, messageIds: visible.map(m => m.id), messages: visible.map(m => ({ id: m.id, role: m.role as 'user' | 'assistant' })), pages, exhausted: true, screenVerified: false, revisionVerified: hasRevision };

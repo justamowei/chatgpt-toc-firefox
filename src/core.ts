@@ -1,6 +1,6 @@
 export type Completeness = 'unknown' | 'partial' | 'verified-complete';
 export interface Entry { id: string; text: string; stable: boolean; slot?: string; }
-export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; }
+export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
 export interface CompleteProof { source: 'conversation-structure'; branch: string; exhausted: boolean; orderedIds: string[]; }
 export interface Settings { auto: boolean; expanded: boolean; }
 export const DEFAULT_SETTINGS: Settings = { auto: false, expanded: false };

@@ -6,6 +6,7 @@ import { fixtureSession } from './firefox-session.mjs';
 const session = await fixtureSession(process.env.TOC_TEST_ARTIFACTS || 'artifacts/firefox-renderers');
 const { driver, url, action, artifacts } = session;
 const results = [];
+const version = JSON.parse(await readFile('manifests/firefox.json', 'utf8')).version;
 const evaluate = (code, ...args) => driver.executeScript(code, ...args);
 const state = () => evaluate(`const h=document.getElementById('chatgpt-toc-root');return h?{nav:h.dataset.navigation,scope:h.shadowRoot.querySelector('#toc-scope').textContent,items:Array.from(h.shadowRoot.querySelectorAll('#toc-list button')).map(b=>({id:b.dataset.entryId,text:b.textContent,disabled:b.disabled}))}:null`);
 const wait = predicate => driver.wait(predicate, 8000);
@@ -49,7 +50,7 @@ try {
     assert.deepEqual(s.items.map(e=>e.id),Array.from({length:6},(_,i)=>'turn-key:user:key-'+i));
     assert.match(s.scope,/歷史尚未完整/);
     await click('#toc-diagnose');const diagnostic=JSON.parse(await evaluate(`return document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-diagnosis').textContent`));
-    assert.equal(diagnostic.version,'0.1.1');assert.equal(diagnostic.collected,6);assert.ok(Object.values(diagnostic).every(v=>typeof v==='number'||v==='0.1.1'));
+    assert.equal(diagnostic.version,version);assert.equal(diagnostic.collected,6);assert.ok(Object.values(diagnostic).every(v=>typeof v==='number'||v===version));
     return {legacy_visible_prompts:0,fixed:6,unknown_history:true,diagnostic_counts_only:true};
   });
   await test('NEW-02:target-highlight-return', async () => {

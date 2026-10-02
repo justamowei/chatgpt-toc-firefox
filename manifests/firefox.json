@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ChatGPT 對話導航器",
   "description": "在本機收錄提問、搜尋與導航 ChatGPT 對話，明確顯示歷史索引範圍。",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "permissions": ["activeTab", "scripting", "storage"],
   "optional_host_permissions": ["https://chatgpt.com/*"],
   "action": {"default_title": "開啟 ChatGPT 對話目錄"},
