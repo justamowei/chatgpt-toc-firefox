@@ -163,3 +163,11 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 22cc60b 固定獨立單元37／FULL15／renderer8／fixture8均PASS，但只讀審查發現未檢查可選has_next_page；該快照不作最終交付來源。
 - 新est首次與重讀head若明示仍有更新頁，不套用完整結果；可選欄位需boolean，older頁has_next=true仍合法。新增HIST-18與FULL-NATIVE-16回歸。
 - 主端38/38合成單元PASS；最終原生16組正在執行，修復commit交sub-agent重新固定SHA驗收，前一次PASS保留但不冒充最終。
+
+## 2026-10-03 05:35:44（Asia/Taipei）：v0.2.0 最終交付核對
+
+- branch feat/firefox-prototype，最終實作source 95c2694e03185f66a1a0dc19a62bc8280b61420e；該commit push成功，git ls-remote相同；沒有force-push或公開Release。
+- GPT-6.1 Sol high固定git archive獨立驗收：38/38單元、Firefox157原生FULL16／renderer8／fixture8／permissions7／addon lifecycle3，共42/42 PASS；自主newer-page反例由22cc60b FAIL改95c2694 PASS。歷史FAIL與合成資料範圍均保留。
+- 正式typecheck/build/lint主端及獨立PASS，lint零errors/warnings/notices。正式content hash625f31fd5c14ec064a6bde4c7fc3ff39f76b7e60bc1b2f1fc3a746204a4675d7；交付ZIP SHA1d0723f76997e0f173ac4633cc45e8919e34f2dcc85edf98121cdc6d06de5c5c，7members與交付副本／獨立build完全一致。
+- 輸出Firefox-原型-v0.2.0、未簽章ZIP、完整目錄使用說明與獨立驗收報告。已同步完整歷史方案、原開發計畫與驗收表。本組最終文件commit／push／遠端SHA核對後記outputs/GitHub建立結果；产品source保持95c2694。
+- 沒有取得或保存真實使用者聊天／憑證／Firefoxprofile。真實ChatGPT內部API/登入、整段expected集合與畫面分支、LIVE/ESR/容器/簽章仍PENDING；實驗版先供暫時安裝測試，不宣稱正式全量保證。

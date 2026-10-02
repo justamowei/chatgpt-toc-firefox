@@ -477,3 +477,11 @@ v0.1.1 必須覆蓋 legacy message role／ID、明確角色 turn shell／ID、tu
 使用者已確認v0.1.1能抓取真實對話，但僅约6–7題。此為辨識修復回饋，LIVE導航／完整度仍未通過。現production branch=null、未知分支卸載撤銷及直接頂／底載入造成目錄只覆蓋mounted window；不設假七題上限，也不靠放寬安全規則宣稱完整。
 
 下一階段規格見docs/full-history-plan.md：預設完整提問目錄＋全文搜尋，分頁／current_node-root可靠來源與DOM定位分離，使用者主動啟動、目前對話唯讀、憑證僅請求記憶體、無外部傳送／保存。候選網站介面未文件化且未實测，來源adapter、完整proof、UI分支核對、取消與有限navigation各自驗收。FULL01–12與既有LIVE gate未過前，不能發布已保證全量的版本。
+
+### 18. 2026-10-03：v0.2.0 實驗版實作
+
+source 22cc60b 實作完整歷史來源與獨立索引；掛載目錄原保守規則維持，server快照不因正常卸載變小。畫面標示伺服器分支及子集核對數，不能標整段畫面分支已驗證。載入按鈕唯讀目前對話；完整資料僅留頁面記憶體，取消／撤權／停用清理。實作與測試見 docs/full-history-v0.2.0.md、docs/acceptance-v0.2.0.md。
+
+最終實作source 95c2694另修 has_next_page newest 邊界：明示還有新頁時不得套用完整结果，older頁有新頁是正常分頁。原source獨立反例FAIL與修正後結果均保留。交付source／套件hash以新版驗收報告為準。
+
+分支完全替換、slotless assistant新身分、跨卸載回答witness、回到較早錨點方向、附件正文／檔名與空user hydration均須回歸。真實完整expected集合、登入及內部API、UI分支與所有LIVE gate仍PENDING。僅交付未簽章實驗版，不把本輪合成通過當成正式全量保证。
