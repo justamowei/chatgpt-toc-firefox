@@ -192,3 +192,7 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 使用者要求先處理5–7則虛擬化窗口卸載、保留已看過的項目，並用computer觀察真實Firefox。正式content/dom/turns/package/lock/manifest恢復到5aa5102 v0.1.1，與該source逐檔diff為空。正式build content SHA0f2d006125a6c643f0354fdeeeebab728dd431014f4cccb6cbace60e89be766b，與既有v0.1.1一致；typecheck/build/lint(0/0/0)/core12 PASS。不把撤回當快取問題已修好，使用者Firefox已安裝v0.2.0尚未透過UI換載。
 
 不抹Git歷史，保留3bedace實驗／合成報告但標withdrawn；新DOM資料保留規格見docs/observed-dom-cache-plan.md。已确认IndexStore的branch=null卸載reset／filter是資料丟失機制；新的已觀察快取尚未實作，真實分支與渲染訊號需先看Firefox。CUA inventory無native apps/Firefox，只有空IAB/MCPApps；本輪工具無node_repl/sky，插件搜尋Firefox無結果，沒有親自進入實際頁面。之前API network大小問題不再需要；不繞政策限制。後續需可用且允許的Firefox控制通道。
+
+## 2026-10-03：DOM快取規格獨立審查
+
+GPT-6.1 Sol high唯讀固定5aa規格審查已完成，未修改來源／測試／release。新增SeenCache/MountedMap/BranchConfidence、cacheRevision/navigationEpoch分離、非overlap segment、長期正文version見證、prefix edit/hydration限制與定位前核對。源碼撤回08f7867已push，遠端一致；使用者Firefox已載入v0.2.0沒有透過UI換載。v0.2.0資料夾／交付JSON標withdrawn但原runtime與ZIP不擦除；API報告保留歷史。有效方案docs/observed-dom-cache-plan.md；純DOM已觀察快取尚未實作，真實場景未觀察。CUA native computer APIs disabled、無Firefox通道，已用computer inventory確認；插件查詢Firefox無結果。不假稱親自查看真實畫面。

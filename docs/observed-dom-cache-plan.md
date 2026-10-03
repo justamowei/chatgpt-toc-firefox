@@ -28,6 +28,18 @@
 6. **離屏搜尋與定位：** 搜尋讀快取，定位只能用現存相符 role/ID 的節點；卸載的提問透過可信殼位置／確認順序按需捲動再等待。找不到、網站無法重新掛載或分支無法核對時明確失敗，不以相似文字或下一則取代。返回依有效閱讀錨點和 generation。
 7. **資源與生命週期：** 以條目數、提問文字總量及任務時間限制快取和掃描；觸頂停止新增並顯示原因，不靜默丟棄前面資料或宣稱已完整。停止／換頁／停用使晚到收集和捲動失效。定稿上限需以真實樣本量測，不沿用 API 回應 bytes 當 DOM 提問快取容量。
 
+## GPT-6.1 Sol high 唯讀審查補充
+
+已檢查固定 5aa5102 的 core/dom/content，沒有修改產品或重新跑合成測試。除了未知分支 reset/filter，content.refresh(reset) 會一起取消導航、清高亮與返回位置；不能只移除一行 filter 就當作完整修復。
+
+- SeenCache、MountedMap、BranchConfidence 分開。列表 cacheRevision 與真正 context／已確認矛盾的 navigationEpoch 分開；正常卸載／收錄新條目不清返回位置、不取消正常尋找。快取合併不自動捲動主畫面。
+- 同 URL 非重疊窗口保留成待核對 segment，不因 common=0 清快取、不猜 UUID 或收錄時間是聊天順序。矛盾時隔離舊 segment 並標示曾看過／分支未核對，暫停當前分支定位；不用靜默混合清單或靜默刪除曾見資料掩蓋不確定性。
+- 5aa 的 previousPrompts 只見前一窗口，無法偵測隔很久重掛載後的同 ID 正文改變；新的 SeenCache 應保存正文版本見證。原 prefix-extension 豁免可能將追加編輯當 hydration，這項不能在沒看真實頁面時沿用作安全證明。
+- 離屏定位在高亮前重新核對 role-owned stable ID、正文版本、connected、viewport、context 和 generation；只查同 ID 存在不夠。返回錨點也需版本核對；取消晚到任務不刪正當快取。
+- 純提問快取未必能看到只改回答的重新生成及後續分支替換，不能保證識別所有分支。需要真實 UI／結構見證；未知時標記與定位限制必須可見。
+
+此審查支持規格方向，不代表真實 DOM 行為已核對。新的 SeenCache 尚未實作，LIVE 驗收維持未完成。
+
 ## 真實 Firefox 必須先觀察的場景
 
 使用者已授權查看 Firefox／指定 ChatGPT 對話，不重複要求同意。透過允許的 computer-use 觀察初始頁、捲動首中尾、反向返回、新增提問、編輯／分支切換。需確認：卸載的是內容或整個 turn、重掛載 ID 是否相同、順序與 slot 是否可重用、實際 scroller、程式和原生捲動能否觸發掛載、hydration/streaming 與停留時間。螢幕可協助確認使用情境；具體 DOM 結構仍需受允許的頁面讀取能力或本機 addon 診斷，不能單憑截圖推定 ID。

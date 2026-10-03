@@ -1,5 +1,7 @@
 # 超限修正開發狀態：尚未交付
 
+> 已撤回：2026-10-03 使用者要求停用 API／超限方向，正式 runtime 恢復 v0.1.1。此報告僅保留歷史；有效下一階段為 observed-dom-cache-plan.md，先觀察真實 Firefox 後開發卸載保留快取。
+
 日期：2026-10-03（Asia/Taipei）。開發中 runtime source：3bedace3fe4d646b008b741489cfd8a702eb8d9c，已推送私人 GitHub 並核對遠端 SHA。已交付 v0.2.0 的 runtime 仍為 95c2694；沒有替換安裝資料夾、ZIP 或建立新的修復包。
 
 ## 結論與剩餘問題
