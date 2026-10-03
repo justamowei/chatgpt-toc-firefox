@@ -173,6 +173,9 @@ function start(): Instance {
     if (!adapter.mounted(position.id) && (!store.ordered || store.quarantine.length)) {
       status.textContent = '原閱讀位置的順序尚未核對，請先手動捲動至原提問附近。'; return;
     }
+    if (!adapter.mounted(position.id) && position.role === 'assistant' && !position.anchorId) {
+      status.textContent = '原答案缺少可核對的提問錨點，請先手動捲動至原答案附近。'; return;
+    }
     cancel(); const token = ++navigationToken;
     operation = new AbortController(); navigationPending = true;
     delete host.dataset.restored;

@@ -1,0 +1,12 @@
+{
+  "version": "0.3.0",
+  "fixture": false,
+  "hashes": {
+    "background.js": "bba203ccf71c5419898051ebd5de68c850830d3f84535d4d85e31a50f83b8977",
+    "content.js": "441c92cc5731915fca39a2b4c7f471498d65216f26e83e8ab942b291acda2a36",
+    "options.js": "a986be9a94429358b8a9fd6871e3ab0672cc75fdb1c020cdd1878f8076350ad4",
+    "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+    "host.css": "fbc849f0af4b24c89360b59ca8b55d0ccd423429f737b0db422a651d57a5c6a4",
+    "manifest.json": "564f8bb7b7347caa3727a618de85ccc054687f3233417d17119f345c836544b2"
+  }
+}

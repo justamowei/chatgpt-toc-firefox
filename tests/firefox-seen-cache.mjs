@@ -44,6 +44,7 @@ try {
     await wait(async () => (await state()).items.length === 1);
     assert.equal((await state()).items[0].id, evidence.expectedPrompts[0].id);
     await input.clear(); await input.sendKeys(' '); await wait(async () => (await state()).items.length === 12);
+    await session.screenshot('cache-retains-12-mounted-2.png');
     const target = evidence.expectedPrompts.at(-1).id;
     await click(`#toc-list button[data-entry-id="${target}"]`); await wait(async () => (await state()).nav === 'located');
     assert.equal(await evaluate(`return document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')`), target);
@@ -95,13 +96,37 @@ try {
     await driver.wait(async () => (await state()).nav === 'idle', 20000);
     assert.equal((await state()).items.length, 20);
     assert.match((await state()).scope, /目前掛載 10 則/);
+    // This older fixture replaces two disjoint ten-turn windows. Collection
+    // preserves both, but scroll direction alone is not an ordering witness.
+    assert.match((await state()).scope, /順序待核對/);
+    await click('#toc-back');
+    await wait(async () => await evaluate(`return document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-status').textContent.includes('順序尚未核對')`));
+    assert.notEqual(await evaluate(`return document.getElementById('chatgpt-toc-root').dataset.restored`), 'true');
+    // An actual ordered window supplies the missing bridge before returning.
+    await evaluate(`window.fixture.mode('mounted');`);
+    await wait(async () => (await state()).scope.includes('目前掛載 20 則') && !(await state()).scope.includes('順序待核對'));
+    await evaluate(`window.fixture.mode('virtual');`);
+    await wait(async () => (await state()).scope.includes('目前掛載 10 則'));
     await click('#toc-back');
     await driver.wait(async () => await evaluate(`return document.getElementById('chatgpt-toc-root').dataset.restored==='true'`), 12000);
     assert.equal((await state()).items.length, 20);
     await click('#toc-earlier'); await wait(async () => (await state()).nav === 'loading'); await click('#toc-stop');
     await wait(async () => (await state()).nav === 'cancelled');
     assert.equal((await state()).items.length, 20);
-    return { collected: 20, mounted: 10, restored: true, cancelledWithoutCacheLoss: true };
+    return { collected: 20, mounted: 10, unconfirmedReturnRefused: true, restoredAfterOrderWitness: true, cancelledWithoutCacheLoss: true };
   });
-} catch (error) { results.push({ name: 'execution', status: 'FAIL', error: error.message }); console.error(error); process.exitCode = 1; }
+  await test('CACHE-08: an unmounted answer without a prompt-order anchor refuses guessed return', async () => {
+    await evaluate(`history.pushState({},'', '/c/answer-without-anchor');window.fixture.mode('mounted');const m=document.querySelector('main');m.removeAttribute('data-fixture-branch');m.replaceChildren();const a=document.createElement('div');a.setAttribute('data-message-author-role','assistant');a.setAttribute('data-message-id','answer-no-anchor');a.textContent='可見的本機答案，前一則提問尚未掛載。';a.style.minHeight='220px';const gap=document.createElement('div');gap.style.height='1600px';const u=document.createElement('div');u.setAttribute('data-message-author-role','user');u.setAttribute('data-message-id','far-current-user');u.textContent='遠方本機提問';u.style.height='100px';m.append(a,gap,u);m.scrollTop=0;`);
+    await wait(async () => (await state()).items.length === 1 && (await state()).items[0].id === 'far-current-user');
+    await click('#toc-list button[data-entry-id="far-current-user"]'); await wait(async () => (await state()).nav === 'located');
+    assert.equal((await state()).back, true, 'The visible answer must have been captured');
+    await evaluate(`document.querySelector('[data-message-id="answer-no-anchor"]').remove();`);
+    const before = await evaluate(`return document.querySelector('main').scrollTop`);
+    await click('#toc-back');
+    await wait(async () => await evaluate(`return document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-status').textContent.includes('缺少可核對的提問錨點')`));
+    assert.equal(await evaluate(`return document.querySelector('main').scrollTop`), before);
+    assert.notEqual(await evaluate(`return document.getElementById('chatgpt-toc-root').dataset.restored`), 'true');
+    return { unmountedAnswerReturnRefused: true, noGuessedScroll: true };
+  });
+} catch (error) { results.push({ name: 'execution', status: 'FAIL', error: error.message, ui: await state().catch(() => null) }); await session.screenshot('cache-fail.png').catch(() => {}); console.error(error); process.exitCode = 1; }
 finally { const caps = await driver.getCapabilities(); await writeFile(resolve(artifacts, 'results.json'), JSON.stringify({ date: new Date().toISOString(), firefox: caps.get('browserVersion'), source: 'real IAB snapshots rebuilt on localhost', liveChatGptAddon: false, build: JSON.parse(await readFile('dist/fixture/build-info.json','utf8')), results }, null, 2)); await session.close(); }
