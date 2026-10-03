@@ -3,10 +3,13 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { transform } from 'esbuild';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 
 const evidenceUrl = new URL('../docs/evidence/iab-2026-10-03/live-dom-evidence.json', import.meta.url);
 const evidence = JSON.parse(await readFile(evidenceUrl, 'utf8'));
-const source = await readFile(new URL('../src/core.ts', import.meta.url), 'utf8');
+// This is the regression's historical baseline, not the repaired implementation.
+const baseline = '57d10a6acf9267615fed02813481965dbf4a4a75';
+const source = execFileSync('git', ['-c', `safe.directory=${process.cwd().replaceAll('\\', '/')}`, 'show', `${baseline}:src/core.ts`], { encoding: 'utf8', windowsHide: true });
 const compiled = await transform(source, { loader: 'ts', format: 'esm', target: 'es2022' });
 const { IndexStore } = await import(`data:text/javascript;base64,${Buffer.from(compiled.code).toString('base64')}`);
 const expected = new Map(evidence.expectedPrompts.map(e => [e.id, e.text]));
@@ -49,7 +52,7 @@ assert.ok(trace.some(t => t.retained === 12 && t.oldIndexCount === 2));
 assert.equal(evidence.coldCollection.exactIdAndTextMatch, true);
 
 const result = {
-  source: 'real ChatGPT DOM in Codex IAB, locally replayed against current src/core.ts',
+  source: 'real ChatGPT DOM in Codex IAB, locally replayed against historical baseline src/core.ts', baseline,
   addonExecutedInIab: false, firefoxAcceptance: false, runtimeImplementationChanged: false,
   expectedPrompts: expected.size, recordedFrames: evidence.snapshots.length, replayedFrames: trace.length,
   coldInitialRetained: cold[0].retained, coldFinalRetained: cold.at(-1).retained,

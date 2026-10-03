@@ -1,4 +1,4 @@
-import { DEFAULT_SETTINGS, IndexStore, Navigator, validSettings, type NavState, type Position } from './core';
+import { DEFAULT_SETTINGS, IndexStore, Navigator, normalize, validSettings, type NavState, type Position } from './core';
 import { DomAdapter } from './dom';
 import { supported } from './config';
 import { styles } from './styles';
@@ -11,6 +11,7 @@ if (window === window.top && !browser.extension.inIncognitoContext && supported(
 function start(): Instance {
   let alive = true, expanded = false, query = '', renderKey = '', navigationToken = 0, uiRevision = 0;
   let returnPosition: Position | null = null, returnEpoch = -1, refreshTimer: ReturnType<typeof setTimeout> | undefined;
+  let navigationPending = false, operation: AbortController | null = null;
   const events = new AbortController();
   const store = new IndexStore();
   // A disabled Firefox content context cannot run teardown JavaScript. Remove
@@ -39,7 +40,7 @@ function start(): Instance {
   const scope = make('div', 'scope'), list = make('ul', 'list'), status = make('p', 'status');
   scope.id = 'toc-scope'; list.id = 'toc-list'; status.id = 'toc-status'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
   const footer = make('footer');
-  const earlier = button('載入較早訊息', () => { void navigate(null); }); earlier.id = 'toc-earlier';
+  const earlier = button('收集較早提問', () => { void navigate(null); }); earlier.id = 'toc-earlier';
   const back = button('回到剛才位置', () => { void restore(); }); back.id = 'toc-back';
   const stop = button('停止', cancel); stop.id = 'toc-stop';
   const settings = button('設定', () => { void browser.runtime.sendMessage({ kind: 'options:open' }).catch(() => { if (alive) status.textContent = '無法開啟設定，請從 Firefox 附加元件頁開啟。'; }); });
@@ -50,7 +51,8 @@ function start(): Instance {
     // Counts only; no conversation text, IDs, URLs, or account information.
     const counts: Record<string, number> = {};
     for (const [label, selector] of Object.entries({ main: 'main', legacyRole: '[data-message-author-role]', turnShell: '[data-testid^="conversation-turn-"][data-turn]', turnKey: '[data-turn-key]', userBubble: '[data-user-message-bubble]', conversationRole: '[data-conversation-role]', agentStart: '[data-chatgpt-agent-turn-start]' })) counts[label] = document.querySelectorAll(selector).length;
-    diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, collected: store.entries.length, ...counts }, null, 2); diagnosis.hidden = false;
+    diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, collected: store.entries.length,
+      observed: store.retainedCount, mounted: store.mounted.size, quarantined: store.quarantine.reduce((n, g) => n + g.entries.length, 0), ...counts }, null, 2); diagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
   footer.append(earlier, back, stop, settings, disable, diagnose);
   const hint = make('div', 'hint', 'Alt＋Shift＋O 開啟 · Esc 收合');
@@ -72,7 +74,7 @@ function start(): Instance {
     if (sender.id === browser.runtime.id && isDispose(message)) dispose();
   };
   browser.runtime.onMessage.addListener(runtimeListener);
-  function cancel(): void { navigationToken++; navigator.cancel(); }
+  function cancel(): void { navigationToken++; navigationPending = false; operation?.abort(); operation = null; navigator.cancel(); }
   function setExpanded(value: boolean, focus = true, persist = true): void {
     if (!alive) return;
     expanded = value; panel.hidden = !expanded; toggle.setAttribute('aria-expanded', String(expanded));
@@ -88,60 +90,98 @@ function start(): Instance {
   function render(): void {
     if (!alive) return;
     const entries = store.search(query);
-    scope.textContent = `已收錄 ${store.entries.length} 則 · ${store.completeness === 'unknown' ? '訊息識別尚未確認' : '歷史尚未完整'}。搜尋只涵蓋已收錄提問。`;
+    scope.textContent = `本頁已看過 ${store.entries.length} 則 · 目前掛載 ${store.mounted.size} 則。歷史尚未完整；${store.branchConfidence === 'unverified' ? '當前分支未完整核對；' : ''}搜尋涵蓋已觀察資料。` +
+      (!store.ordered ? '部分順序待核對，按觀察區段分組。' : '') +
+      (store.quarantine.length ? `另有 ${store.retainedCount - store.entries.length} 筆曾看過資料已隔離，僅供搜尋。` : '') +
+      (store.limitReason ? `已達${store.limitReason === 'entries' ? '5000 筆記錄' : '500 萬字元'}保留上限，已停止新增；現有資料仍可搜尋。` : '');
     back.disabled = !returnPosition || returnEpoch !== store.epoch;
-    const key = JSON.stringify([store.epoch, query, store.entries.map(e => [e.id, e.text, e.stable])]);
+    const key = JSON.stringify([store.cacheRevision, query, [...store.mounted]]);
     if (key !== renderKey) {
       renderKey = key;
       const focused = shadow.activeElement instanceof HTMLElement ? shadow.activeElement.dataset.entryId : undefined;
       list.replaceChildren(); markers.replaceChildren();
-      for (const entry of entries) {
+      const selectable = (id: string, stable: boolean) => stable &&
+        (adapter.canLocate(id) || (store.ordered && !store.quarantine.length && !store.mounted.has(id)));
+      for (const [index, segment] of store.segments.entries()) {
+        const visible = entries.filter(entry => segment.ids.includes(entry.id));
+        if (!visible.length) continue;
+        if (!store.ordered) list.append(make('li', 'empty', `觀察區段 ${index + 1} · ${segment.ordered ? '區段內順序已核對' : '區段內順序待核對'}`));
+        for (const entry of visible) {
         const row = make('li'); const choice = button(entry.text.slice(0, 180), () => { void navigate(entry.id); }, 'entry', false);
-        choice.dataset.entryId = entry.id; choice.title = entry.text; choice.disabled = !entry.stable; row.append(choice); list.append(row);
+        choice.dataset.entryId = entry.id; choice.title = entry.text; choice.disabled = !selectable(entry.id, entry.stable); row.append(choice); list.append(row);
+        }
       }
+      const archived = store.quarantine.flatMap(group => group.entries).filter(entry => !query || normalize(entry.text).includes(normalize(query)));
+      if (archived.length) list.append(make('li', 'empty', '曾看過／分支未核對 · 僅供搜尋，不提供定位'));
+      for (const entry of archived) { const row = make('li', 'archived'); row.textContent = entry.text.slice(0, 180); row.title = entry.text; list.append(row); }
       for (const entry of store.entries) {
         const mark = button('', () => { void navigate(entry.id); }, 'mark', false); mark.dataset.entryId = entry.id;
-        mark.title = entry.text.slice(0, 180); mark.setAttribute('aria-label', `定位：${entry.text.slice(0, 180)}`); mark.disabled = !entry.stable; markers.append(mark);
+        mark.title = entry.text.slice(0, 180); mark.setAttribute('aria-label', `定位：${entry.text.slice(0, 180)}`); mark.disabled = !selectable(entry.id, entry.stable); markers.append(mark);
       }
-      if (!entries.length) list.append(make('li', 'empty', query ? '沒有符合的已收錄提問。' : '尚未辨識到提問；若已有對話，頁面版本可能尚未支援。'));
+      if (!entries.length && !archived.length) list.append(make('li', 'empty', query ? '沒有符合的已觀察提問。' : '尚未辨識到提問；可捲動對話讓網站掛載訊息。'));
       if (focused) [...list.querySelectorAll<HTMLButtonElement>('[data-entry-id]')].find(node => node.dataset.entryId === focused)?.focus({ preventScroll: true });
     }
     updateCurrent();
   }
-  function refresh(direction?: 'older' | 'newer'): void {
+  function collect(direction?: 'older' | 'newer', records: MutationRecord[] = []): void {
     if (!alive) return;
     if (!supported(location.href)) { dispose(); return; }
-    const reset = store.merge(adapter.read(), direction ?? adapter.currentDirection() ?? 'observe');
-    if (reset) { cancel(); adapter.clearHighlight(); returnPosition = null; returnEpoch = -1; status.textContent = '對話或分支已變更，已重建目前目錄。'; }
+    const snapshot = adapter.read();
+    let reset = false;
+    // Capture short-lived, first-seen removed prompts as plain data before the
+    // UI debounce. Never carry removed content across a route/known branch.
+    if (snapshot.context === store.context && snapshot.branch === store.branch) for (const entries of adapter.readRemoved(records)) {
+      reset = store.merge({ ...snapshot, entries }) || reset;
+    }
+    reset = store.merge(snapshot, direction ?? adapter.currentDirection() ?? 'observe') || reset;
+    if (reset) { cancel(); adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
+      status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
+  }
+  function refresh(direction?: 'older' | 'newer'): void {
+    collect(direction);
     render();
   }
-  function queue(): void {
+  function queue(records: MutationRecord[] = []): void {
     if (!alive) return;
     if (store.context !== location.origin + location.pathname) { clearTimeout(refreshTimer); refreshTimer = undefined; refresh(); return; }
-    if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; refresh(); }, 120);
+    collect(undefined, records);
+    if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; render(); }, 120);
   }
   async function navigate(id: string | null): Promise<void> {
     if (!alive) return;
     refresh();
-    if (id !== null && !store.entries.some(entry => entry.id === id && entry.stable)) { status.textContent = '此目標已失效，請從目前目錄重新選取。'; return; }
-    returnPosition = adapter.capture(); returnEpoch = store.epoch; render();
+    if (id !== null && (!store.entries.some(entry => entry.id === id && entry.stable) ||
+      (!adapter.canLocate(id) && (!store.ordered || store.quarantine.length || store.mounted.has(id))))) {
+      status.textContent = '此目標的順序、正文或目前分支尚未核對；請先手動捲動至該則提問。'; return;
+    }
+    cancel(); const token = ++navigationToken, epoch = store.epoch;
+    operation = new AbortController(); navigationPending = true;
+    const position = await adapter.capture(operation.signal);
+    if (!alive || token !== navigationToken || epoch !== store.epoch) return;
+    returnPosition = position; returnEpoch = epoch; render();
     delete host.dataset.restored;
-    const token = ++navigationToken;
     const result = await navigator.run(id);
     if (!alive || token !== navigationToken) return;
+    navigationPending = false;
     if (id === null && result === 'idle') status.textContent = '本次載入已停止。未核對完整歷史；可返回剛才位置或繼續。';
     updateCurrent();
   }
   async function restore(): Promise<void> {
     const position = returnPosition, epoch = returnEpoch;
     if (!alive || !position || epoch !== store.epoch) { status.textContent = '原閱讀位置已失效，無法恢復。'; return; }
-    const token = ++navigationToken;
+    if (!adapter.mounted(position.id) && (!store.ordered || store.quarantine.length)) {
+      status.textContent = '原閱讀位置的順序尚未核對，請先手動捲動至原提問附近。'; return;
+    }
+    cancel(); const token = ++navigationToken;
+    operation = new AbortController(); navigationPending = true;
     delete host.dataset.restored;
     const result = await navigator.run(position.id);
     if (!alive || token !== navigationToken || epoch !== store.epoch) return;
-    if (result !== 'located') { status.textContent = '原閱讀位置目前未掛載，尚未恢復。'; return; }
-    const restored = adapter.restore(position, events.signal);
+    if (result !== 'located') { navigationPending = false; status.textContent = '原閱讀位置目前未掛載，尚未恢復。'; return; }
+    const restored = await adapter.restore(position, operation.signal);
+    if (!alive || token !== navigationToken || epoch !== store.epoch) return;
+    navigationPending = false;
     status.textContent = restored ? '已回到剛才的閱讀位置。' : '原閱讀錨點已改變，位置未能精準恢復。';
     host.dataset.restored = String(restored); updateCurrent();
   }
@@ -150,9 +190,9 @@ function start(): Instance {
   window.addEventListener('popstate', refreshRoute, { signal: events.signal });
   function refreshRoute(): void { refresh(); }
   window.addEventListener('pagehide', dispose, { signal: events.signal });
-  document.addEventListener('scroll', updateCurrent, { capture: true, passive: true, signal: events.signal });
+  document.addEventListener('scroll', () => { queue(); updateCurrent(); }, { capture: true, passive: true, signal: events.signal });
   for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown', 'input']) document.addEventListener(type, event => {
-    if (navigator.state === 'loading' && event.isTrusted && !event.composedPath().includes(host)) cancel();
+    if ((navigationPending || navigator.state === 'loading') && event.isTrusted && !event.composedPath().includes(host)) cancel();
   }, { capture: true, passive: true, signal: events.signal });
   input.addEventListener('input', () => { query = input.value; render(); }, { signal: events.signal });
   shadow.addEventListener('keydown', event => {
@@ -167,7 +207,7 @@ function start(): Instance {
   input.addEventListener('keydown', event => { if (event.key === 'ArrowDown' || event.key === 'Enter') { event.preventDefault(); list.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus(); } }, { signal: events.signal });
   function dispose(): void {
     if (!alive) return;
-    alive = false; navigationToken++; navigator.cancel(); events.abort(); observer.disconnect(); clearTimeout(refreshTimer); clearInterval(routeTimer);
+    alive = false; cancel(); events.abort(); observer.disconnect(); clearTimeout(refreshTimer); clearInterval(routeTimer);
     browser.runtime.onMessage.removeListener(runtimeListener); port?.disconnect(); port = null; adapter.dispose(); store.reset(); host.remove();
     delete world.__chatgptToc;
   }

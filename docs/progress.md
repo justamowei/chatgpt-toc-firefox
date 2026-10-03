@@ -204,3 +204,7 @@ GPT-6.1 Sol high唯讀固定5aa規格審查已完成，未修改來源／測試�
 測試端純資料 Map 在往返保留12。重載同一對話後使用另一空Map，從初始4則逐段收齊12，全部ID／提問全文一致。保存63份無帳號／完整私有URL／回答全文／憑證的真實快照，56份完成窗口本機重播目前src/core.ts；28次有overlap、adapter未invalidated仍reset/drop，確認舊索引卸載刪除機制。scripts/replay-live-dom.mjs 可重新核對，結果見docs/evidence/iab-2026-10-03。這是實際DOM輸入重播，不是addon在IAB執行；Firefox LIVE、分支、編輯、導航等仍待驗收。未改runtime／未重包。子代理GPT-6.1 Sol high作獨立唯讀審查，文件與證據提交後push並核對遠端。
 
 獨立審查以另一支記憶體編譯腳本重算56筆trace，所有欄位一致；28次共同ID順序無矛盾。63→56排除的7份都是缺context，只有一份生成中。另確認同ID／全文的conversation-turn-N會重編／重用，不能用slot換號判定分支。修正文檔等待延遲說法：存檔間隔含其他工具操作，未量測精確載入耗時。子代理未改檔案或操作瀏覽器，報告docs/iab-live-independent-review.md。
+# 2026-10-03 已觀察快取修正候選
+
+v0.3.0 將已觀察提問與目前 DOM 掛載分開；加入長期正文見證、順序區段、隔離舊版本、即時 Observer 收集、70% viewport 步進、精確返回版本核對和 SPA 舊內容排除。核心 20 項 PASS；本機 Firefox 快取前 5 項 PASS。新增 2 項回歸尚待最終執行。真實 IAB 執行同一份提問解析器取得 20 個窗口，本機當前快取保留預期 12 則而頁尾只掛載 2 則，精確全文／ID／順序一致。附加元件未在真實 Firefox ChatGPT 上完成驗收；候選不等於 LIVE PASS。見 docs/seen-cache-v0.3.0.md。
+
