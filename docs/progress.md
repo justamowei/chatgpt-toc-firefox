@@ -186,3 +186,9 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 ## 2026-10-03：3bedace 縮頁修正合成複验完成，真實驗收仍未完成
 
 主端固定runtime3bedace的renderer8/8已PASS，連同FULL18/18及單元46/46。GPT-6.1 Sol high固定archive獨立typecheck與history34/34 PASS，自主5/5合成probe PASS，包括真HTTP gzip的head50/older25/recheck50、舊95c相同樣本limit拒絕、失敗bytes計入總量、頭頁重讀不縮、忽略signal晚串流取消。詳見docs/history-limit-debug.md。沒有新增synthetic阻擋；不能改為真實PASS。使用者network metadata與真實Firefox長對話測試仍待完成；無新包交付，已交付v0.2.0 content/ZIP未變。文件與安全JSON結果同步outputs。
+
+## 2026-10-03：依使用者指示撤回 API／縮頁方向
+
+使用者要求先處理5–7則虛擬化窗口卸載、保留已看過的項目，並用computer觀察真實Firefox。正式content/dom/turns/package/lock/manifest恢復到5aa5102 v0.1.1，與該source逐檔diff為空。正式build content SHA0f2d006125a6c643f0354fdeeeebab728dd431014f4cccb6cbace60e89be766b，與既有v0.1.1一致；typecheck/build/lint(0/0/0)/core12 PASS。不把撤回當快取問題已修好，使用者Firefox已安裝v0.2.0尚未透過UI換載。
+
+不抹Git歷史，保留3bedace實驗／合成報告但標withdrawn；新DOM資料保留規格見docs/observed-dom-cache-plan.md。已确认IndexStore的branch=null卸載reset／filter是資料丟失機制；新的已觀察快取尚未實作，真實分支與渲染訊號需先看Firefox。CUA inventory無native apps/Firefox，只有空IAB/MCPApps；本輪工具無node_repl/sky，插件搜尋Firefox無結果，沒有親自進入實際頁面。之前API network大小問題不再需要；不繞政策限制。後續需可用且允許的Firefox控制通道。

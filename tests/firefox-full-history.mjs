@@ -2,7 +2,6 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { By } from 'selenium-webdriver';
-import { gzipSync } from 'node:zlib';
 import { fixtureSession } from './firefox-session.mjs';
 const conversation='00000000-0000-4000-8000-000000000001';
 let mode='normal'; const requests=[];
@@ -20,18 +19,9 @@ const session=await fixtureSession(process.env.TOC_TEST_ARTIFACTS||'artifacts/fi
   if(url.pathname==='/full-history.js'){res.setHeader('Content-Type','text/javascript');res.end(await readFile('tests/fixtures/full-history.js'));return true;}
   if(url.pathname==='/api/auth/session'){requests.push({kind:'session',cookie:req.headers.cookie?.includes('tocFixture=yes')===true});res.setHeader('Content-Type','application/json');res.end(JSON.stringify({accessToken:'synthetic-fixture-token'}));return true;}
   if(url.pathname.startsWith('/backend-api/')) {
-    requests.push({kind:'history',path:url.pathname,before:url.searchParams.get('before'),turns:Number(url.searchParams.get('num_turns')),cookie:req.headers.cookie?.includes('tocFixture=yes')===true,authenticated:req.headers.authorization==='Bearer synthetic-fixture-token'});
+    requests.push({kind:'history',path:url.pathname,before:url.searchParams.get('before'),cookie:req.headers.cookie?.includes('tocFixture=yes')===true,authenticated:req.headers.authorization==='Bearer synthetic-fixture-token'});
     if(mode==='denied'){res.writeHead(403,{'Content-Type':'application/json'});res.end('{}');return true;}
     if(mode==='slow')await new Promise(r=>setTimeout(r,900));
-    if(mode==='large-page') {
-      const turns=Number(url.searchParams.get('num_turns')),end=url.searchParams.has('before')?Number(url.searchParams.get('before')):messages.length,start=Math.max(0,end-turns*2);
-      const payload={conversation_id:conversation,current_node:'a-199',update_time:123,messages:messages.slice(start,end),page_info:{has_previous_page:start>0,has_next_page:end<messages.length,start_cursor:String(start)},...(turns===100?{padding:'x'.repeat(2*1024*1024)}:{})};
-      const body=gzipSync(Buffer.from(JSON.stringify(payload)));res.writeHead(200,{'Content-Type':'application/json','Content-Encoding':'gzip','Content-Length':body.length});res.end(body);return true;
-    }
-    if(mode==='text-limit') {
-      const list=structuredClone(messages.slice(200));list[0].content.parts=['x'.repeat(262145)];
-      res.setHeader('Content-Type','application/json');res.end(JSON.stringify({conversation_id:conversation,current_node:'a-199',update_time:123,messages:list,page_info:{has_previous_page:false,start_cursor:null}}));return true;
-    }
     const older=url.searchParams.has('before');
     res.setHeader('Content-Type','application/json');res.end(JSON.stringify({conversation_id:conversation,current_node:'a-199',update_time:123,messages:older?messages.slice(0,200):messages.slice(200),page_info:{has_previous_page:mode==='malformed'?true:!older,has_next_page:older||mode==='newer',start_cursor:mode==='malformed'?null:older?'start':'older-200'}}));return true;
   }
@@ -42,7 +32,6 @@ const results=[];
 const evaluate=(code,...args)=>driver.executeScript(code,...args);
 const state=()=>evaluate(`const h=document.getElementById('chatgpt-toc-root');return h?{history:h.dataset.history,nav:h.dataset.navigation,scope:h.shadowRoot.querySelector('#toc-scope').textContent,status:h.shadowRoot.querySelector('#toc-status').textContent,items:Array.from(h.shadowRoot.querySelectorAll('#toc-list button')).map(b=>({id:b.dataset.entryId,text:b.textContent,disabled:b.disabled}))}:null;`);
 const wait=p=>driver.wait(p,10000);
-async function diagnostic(){await click('#toc-diagnose');return JSON.parse(await evaluate(`return document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-diagnosis').textContent;`));}
 async function click(selector){const root=await(await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();const node=await root.findElement(By.css(selector));await evaluate('arguments[0].scrollIntoView({block:"nearest"});',node);await node.click();}
 async function search(value){await evaluate(`const n=document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-search');n.value=arguments[0];n.dispatchEvent(new Event('input',{bubbles:true}));`,value);}
 async function test(name,run){try{const actual=await run();results.push({name,status:'PASS',actual});console.log(`${name} PASS ${JSON.stringify(actual)}`);}catch(e){results.push({name,status:'FAIL',error:e.message});throw e;}}
@@ -139,23 +128,6 @@ try {
     mode='newer';await click('#toc-complete');await wait(async()=>(await state()).history==='idle');
     assert.equal((await state()).items.length,7);assert.doesNotMatch((await state()).scope,/已讀取完整歷史/);
     return {unreadNewerPageRejected:true,mountedFallback:7};
-  });
-  await reset();
-  await test('FULL-NATIVE-17:real-gzip-decoded-oversize-adapts-and-keeps-200',async()=>{
-    mode='large-page';const from=requests.length;await load();const s=await state();assert.deepEqual(s.items.map(e=>e.id),Array.from({length:200},(_,i)=>'u-'+i));
-    const calls=requests.slice(from).filter(r=>r.kind==='history');assert.deepEqual(calls.map(r=>r.turns),[100,50,50,50,50,50]);assert.deepEqual(calls.map(r=>r.before),[null,null,'300','200','100',null]);
-    const d=await diagnostic();assert.equal(d.fullCount,200);assert.equal(d.mountedCount,7);assert.deepEqual(d.lastHistory,{outcome:'installed',pages:4});
-    await evaluate('window.fullFixture.mount(0);');await driver.sleep(250);assert.equal((await state()).items.length,200);await search('第193則');assert.deepEqual((await state()).items.map(e=>e.id),['u-193']);await search('');
-    return {sample:'synthetic-localhost-real-http-gzip',decodedHeadOverMiB:2,batches:calls.map(r=>r.turns),complete:200,mounted:7,retained:200};
-  });
-  await reset();
-  await test('FULL-NATIVE-18:specific-text-limit-persists-after-navigation-status-refresh',async()=>{
-    mode='text-limit';const from=requests.length;await click('#toc-complete');await wait(async()=>(await state()).history==='idle');assert.equal((await state()).items.length,7);assert.match((await state()).status,/單則提問字元數超出上限/);
-    const d=await diagnostic();assert.equal(d.fullCount,0);assert.equal(d.lastHistory.outcome,'failed');assert.equal(d.lastHistory.limit.kind,'text-chars');assert.equal(d.lastHistory.limit.observed,262145);assert.equal(d.lastHistory.limit.maximum,262144);assert.equal(d.lastHistory.limit.stage,'head');
-    assert.equal(requests.slice(from).filter(r=>r.kind==='history').length,1,'Text limits are not retried as smaller pages');
-    await evaluate('window.fullFixture.mount(0);');await driver.sleep(250);await search('第0則');await click('#toc-list button[data-entry-id="turn-key:user:u-0"]');await wait(async()=>(await state()).nav==='located');
-    const after=await diagnostic();assert.deepEqual(after.lastHistory,d.lastHistory);assert.ok(!JSON.stringify(after).includes('x'.repeat(100)));assert.ok(!JSON.stringify(after).includes(conversation));
-    return {kind:d.lastHistory.limit.kind,observed:d.lastHistory.limit.observed,maximum:d.lastHistory.limit.maximum,sticky:true,partialInstalled:false};
   });
 }catch(error){console.error(error);process.exitCode=1;await session.screenshot('full-history-fail.png').catch(()=>{});}
 finally{await writeFile(resolve(artifacts,'results.json'),JSON.stringify({date:new Date().toISOString(),executor:process.env.TOC_TEST_EXECUTOR||'primary-agent',firefox:(await driver.getCapabilities()).get('browserVersion'),sample:'synthetic-200-prompts-localhost-no-real-account',build:JSON.parse(await readFile('dist/fixture/build-info.json','utf8')),results},null,2));await session.close();}

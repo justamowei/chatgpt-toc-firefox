@@ -139,9 +139,9 @@ test('HIST-12: byte, aggregate, depth, text and message limits refuse oversized 
   const p = page(); await reject([p], 'limit', { limits: { pageBytes: 30 } });
   await reject([p], 'limit', { limits: { totalBytes: 50 } });
   await reject([p], 'limit', { limits: { textChars: 1 } });
-  const q = queue([{ accessToken: token }, ...Array.from({ length: 7 }, () => new Response('{}', { headers: { 'Content-Type': 'application/json', 'Content-Length': '99999999' } }))]);
+  const q = queue([{ accessToken: token }, new Response('{}', { headers: { 'Content-Type': 'application/json', 'Content-Length': '99999999' } })]);
   await assert.rejects(loadHistory(url, new AbortController().signal, undefined, { fetch: q.fetch }), { code: 'limit' });
-  await reject([page([msg('u1'), msg('u2')])], 'limit', { limits: { maxMessages: 1 } });
+  await reject([page([msg('u1'), msg('u2')])], 'schema', { limits: { maxMessages: 1 } });
   const deep = page(); deep.messages[0].metadata = { nest: { nest: { nest: { nest: {} } } } }; await reject([deep], 'limit', { limits: { maxDepth: 5 } });
 });
 
@@ -199,86 +199,4 @@ test('HIST-18: newest must not advertise unread newer pages; older has_next=true
   const {snapshot}=await run([newest,older,newest]);assert.deepEqual(snapshot.entries.map(e=>e.id),['u1','u2']);
   const head=page();head.page_info.has_next_page=false;
   const changed=page();changed.page_info.has_next_page=true;await reject([head,changed],'changed');
-});
-
-const turnsOf = call => new URL(call.url).searchParams.get('num_turns');
-const beforeOf = call => new URL(call.url).searchParams.get('before');
-function oversizedStream(size, cancelled) {
-  return new Response(new ReadableStream({ start(c) { c.enqueue(new Uint8Array(size).fill(32)); }, cancel() { cancelled.value = true; } }), { headers: { 'Content-Type': 'application/json' } });
-}
-function oversizedHeader(size = 99999999) { return new Response('{}', { headers: { 'Content-Type': 'application/json', 'Content-Length': String(size) } }); }
-
-test('HIST-19: streamed oversize shrinks head then exhausts exact older pages; failed bytes count and body cancels', async () => {
-  const newest = page([msg('u2')], true, 'older'), older = page([msg('u1')]), cancelled = { value: false }, progress = [];
-  const { snapshot, calls } = await run([oversizedStream(701, cancelled), newest, older, newest], { progress: n => progress.push(n), deps: { limits: { pageBytes: 700, totalBytes: 5000 } } });
-  assert.deepEqual(snapshot.entries.map(e => e.id), ['u1', 'u2']); assert.deepEqual(progress, [1, 2]); assert.equal(snapshot.pages, 2);
-  assert.deepEqual(calls.slice(1).map(turnsOf), ['100', '50', '50', '50']); assert.deepEqual(calls.slice(1).map(beforeOf), [null, null, 'older', null]); assert.equal(cancelled.value, true);
-  const q = queue([{ accessToken: token }, oversizedStream(701, { value: false }), newest, older, newest]);
-  await assert.rejects(loadHistory(url, new AbortController().signal, undefined, { fetch: q.fetch, limits: { pageBytes: 700, totalBytes: 701 + JSON.stringify({ accessToken: token }).length } }), e => e.code === 'limit' && e.limit.kind === 'total-bytes' && e.limit.consumedBytes > 701);
-  assert.equal(q.calls.length, 3, 'No second shrink after aggregate budget is exhausted');
-});
-
-test('HIST-20: older shrink keeps cursor, rechecks original larger head and rejects head reread oversize', async () => {
-  const newest = page([msg('u2')], true, 'older'), older = page([msg('u1')]);
-  const { snapshot, calls } = await run([newest, oversizedHeader(), older, newest]);
-  assert.deepEqual(snapshot.entries.map(e => e.id), ['u1', 'u2']); assert.deepEqual(calls.slice(1).map(turnsOf), ['100', '100', '50', '100']);
-  assert.deepEqual(calls.slice(1).map(beforeOf), [null, 'older', 'older', null]);
-  const q = queue([{ accessToken: token }, newest, older, oversizedHeader()]);
-  await assert.rejects(loadHistory(url, new AbortController().signal, undefined, { fetch: q.fetch }), e => e.code === 'limit' && e.limit.kind === 'page-bytes' && e.limit.stage === 'recheck' && e.limit.pageTurns === 100 && e.limit.completedPages === 2);
-  assert.equal(q.calls.length, 4, 'Never shrink the recheck into a different head subset');
-});
-
-test('HIST-21: ignored batch size reaches one then refuses; diagnostics disclose only allowlisted numeric metadata', async () => {
-  const q = queue([{ accessToken: token }, ...Array.from({ length: 7 }, () => oversizedHeader())]); let failure;
-  await assert.rejects(loadHistory(url, new AbortController().signal, undefined, { fetch: q.fetch }), e => { failure = e; return e.code === 'limit'; });
-  assert.deepEqual(q.calls.slice(1).map(turnsOf), ['100', '50', '25', '12', '6', '3', '1']);
-  assert.deepEqual(failure.limit, { kind: 'page-bytes', observed: 99999999, maximum: 2097152, measurement: 'declared-bytes', stage: 'head', pageTurns: 1, completedPages: 0, consumedBytes: JSON.stringify({ accessToken: token }).length, requests: 8 });
-  assert.ok(!JSON.stringify(failure).includes(token)); assert.ok(!JSON.stringify(failure).includes(uuid));
-  const calls = await reject([oversizedHeader(), status(404)], 'http'); assert.equal(calls.length, 3, 'A supported-but-too-large endpoint does not turn a resized 404 into legacy fallback');
-});
-
-test('HIST-22: total budget wins simultaneous page overflow, with no adaptive retry', async () => {
-  const cancelled = { value: false }, q = queue([{ accessToken: token }, oversizedStream(701, cancelled)]);
-  await assert.rejects(loadHistory(url, new AbortController().signal, undefined, { fetch: q.fetch, limits: { pageBytes: 700, totalBytes: 700 } }), e => e.code === 'limit' && e.limit.kind === 'total-bytes' && e.limit.measurement === 'decoded-bytes');
-  assert.equal(q.calls.length, 2); assert.equal(cancelled.value, true);
-});
-
-test('HIST-23: session, legacy, text, depth, node, message and page limits are precise and never adapt', async () => {
-  const cases = [
-    { responses: [oversizedHeader()], deps: {}, kind: 'session-bytes', requests: 1 },
-    { responses: [{ accessToken: token }, status(404), oversizedHeader()], deps: {}, kind: 'page-bytes', stage: 'legacy', requests: 3 },
-    { responses: [{ accessToken: token }, page([msg('private-prompt', 'user', 'private-text')])], deps: { textChars: 1 }, kind: 'text-chars', requests: 2 },
-    { responses: [{ accessToken: token }, page([msg('u1', 'user', 'x', { metadata: { a: { b: { c: {} } } } })])], deps: { maxDepth: 5 }, kind: 'depth', requests: 2 },
-    { responses: [{ accessToken: token }, page([msg('u1')], false, null, { padding: Array(140).fill(0) })], deps: { maxMessages: 1 }, kind: 'nodes', requests: 2 },
-    { responses: [{ accessToken: token }, page([msg('u1'), msg('u2')])], deps: { maxMessages: 1 }, kind: 'messages', requests: 2 },
-    { responses: [{ accessToken: token }, page([msg('u2')], true, 'older')], deps: { maxPages: 1 }, kind: 'pages', requests: 2 },
-  ];
-  for (const c of cases) { const q = queue(c.responses); await assert.rejects(loadHistory(url, new AbortController().signal, undefined, { fetch: q.fetch, limits: c.deps }), e => e.code === 'limit' && e.limit.kind === c.kind && (!c.stage || e.limit.stage === c.stage) && !JSON.stringify(e).includes('private-text') && !JSON.stringify(e).includes('private-prompt')); assert.equal(q.calls.length, c.requests); }
-});
-
-test('HIST-24: adaptive pages still reject revision, cursor loop, overlap mismatch and parent gaps', async () => {
-  const newest = page([msg('u2')], true, 'older');
-  for (const [older, code] of [
-    [page([msg('u1')], false, null, { update_time: 2 }), 'changed'],
-    [page([msg('u1')], true, 'older'), 'schema'],
-    [page([msg('u1'), msg('u2', 'user', 'different')]), 'changed'],
-    [page([msg('u1')]), 'schema'],
-  ]) {
-    const head = structuredClone(newest); if (code === 'schema' && !older.page_info.has_previous_page) head.messages[0].parent = 'missing-parent';
-    await reject([head, oversizedHeader(), older], code);
-  }
-});
-
-test('HIST-25: cancellation triggered by oversize body cancellation prevents smaller retry and progress', async () => {
-  const controller = new AbortController(), progress = [];
-  const body = new Response(new ReadableStream({ start(c) { c.enqueue(new Uint8Array(701)); }, cancel() { controller.abort(); } }), { headers: { 'Content-Type': 'application/json' } });
-  const q = queue([{ accessToken: token }, body]);
-  await assert.rejects(loadHistory(url, controller.signal, n => progress.push(n), { fetch: q.fetch, limits: { pageBytes: 700 } }), { code: 'aborted' });
-  assert.equal(q.calls.length, 2); assert.deepEqual(progress, []);
-});
-
-test('HIST-26: declared compressed size does not replace decoded body accounting', async () => {
-  const body = oversizedStream(701, { value: false }); body.headers.set('Content-Encoding', 'gzip'); body.headers.set('Content-Length', '40');
-  const p = page([msg('u1')]); const { snapshot, calls } = await run([body, p, p], { deps: { limits: { pageBytes: 700 } } });
-  assert.equal(snapshot.entries.length, 1); assert.deepEqual(calls.slice(1).map(turnsOf), ['100', '50', '50']);
 });

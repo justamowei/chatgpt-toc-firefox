@@ -489,3 +489,9 @@ source 22cc60b 實作完整歷史來源與獨立索引；掛載目錄原保守�
 ## 2026-10-03：v0.2.0 使用者真實超限失敗，交付門檻收緊
 
 使用者回報仍隨掛載數變動，完整載入提示為「對話超出本次載入上限，未宣稱完整；仍可使用已掛載目錄。」已確認 HistoryError limit，但頁大小、總量、文字／深度等具體類型待證據。產品目標 LIVE FAIL；舊合成 PASS 保留，不能抵銷實際失敗。新增 docs/live-history-failure.md，完整目錄數、穩定搜尋、全集合／分支与遠距定位必須真實 Firefox 驗收後才可交付修正版。目前沒有受允許 Firefox 分頁控制通道，不繞過先前網址政策限制；已請使用者提供無內容 network 大小／狀態 metadata。新 runtime 尚未改動。
+
+## 2026-10-03：依使用者指示撤回 API／縮頁方向
+
+使用者要求先處理5–7則虛擬化窗口卸載、保留已看過的項目，並用computer觀察真實Firefox。正式content/dom/turns/package/lock/manifest恢復到5aa5102 v0.1.1，與該source逐檔diff為空。正式build content SHA0f2d006125a6c643f0354fdeeeebab728dd431014f4cccb6cbace60e89be766b，與既有v0.1.1一致；typecheck/build/lint(0/0/0)/core12 PASS。不把撤回當快取問題已修好，使用者Firefox已安裝v0.2.0尚未透過UI換載。
+
+不抹Git歷史，保留3bedace實驗／合成報告但標withdrawn；新DOM資料保留規格見docs/observed-dom-cache-plan.md。已确认IndexStore的branch=null卸載reset／filter是資料丟失機制；新的已觀察快取尚未實作，真實分支與渲染訊號需先看Firefox。CUA inventory無native apps/Firefox，只有空IAB/MCPApps；本輪工具無node_repl/sky，插件搜尋Firefox無結果，沒有親自進入實際頁面。之前API network大小問題不再需要；不繞政策限制。後續需可用且允許的Firefox控制通道。

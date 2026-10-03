@@ -28,15 +28,8 @@ export const HISTORY_LIMITS: Readonly<HistoryLimits> = Object.freeze({
 });
 export interface HistoryDependencies { fetch?: typeof fetch; limits?: Partial<HistoryLimits>; origin?: string; }
 export type HistoryErrorCode = 'unsupported-url' | 'aborted' | 'timeout' | 'access-denied' | 'http' | 'rate-limit' | 'schema' | 'limit' | 'changed';
-export type HistoryLimitKind = 'configuration' | 'session-bytes' | 'page-bytes' | 'total-bytes' | 'text-chars' | 'depth' | 'nodes' | 'messages' | 'pages';
-export interface HistoryLimitFailure {
-  kind: HistoryLimitKind; observed: number; maximum: number;
-  measurement: 'decoded-bytes' | 'declared-bytes' | 'count';
-  stage?: 'session' | 'head' | 'older' | 'recheck' | 'legacy' | 'legacy-recheck';
-  pageTurns?: number; completedPages?: number; consumedBytes?: number; requests?: number;
-}
 export class HistoryError extends Error {
-  constructor(public readonly code: HistoryErrorCode, public readonly limit?: HistoryLimitFailure) { super(`History ${code}`); this.name = 'HistoryError'; }
+  constructor(public readonly code: HistoryErrorCode) { super(`History ${code}`); this.name = 'HistoryError'; }
 }
 type JsonRecord = Record<string, unknown>;
 interface ApiMessage { id: string; role: string; visible: boolean; text: string; screenText: string; signature: string; parent?: string | null; }
@@ -46,9 +39,6 @@ const path = new RegExp(`^/(?:g/[A-Za-z0-9_-]+/)?c/(${uuid})/?$`);
 const internalTypes = new Set(['thoughts', 'reasoning', 'reasoning_recap', 'model_editable_context', 'user_editable_context', 'tether_browsing_display', 'tether_quote']);
 const assets = new Set(['image_asset_pointer', 'file_asset_pointer', 'file', 'audio_asset_pointer', 'video_asset_pointer']);
 function fail(code: HistoryErrorCode): never { throw new HistoryError(code); }
-function failLimit(kind: HistoryLimitKind, observed: number, maximum: number, measurement: HistoryLimitFailure['measurement'] = 'count'): never {
-  throw new HistoryError('limit', { kind, observed, maximum, measurement });
-}
 function record(value: unknown): JsonRecord { if (!value || typeof value !== 'object' || Array.isArray(value)) fail('schema'); return value as JsonRecord; }
 function identifier(value: unknown): string {
   if (typeof value !== 'string' || !value || value.length > 200 || /[\s\u0000-\u001f\u007f]/u.test(value)) fail('schema');
@@ -74,8 +64,7 @@ function canonical(value: unknown): string {
   return JSON.stringify(value);
 }
 function boundedShape(value: unknown, limits: HistoryLimits, depth = 0, counter = { nodes: 0 }): void {
-  if (depth > limits.maxDepth) failLimit('depth', depth, limits.maxDepth);
-  if (++counter.nodes > limits.maxMessages * 128) failLimit('nodes', counter.nodes, limits.maxMessages * 128);
+  if (depth > limits.maxDepth || ++counter.nodes > limits.maxMessages * 128) fail('limit');
   if (value && typeof value === 'object') for (const child of Object.values(value)) boundedShape(child, limits, depth + 1, counter);
 }
 function message(value: unknown, limits: HistoryLimits): ApiMessage {
@@ -119,7 +108,7 @@ function message(value: unknown, limits: HistoryLimits): ApiMessage {
     text = pieces.join('\n\n').replace(/\r\n/g, '\n').trim();
     if (!text && attachment) text = '〔附件或非文字提問〕';
     if (!text) fail('schema'); // An unknown/empty visible prompt is not silently dropped.
-    if (text.length > limits.textChars) failLimit('text-chars', text.length, limits.textChars);
+    if (text.length > limits.textChars) fail('limit');
   }
   let parent: string | null | undefined;
   if (Object.hasOwn(m, 'parent') || Object.hasOwn(m, 'parent_id')) {
@@ -137,8 +126,7 @@ function revision(payload: JsonRecord, conversation: string): { revision: string
 }
 function page(value: unknown, conversation: string, limits: HistoryLimits): Page {
   const p = record(value), info = record(p.page_info);
-  if (!Array.isArray(p.messages) || !p.messages.length || typeof info.has_previous_page !== 'boolean') fail('schema');
-  if (p.messages.length > limits.maxMessages) failLimit('messages', p.messages.length, limits.maxMessages);
+  if (!Array.isArray(p.messages) || !p.messages.length || p.messages.length > limits.maxMessages || typeof info.has_previous_page !== 'boolean') fail('schema');
   if (Object.hasOwn(info, 'has_next_page') && typeof info.has_next_page !== 'boolean') fail('schema');
   const cursor = info.start_cursor === null || info.start_cursor === undefined ? null : identifier(info.start_cursor);
   if (info.has_previous_page && !cursor) fail('schema');
@@ -148,11 +136,11 @@ function page(value: unknown, conversation: string, limits: HistoryLimits): Page
 }
 function legacy(value: unknown, conversation: string, limits: HistoryLimits): { messages: ApiMessage[]; revision: string; hasRevision: boolean } {
   const p = record(value), mapping = record(p.mapping);
-  if (Object.keys(mapping).length > limits.maxMessages) failLimit('messages', Object.keys(mapping).length, limits.maxMessages);
+  if (Object.keys(mapping).length > limits.maxMessages) fail('limit');
   const nodes: ApiMessage[] = [], seen = new Set<string>(); let id: string | null = identifier(p.current_node);
   while (id !== null) {
     if (seen.has(id)) fail('schema'); seen.add(id);
-    if (seen.size > limits.maxMessages) failLimit('messages', seen.size, limits.maxMessages);
+    if (seen.size > limits.maxMessages) fail('limit');
     if (!Object.hasOwn(mapping, id)) fail('schema');
     const node = record(mapping[id]);
     if (node.id !== undefined && node.id !== id) fail('schema');
@@ -205,23 +193,18 @@ export async function loadHistory(url: string, signal: AbortSignal, progress?: (
   if (parsed.origin !== origin || parsed.username || parsed.password || !match) fail('unsupported-url');
   const conversation = match[1].toLowerCase();
   const limits: HistoryLimits = { ...HISTORY_LIMITS, ...deps.limits };
-  for (const [key, value] of Object.entries(limits)) if (!Number.isSafeInteger(value) || value < (key === 'maxRetries' ? 0 : 1)) failLimit('configuration', Number.isSafeInteger(value) ? value : 0, key === 'maxRetries' ? 0 : 1);
+  for (const [key, value] of Object.entries(limits)) if (!Number.isSafeInteger(value) || value < (key === 'maxRetries' ? 0 : 1)) fail('limit');
   const controller = new AbortController();
   const aborted = () => controller.abort(new HistoryError('aborted'));
   signal.addEventListener('abort', aborted, { once: true });
   if (signal.aborted) aborted();
   const totalTimer = setTimeout(() => controller.abort(new HistoryError('timeout')), limits.totalMs);
   const fetcher = deps.fetch ?? globalThis.fetch.bind(globalThis);
-  let consumed = 0, completedPages = 0, requests = 0, currentTurns = 0;
-  let stage: NonNullable<HistoryLimitFailure['stage']> = 'session';
-  async function read(response: Response, own: AbortSignal, maximum: number, session: boolean): Promise<unknown> {
+  let consumed = 0;
+  async function read(response: Response, own: AbortSignal, maximum: number): Promise<unknown> {
     if (!/^application\/(?:json|[\w.+-]+\+json)(?:\s*;|$)/i.test(response.headers.get('content-type') ?? '')) fail('schema');
     const length = response.headers.get('content-length');
-    if (length !== null && (!/^\d+$/.test(length) || !Number.isSafeInteger(Number(length)))) { void response.body?.cancel().catch(() => {}); fail('schema'); }
-    if (length !== null && Number(length) > maximum) {
-      void response.body?.cancel().catch(() => {});
-      failLimit(session ? 'session-bytes' : 'page-bytes', Number(length), maximum, 'declared-bytes');
-    }
+    if (length !== null && (!/^\d+$/.test(length) || Number(length) > maximum)) fail('limit');
     if (!response.body) fail('schema');
     const reader = response.body.getReader(); const chunks: Uint8Array[] = []; let size = 0;
     try {
@@ -230,9 +213,7 @@ export async function loadHistory(url: string, signal: AbortSignal, progress?: (
         active(own);
         if (result.done) break;
         size += result.value.byteLength; consumed += result.value.byteLength;
-        // Total budget takes precedence: shrinking a page cannot restore bytes already read.
-        if (consumed > limits.totalBytes) failLimit('total-bytes', consumed, limits.totalBytes, 'decoded-bytes');
-        if (size > maximum) failLimit(session ? 'session-bytes' : 'page-bytes', size, maximum, 'decoded-bytes');
+        if (size > maximum || consumed > limits.totalBytes) fail('limit');
         chunks.push(result.value);
       }
       const data = new Uint8Array(size); let offset = 0;
@@ -252,7 +233,6 @@ export async function loadHistory(url: string, signal: AbortSignal, progress?: (
       const timer = setTimeout(() => own.abort(new HistoryError('timeout')), limits.pageMs);
       let retry = 0;
       try {
-        requests++;
         const response = await abortable(() => fetcher(target, { method: 'GET', credentials: 'same-origin', mode: 'same-origin', redirect: 'error', cache: 'no-store', signal: own.signal,
           headers: { Accept: 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) } }), own.signal);
         active(own.signal);
@@ -267,7 +247,7 @@ export async function loadHistory(url: string, signal: AbortSignal, progress?: (
           if (!Number.isFinite(retry) || retry > limits.retryDelayMs) fail('rate-limit');
         } else {
           if (!response.ok) fail('http');
-          const value = await read(response, own.signal, session ? Math.min(limits.pageBytes, 256 * 1024) : limits.pageBytes, session);
+          const value = await read(response, own.signal, session ? Math.min(limits.pageBytes, 256 * 1024) : limits.pageBytes);
           active(own.signal); return value;
         }
       } finally { clearTimeout(timer); controller.signal.removeEventListener('abort', stop); own.abort(new HistoryError('aborted')); }
@@ -279,60 +259,39 @@ export async function loadHistory(url: string, signal: AbortSignal, progress?: (
       });
     }
   }
-  async function paginated(before: string | null, turns: number, shrink: boolean): Promise<{ value: unknown | null; turns: number }> {
-    for (;;) {
-      active(controller.signal); currentTurns = turns;
-      const route = `/backend-api/conversations/${conversation}?include_has_versions=true&num_turns=${turns}${before === null ? '' : `&before=${encodeURIComponent(before)}`}`;
-      try { return { value: await request(route, token, stage === 'head' && turns === 100), turns }; }
-      catch (error) {
-        // A smaller batch only addresses a page-byte failure. Keep the same cursor,
-        // total deadline and consumed-byte budget; never install a partial result.
-        if (!shrink || !(error instanceof HistoryError) || error.limit?.kind !== 'page-bytes' || turns === 1) throw error;
-        active(controller.signal); turns = Math.max(1, Math.floor(turns / 2));
-      }
-    }
-  }
-  let token = '';
   try {
     active(controller.signal);
     const session = record(await request('/api/auth/session', undefined, false, true));
-    const sessionToken = session.accessToken ?? session.access_token;
-    if (typeof sessionToken !== 'string' || !/^[A-Za-z0-9._~+/=-]{1,8192}$/.test(sessionToken) || (session.accessToken && session.access_token && session.accessToken !== session.access_token)) fail('access-denied');
-    token = sessionToken;
-    stage = 'head';
-    const firstRead = await paginated(null, 100, true), first = firstRead.value;
+    const token = session.accessToken ?? session.access_token;
+    if (typeof token !== 'string' || !/^[A-Za-z0-9._~+/=-]{1,8192}$/.test(token) || (session.accessToken && session.access_token && session.accessToken !== session.access_token)) fail('access-denied');
+    const base = `/backend-api/conversations/${conversation}?include_has_versions=true&num_turns=100`;
+    const first = await request(base, token, true);
     let source: HistorySnapshot['source'], messages: ApiMessage[], pages: number, hasRevision: boolean;
     if (first === null) {
-      source = 'legacy-api'; const route = `/backend-api/conversation/${conversation}`; stage = 'legacy'; currentTurns = 0;
+      source = 'legacy-api'; const route = `/backend-api/conversation/${conversation}`;
       const snapshot = legacy(await request(route, token), conversation, limits);
       messages = snapshot.messages; hasRevision = snapshot.hasRevision; pages = 1;
-      completedPages = pages; active(controller.signal); progress?.(pages); active(controller.signal);
-      stage = 'legacy-recheck';
+      active(controller.signal); progress?.(pages); active(controller.signal);
       const checked = legacy(await request(route, token), conversation, limits);
       if (snapshot.revision !== checked.revision || canonical(messages.map(m => m.signature)) !== canonical(checked.messages.map(m => m.signature))) fail('changed');
     } else {
       source = 'paginated-api'; let current = page(first, conversation, limits);
       if (current.next === true) fail('schema'); // A newest request cannot leave a known newer page unread.
-      const head = current, headTurns = firstRead.turns; let batchTurns = headTurns;
-      messages = current.messages; hasRevision = current.hasRevision; pages = 1;
+      const head = current; messages = current.messages; hasRevision = current.hasRevision; pages = 1;
       const seenCursors = new Set<string>();
-      completedPages = pages; active(controller.signal); progress?.(pages); active(controller.signal);
+      active(controller.signal); progress?.(pages); active(controller.signal);
       while (current.previous) {
-        if (pages >= limits.maxPages) failLimit('pages', pages + 1, limits.maxPages);
+        if (pages >= limits.maxPages) fail('limit');
         if (!current.cursor || seenCursors.has(current.cursor)) fail('schema');
         seenCursors.add(current.cursor);
-        stage = 'older'; const olderRead = await paginated(current.cursor, batchTurns, true); batchTurns = olderRead.turns;
-        current = page(olderRead.value, conversation, limits);
+        current = page(await request(`${base}&before=${encodeURIComponent(current.cursor)}`, token), conversation, limits);
         if (current.revision !== head.revision) fail('changed');
         messages = prepend(current.messages, messages);
-        if (messages.length > limits.maxMessages) failLimit('messages', messages.length, limits.maxMessages);
-        pages++; completedPages = pages; active(controller.signal); progress?.(pages); active(controller.signal);
+        if (messages.length > limits.maxMessages) fail('limit');
+        pages++; active(controller.signal); progress?.(pages); active(controller.signal);
       }
       checkParents(messages);
-      stage = 'recheck';
-      // Recheck precisely the original head boundary. Shrinking it here would
-      // compare a different subset and cannot establish the original snapshot.
-      const checked = page((await paginated(null, headTurns, false)).value, conversation, limits);
+      const checked = page(await request(base, token), conversation, limits);
       if (checked.next === true || checked.next !== head.next || checked.revision !== head.revision || checked.previous !== head.previous || checked.cursor !== head.cursor || canonical(head.messages.map(m => m.signature)) !== canonical(checked.messages.map(m => m.signature))) fail('changed');
     }
     active(controller.signal);
@@ -343,7 +302,6 @@ export async function loadHistory(url: string, signal: AbortSignal, progress?: (
     return { conversation, branch, source, entries, messageIds: visible.map(m => m.id), messages: visible.map(m => ({ id: m.id, role: m.role as 'user' | 'assistant' })), pages, exhausted: true, screenVerified: false, revisionVerified: hasRevision };
   } catch (error) {
     if (controller.signal.aborted) active(controller.signal);
-    if (error instanceof HistoryError && error.limit) throw new HistoryError(error.code, { ...error.limit, stage, pageTurns: currentTurns, completedPages, consumedBytes: consumed, requests });
     throw error instanceof HistoryError ? error : new HistoryError('schema');
   } finally { clearTimeout(totalTimer); signal.removeEventListener('abort', aborted); controller.abort(new HistoryError('aborted')); }
 }
