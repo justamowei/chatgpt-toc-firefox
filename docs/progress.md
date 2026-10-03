@@ -196,3 +196,11 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 ## 2026-10-03：DOM快取規格獨立審查
 
 GPT-6.1 Sol high唯讀固定5aa規格審查已完成，未修改來源／測試／release。新增SeenCache/MountedMap/BranchConfidence、cacheRevision/navigationEpoch分離、非overlap segment、長期正文version見證、prefix edit/hydration限制與定位前核對。源碼撤回08f7867已push，遠端一致；使用者Firefox已載入v0.2.0沒有透過UI換載。v0.2.0資料夾／交付JSON標withdrawn但原runtime與ZIP不擦除；API報告保留歷史。有效方案docs/observed-dom-cache-plan.md；純DOM已觀察快取尚未實作，真實場景未觀察。CUA native computer APIs disabled、無Firefox通道，已用computer inventory確認；插件查詢Firefox無結果。不假稱親自查看真實畫面。
+
+## 2026-10-03：使用者改授權 IAB 真實 ChatGPT 場景測試
+
+使用者明確同意先用 Codex 內建瀏覽器。登入免費帳號後建立12則中性提問與回答，真實 DOM 底部2 user＋3 assistant，首中尾窗口實際移除整個turn，重掛載 user ID／全文一致；窗口會保留附近訊息＋尾兩輪，不是固定七則。PageUp/PageDown/Control+Home 作用於 data-scroll-root；top/height有錨點修正，冷啟動到頂後仍延遲掛載首兩則。
+
+測試端純資料 Map 在往返保留12。重載同一對話後使用另一空Map，從初始4則逐段收齊12，全部ID／提問全文一致。保存63份無帳號／完整私有URL／回答全文／憑證的真實快照，56份完成窗口本機重播目前src/core.ts；28次有overlap、adapter未invalidated仍reset/drop，確認舊索引卸載刪除機制。scripts/replay-live-dom.mjs 可重新核對，結果見docs/evidence/iab-2026-10-03。這是實際DOM輸入重播，不是addon在IAB執行；Firefox LIVE、分支、編輯、導航等仍待驗收。未改runtime／未重包。子代理GPT-6.1 Sol high作獨立唯讀審查，文件與證據提交後push並核對遠端。
+
+獨立審查以另一支記憶體編譯腳本重算56筆trace，所有欄位一致；28次共同ID順序無矛盾。63→56排除的7份都是缺context，只有一份生成中。另確認同ID／全文的conversation-turn-N會重編／重用，不能用slot換號判定分支。修正文檔等待延遲說法：存檔間隔含其他工具操作，未量測精確載入耗時。子代理未改檔案或操作瀏覽器，報告docs/iab-live-independent-review.md。

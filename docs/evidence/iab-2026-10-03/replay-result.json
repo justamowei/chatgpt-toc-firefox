@@ -1,0 +1,1800 @@
+{
+  "source": "real ChatGPT DOM in Codex IAB, locally replayed against current src/core.ts",
+  "addonExecutedInIab": false,
+  "firefoxAcceptance": false,
+  "runtimeImplementationChanged": false,
+  "expectedPrompts": 12,
+  "recordedFrames": 63,
+  "replayedFrames": 56,
+  "coldInitialRetained": 4,
+  "coldFinalRetained": 12,
+  "overlapResetWithoutAdapterInvalidation": 28,
+  "textVersionMismatches": 0,
+  "trace": [
+    {
+      "phase": "warm",
+      "action": "up-01",
+      "mounted": 5,
+      "retained": 5,
+      "oldIndexCount": 5,
+      "beforeIds": [],
+      "afterIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 0,
+      "afterEpoch": 1
+    },
+    {
+      "phase": "warm",
+      "action": "head-settled",
+      "mounted": 5,
+      "retained": 7,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289"
+      ],
+      "overlapIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 1,
+      "afterEpoch": 2
+    },
+    {
+      "phase": "warm",
+      "action": "down-01",
+      "mounted": 5,
+      "retained": 8,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19"
+      ],
+      "overlapIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 2,
+      "afterEpoch": 3
+    },
+    {
+      "phase": "warm",
+      "action": "control-home",
+      "mounted": 6,
+      "retained": 8,
+      "oldIndexCount": 6,
+      "beforeIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470"
+      ],
+      "overlapIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 3,
+      "afterEpoch": 4
+    },
+    {
+      "phase": "warm",
+      "action": "head-confirmed",
+      "mounted": 5,
+      "retained": 8,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f"
+      ],
+      "overlapIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 4,
+      "afterEpoch": 5
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-01",
+      "mounted": 5,
+      "retained": 8,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 5,
+      "afterEpoch": 5
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-02",
+      "mounted": 7,
+      "retained": 9,
+      "oldIndexCount": 7,
+      "beforeIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289"
+      ],
+      "overlapIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 5,
+      "afterEpoch": 6
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-03",
+      "mounted": 6,
+      "retained": 9,
+      "oldIndexCount": 6,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d"
+      ],
+      "overlapIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 6,
+      "afterEpoch": 7
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-04",
+      "mounted": 4,
+      "retained": 9,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470"
+      ],
+      "overlapIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 7,
+      "afterEpoch": 8
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-05",
+      "mounted": 7,
+      "retained": 10,
+      "oldIndexCount": 7,
+      "beforeIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 8,
+      "afterEpoch": 8
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-06",
+      "mounted": 5,
+      "retained": 10,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3"
+      ],
+      "overlapIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 8,
+      "afterEpoch": 9
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-07",
+      "mounted": 6,
+      "retained": 10,
+      "oldIndexCount": 6,
+      "beforeIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 9,
+      "afterEpoch": 9
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-08",
+      "mounted": 4,
+      "retained": 10,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3"
+      ],
+      "overlapIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 9,
+      "afterEpoch": 10
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-09",
+      "mounted": 5,
+      "retained": 11,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470"
+      ],
+      "overlapIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 10,
+      "afterEpoch": 11
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-10",
+      "mounted": 5,
+      "retained": 11,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 11,
+      "afterEpoch": 11
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-11",
+      "mounted": 4,
+      "retained": 11,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d"
+      ],
+      "overlapIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 11,
+      "afterEpoch": 12
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-12",
+      "mounted": 4,
+      "retained": 12,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3"
+      ],
+      "overlapIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 12,
+      "afterEpoch": 13
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-13",
+      "mounted": 4,
+      "retained": 12,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 13,
+      "afterEpoch": 13
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-14",
+      "mounted": 3,
+      "retained": 12,
+      "oldIndexCount": 3,
+      "beforeIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab"
+      ],
+      "overlapIds": [
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 13,
+      "afterEpoch": 14
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-15",
+      "mounted": 3,
+      "retained": 12,
+      "oldIndexCount": 3,
+      "beforeIds": [
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 14,
+      "afterEpoch": 14
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-16",
+      "mounted": 2,
+      "retained": 12,
+      "oldIndexCount": 2,
+      "beforeIds": [
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e"
+      ],
+      "overlapIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 14,
+      "afterEpoch": 15
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-17",
+      "mounted": 2,
+      "retained": 12,
+      "oldIndexCount": 2,
+      "beforeIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 15,
+      "afterEpoch": 15
+    },
+    {
+      "phase": "warm",
+      "action": "scan-down-18",
+      "mounted": 2,
+      "retained": 12,
+      "oldIndexCount": 2,
+      "beforeIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 15,
+      "afterEpoch": 15
+    },
+    {
+      "phase": "warm",
+      "action": "tail-confirmed",
+      "mounted": 2,
+      "retained": 12,
+      "oldIndexCount": 2,
+      "beforeIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 15,
+      "afterEpoch": 15
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-01",
+      "mounted": 2,
+      "retained": 12,
+      "oldIndexCount": 2,
+      "beforeIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 15,
+      "afterEpoch": 15
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-02",
+      "mounted": 2,
+      "retained": 12,
+      "oldIndexCount": 2,
+      "beforeIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 15,
+      "afterEpoch": 15
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-03",
+      "mounted": 5,
+      "retained": 12,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 15,
+      "afterEpoch": 15
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-04",
+      "mounted": 4,
+      "retained": 12,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3"
+      ],
+      "overlapIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 15,
+      "afterEpoch": 16
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-05",
+      "mounted": 6,
+      "retained": 12,
+      "oldIndexCount": 6,
+      "beforeIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 16,
+      "afterEpoch": 16
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-06",
+      "mounted": 6,
+      "retained": 12,
+      "oldIndexCount": 6,
+      "beforeIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 16,
+      "afterEpoch": 16
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-07",
+      "mounted": 4,
+      "retained": 12,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e"
+      ],
+      "overlapIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 16,
+      "afterEpoch": 17
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-08",
+      "mounted": 6,
+      "retained": 12,
+      "oldIndexCount": 6,
+      "beforeIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 17,
+      "afterEpoch": 17
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-09",
+      "mounted": 5,
+      "retained": 12,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab"
+      ],
+      "overlapIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 17,
+      "afterEpoch": 18
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-10",
+      "mounted": 6,
+      "retained": 12,
+      "oldIndexCount": 6,
+      "beforeIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3"
+      ],
+      "overlapIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 18,
+      "afterEpoch": 19
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-11",
+      "mounted": 6,
+      "retained": 12,
+      "oldIndexCount": 6,
+      "beforeIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 19,
+      "afterEpoch": 19
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-12",
+      "mounted": 4,
+      "retained": 12,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d"
+      ],
+      "overlapIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 19,
+      "afterEpoch": 20
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-13",
+      "mounted": 5,
+      "retained": 12,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470"
+      ],
+      "overlapIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 20,
+      "afterEpoch": 21
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-14",
+      "mounted": 5,
+      "retained": 12,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 21,
+      "afterEpoch": 21
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-15",
+      "mounted": 4,
+      "retained": 12,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821"
+      ],
+      "overlapIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 21,
+      "afterEpoch": 22
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-16",
+      "mounted": 6,
+      "retained": 12,
+      "oldIndexCount": 6,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 22,
+      "afterEpoch": 22
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-17",
+      "mounted": 5,
+      "retained": 12,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f"
+      ],
+      "overlapIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 22,
+      "afterEpoch": 23
+    },
+    {
+      "phase": "warm",
+      "action": "scan-up-18",
+      "mounted": 5,
+      "retained": 12,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 23,
+      "afterEpoch": 23
+    },
+    {
+      "phase": "warm",
+      "action": "head-return-confirmed",
+      "mounted": 5,
+      "retained": 12,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 23,
+      "afterEpoch": 23
+    },
+    {
+      "phase": "cold",
+      "action": "cold-initial",
+      "mounted": 4,
+      "retained": 4,
+      "oldIndexCount": 4,
+      "beforeIds": [],
+      "afterIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 0,
+      "afterEpoch": 1
+    },
+    {
+      "phase": "cold",
+      "action": "cold-head",
+      "mounted": 5,
+      "retained": 5,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 1,
+      "afterEpoch": 1
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-01",
+      "mounted": 4,
+      "retained": 5,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "ed6f2f77-2f61-4fef-b6e3-418280187a8e"
+      ],
+      "overlapIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": true,
+      "reset": true,
+      "beforeEpoch": 1,
+      "afterEpoch": 2
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-02",
+      "mounted": 4,
+      "retained": 6,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "5424fa8b-8688-4cd4-96c6-3bc99a2d29ab"
+      ],
+      "overlapIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 2,
+      "afterEpoch": 3
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-03",
+      "mounted": 5,
+      "retained": 7,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 3,
+      "afterEpoch": 3
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-04",
+      "mounted": 7,
+      "retained": 10,
+      "oldIndexCount": 7,
+      "beforeIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "5066dedc-65bd-4734-82d0-bc382122c6d3",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "5066dedc-65bd-4734-82d0-bc382122c6d3"
+      ],
+      "overlapIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 3,
+      "afterEpoch": 4
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-05",
+      "mounted": 5,
+      "retained": 10,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f"
+      ],
+      "overlapIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 4,
+      "afterEpoch": 5
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-06",
+      "mounted": 4,
+      "retained": 10,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "49beafbb-7392-4be3-b929-4c96c1b39c8d"
+      ],
+      "overlapIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 5,
+      "afterEpoch": 6
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-07",
+      "mounted": 4,
+      "retained": 10,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "adf78c5c-3cdd-4dbc-a62f-ae9dbd2d6470"
+      ],
+      "overlapIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 6,
+      "afterEpoch": 7
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-08",
+      "mounted": 5,
+      "retained": 10,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 7,
+      "afterEpoch": 7
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-09",
+      "mounted": 4,
+      "retained": 10,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "8ad8a649-084a-4d41-a017-507f5bed3821",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "8ad8a649-084a-4d41-a017-507f5bed3821"
+      ],
+      "overlapIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": true,
+      "beforeEpoch": 7,
+      "afterEpoch": 8
+    },
+    {
+      "phase": "cold",
+      "action": "cold-up-10",
+      "mounted": 4,
+      "retained": 10,
+      "oldIndexCount": 4,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [],
+      "overlapIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": false,
+      "reset": false,
+      "beforeEpoch": 8,
+      "afterEpoch": 8
+    },
+    {
+      "phase": "cold",
+      "action": "cold-top-wait",
+      "mounted": 5,
+      "retained": 12,
+      "oldIndexCount": 5,
+      "beforeIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "78ba339c-de75-4438-88de-b161882ba98f",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "afterIds": [
+        "5493ebba-a9a3-444f-8649-ff65b7d7a751",
+        "f921d5fc-02f9-40b1-93b8-f485ad074289",
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "droppedIds": [
+        "78ba339c-de75-4438-88de-b161882ba98f"
+      ],
+      "overlapIds": [
+        "e42232d7-3522-4732-9dad-a0899194cb19",
+        "fc884d1d-9f79-41f5-a8a2-d2ea7e28244d",
+        "1b8d8201-e20a-4bd1-aecb-667d1623498d"
+      ],
+      "invalidated": true,
+      "reset": true,
+      "beforeEpoch": 8,
+      "afterEpoch": 9
+    }
+  ]
+}

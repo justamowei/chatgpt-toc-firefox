@@ -46,6 +46,14 @@
 
 目前 CUA inventory apps=[]，只有 Codex IAB 和 MCP Apps、均無分頁；本輪可用工具沒有 node_repl/sky 呼叫。plugin-management 查詢 Firefox 返回空集合。先前 Firefox URL policy 限制不繞過，不用 shell UIA／真實 profile 的 Selenium／cookie 複製代替。尚未進入使用者真實 Firefox，仍為阻礙。
 
+## 2026-10-03：使用者授權改先做 IAB 真實場景研究
+
+已完成真實 chatgpt.com 免費帳號的 IAB 測試，見 docs/iab-live-dom-findings.md 與 docs/evidence/iab-2026-10-03。12 則中性提問、63 份 DOM 快照，原生鍵盤首中尾往返；底部只掛載 2 提問＋3 回答，user ID／正文重新掛載保持相同。重載同一對話，以空資料 Map 從初始4則收齊12，精確 ID／全文一致。以實際完成窗口重播旧 IndexStore，28 次有 overlap、未 invalidated 仍 reset/drop。這是 IAB 觀察與本機重播，沒有在 IAB 執行 addon，也不是 Firefox PASS。
+
+需修正先前假設：窗口可能保留附近訊息加最後兩輪，未必連續；掛載數不是固定七則；data-scroll-root 高度及 top 會動態修正，向上捲動未必數值單調下降；冷啟動 top=0 後仍須等待舊訊息掛載。一次首尾跳躍、固定 scrollHeight 或零進展不能證明完整。回答串流的 request placeholder 與正式 ID 變化也不能直接視為分支切換。conversation-turn-N 的 slot 在正常重載與載入較早訊息時會重編／重用；同 ID／全文可換 slot，因此 previousSlots 不得把這種換號判定為分支 invalidation，也不能將 slot 當永久顺序。獨立審查已核對該證據；快照不能單獨量測網站掛載延遲。
+
+上方「本輪沒有 node_repl／IAB 分頁」是撤回當時的歷史狀態。後續已有 sky 與 IAB 通道；Firefox 視窗擷取被審查阻擋，使用者最新明確允許改先測 IAB 後，才取得真實 ChatGPT 頁面證據。沒有繞過政策。這輪只完成研究、重播與規格更新，SeenCache 產品仍未實作，Firefox LIVE 門檻維持待驗收。
+
 ## 交付驗收門檻
 
 - 真實長對話先記錄已見提問的預期集合；初始 5–7 則，手動連續捲動收錄至少跨首中尾且明確大於七則。
