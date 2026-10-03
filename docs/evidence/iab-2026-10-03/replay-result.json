@@ -1,5 +1,6 @@
 {
-  "source": "real ChatGPT DOM in Codex IAB, locally replayed against current src/core.ts",
+  "source": "real ChatGPT DOM in Codex IAB, locally replayed against historical baseline src/core.ts",
+  "baseline": "57d10a6acf9267615fed02813481965dbf4a4a75",
   "addonExecutedInIab": false,
   "firefoxAcceptance": false,
   "runtimeImplementationChanged": false,

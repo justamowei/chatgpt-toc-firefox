@@ -206,6 +206,8 @@ GPT-6.1 Sol high唯讀固定5aa規格審查已完成，未修改來源／測試�
 獨立審查以另一支記憶體編譯腳本重算56筆trace，所有欄位一致；28次共同ID順序無矛盾。63→56排除的7份都是缺context，只有一份生成中。另確認同ID／全文的conversation-turn-N會重編／重用，不能用slot換號判定分支。修正文檔等待延遲說法：存檔間隔含其他工具操作，未量測精確載入耗時。子代理未改檔案或操作瀏覽器，報告docs/iab-live-independent-review.md。
 # 2026-10-03 已觀察快取修正候選
 
+產品驗收固定來源 `4c3d838d187b0e2771bbf58d6ba00ddc0b07a4b2`，已push且遠端SHA一致。GPT-6.1 Sol high 獨立核心20／重播20窗口／Firefox本機快取8項通過；正式content hash `441c92cc5731915fca39a2b4c7f471498d65216f26e83e8ab942b291acda2a36`。報告見 docs/acceptance-seen-cache-v0.3.0.md。後續文件提交不改產品源碼。真實Firefox整體addon仍未LIVE驗收。
+
 本輪最終回歸：核心 20／Firefox 本機快取 8／生命週期 3 全部 PASS，正式 build 與 lint 無錯誤或警告。子代理指出無 user 順序錨點的離屏答案仍會猜 newer，已加入拒絕導航與手動返回提示，並以 CACHE-08 核對沒有猜測捲動。真實 IAB 解析器＋本機快取輸入保留精確 12／尾端掛載 2 的證據維持通過。這些是候選實作驗證，真實 Firefox addon LIVE 驗收仍未完成；沒有發佈「已完全修好」安裝包。
 
 v0.3.0 將已觀察提問與目前 DOM 掛載分開；加入長期正文見證、順序區段、隔離舊版本、即時 Observer 收集、70% viewport 步進、精確返回版本核對和 SPA 舊內容排除。核心 20 項 PASS；本機 Firefox 快取前 5 項 PASS。新增 2 項回歸尚待最終執行。真實 IAB 執行同一份提問解析器取得 20 個窗口，本機當前快取保留預期 12 則而頁尾只掛載 2 則，精確全文／ID／順序一致。附加元件未在真實 Firefox ChatGPT 上完成驗收；候選不等於 LIVE PASS。見 docs/seen-cache-v0.3.0.md。

@@ -18,6 +18,7 @@ v0.2.0 是已撤回的完整歷史實驗，舊[說明](docs/full-history-v0.2.0.
 - [可行性紀錄](docs/feasibility.md)：合成／真實資料来源與可承諾範圍。
 - [原型驗收報告](docs/prototype-acceptance.md)：交付來源、測試結果、套件hash與未完成項目。
 - [sub-agent獨立驗收](docs/acceptance-final.md)：固定快照重建、原生回歸與canonical套件核對。
+- [v0.3.0 候選獨立驗收](docs/acceptance-seen-cache-v0.3.0.md)：GPT-6.1 Sol high 固定 SHA 檢查與 Firefox 本機快取重跑；真實 Firefox LIVE 尚未完成。
 
 ## 版本管理
 

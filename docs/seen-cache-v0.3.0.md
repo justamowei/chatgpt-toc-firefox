@@ -18,6 +18,7 @@
 - 修正版 `src/turns.ts` 編譯成純唯讀 DOM callback，直接在真實 IAB ChatGPT 自建中性測試對話執行。20 個原生 PageDown 窗口，掛載從 5 則到 2 則；將辨識結果送入本機當前 IndexStore 後保留完整預期 12 則，ID／全文／順序全部一致。沒有把 addon 注入 IAB。原始中性提問資料與重播結果見 `docs/evidence/iab-cache-fix-2026-10-03`。
 - 隔離 Firefox 本機 8 項 CACHE 測試全部通過：12 則保留／槽位換號、離屏搜尋／高亮／閱讀返回、短暫卸載與空窗口、追加編輯隔離、SPA 切頁無舊對話洩漏、首頁第一則網址建立、虛擬窗口自動收集／停止、缺乏提問順序錨點的離屏答案拒絕猜測返回。第 7 項第一次超時是測試要求在無順序證據下返回；實際應拒絕，已更正測試為先驗證拒絕、供給真實 ordered window 見證後返回。沒有放寬產品順序規則來湊 PASS。
 - Firefox 停用／重啟／移除 3 項回歸全部 PASS。型別、核心 20 項、正式 build、web-ext lint 通過；lint 0 errors／0 warnings／0 notices。正式 bundle 靜態檢查沒有歷史 API／accessToken／HistoryLoader 入口。
+- GPT-6.1 Sol high 對固定產品 SHA `4c3d838d187b0e2771bbf58d6ba00ddc0b07a4b2` 獨立核對，並在隔離 Firefox 157.0 重跑 8 項 CACHE 全部 PASS，fixture 內容 hash 與主代理一致。詳見 [獨立驗收](acceptance-seen-cache-v0.3.0.md)。此後文件提交不改產品源碼與套件 bytes。
 
 ## 未驗收範圍
 
