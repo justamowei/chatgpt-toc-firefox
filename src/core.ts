@@ -183,19 +183,21 @@ export interface Position { id: string; offset: number; role?: 'user' | 'assista
 export interface NavigationAdapter {
   mounted(id: string): boolean;
   locate(id: string, signal: AbortSignal): boolean | Promise<boolean>;
-  load(direction: 'older' | 'newer', signal: AbortSignal, timeout: number): Promise<boolean>;
+  load(direction: 'older' | 'newer', signal: AbortSignal, timeout: number, targetId?: string | null): Promise<boolean>;
   direction(id: string): 'older' | 'newer';
 }
-export interface Limits { totalMs: number; batches: number; batchMs: number; noProgress: number; }
-export const NAV_LIMITS: Limits = { totalMs: 60_000, batches: 20, batchMs: 8_000, noProgress: 3 };
+export interface Limits { totalMs: number; batches: number; collectionBatches?: number; batchMs: number; noProgress: number; }
+export const NAV_LIMITS: Limits = { totalMs: 60_000, batches: 60, collectionBatches: 240, batchMs: 8_000, noProgress: 3 };
+export type NavStopReason = 'none' | 'located' | 'not-found' | 'stalled' | 'batch-limit' | 'time-limit' | 'batch-timeout' | 'cancelled' | 'unsupported';
 export class Navigator {
   state: NavState = 'idle';
+  lastStopReason: NavStopReason = 'none';
   private controller: AbortController | null = null;
   private generation = 0;
   constructor(private adapter: NavigationAdapter, private changed: (state: NavState) => void, private limits: Limits = NAV_LIMITS) {}
   cancel(): void {
     this.generation++; this.controller?.abort(); this.controller = null;
-    if (this.state === 'loading') this.setState('cancelled');
+    if (this.state === 'loading') { this.lastStopReason = 'cancelled'; this.setState('cancelled'); }
   }
   private setState(state: NavState): void { this.state = state; this.changed(state); }
   async run(id: string | null): Promise<NavState> {
@@ -203,46 +205,57 @@ export class Navigator {
     const generation = ++this.generation, controller = new AbortController(); this.controller = controller;
     const live = () => generation === this.generation && !controller.signal.aborted;
     const started = performance.now();
-    this.setState('loading');
-    const totalTimer = setTimeout(() => controller.abort(), this.limits.totalMs);
+    this.lastStopReason = 'none'; this.setState('loading');
+    let totalExpired = false;
+    const totalTimer = setTimeout(() => { totalExpired = true; controller.abort(); }, this.limits.totalMs);
+    const batchLimit = id === null ? this.limits.collectionBatches ?? this.limits.batches : this.limits.batches;
+    // Timer delays round fractional milliseconds. Track which bound is active
+    // instead of guessing its origin from the elapsed time after it fires.
+    let activeDeadline: 'time-limit' | 'batch-timeout' = 'time-limit';
+    const timeoutReason = (): NavStopReason => totalExpired ? 'time-limit' : activeDeadline;
     try {
       let stalls = 0;
-      for (let batch = 0; batch <= this.limits.batches; batch++) {
-        if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : 'cancelled';
+      for (let batch = 0; batch <= batchLimit; batch++) {
+        if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
         if (id !== null && this.adapter.mounted(id)) {
+          activeDeadline = 'time-limit';
           const located = await boundedLoad(() => Promise.resolve(this.adapter.locate(id, controller.signal)), controller,
             Math.max(1, this.limits.totalMs - (performance.now() - started)));
-          if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : 'cancelled';
-          return this.finish(located ? 'located' : 'not-found', generation);
+          if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
+          return this.finish(located ? 'located' : 'not-found', generation, located ? 'located' : 'not-found');
         }
-        if (batch === this.limits.batches || performance.now() - started >= this.limits.totalMs) return this.finish('timed-out', generation);
-        const timeout = Math.min(this.limits.batchMs, this.limits.totalMs - (performance.now() - started));
+        if (performance.now() - started >= this.limits.totalMs) return this.finish('timed-out', generation, 'time-limit');
+        if (batch === batchLimit) return this.finish('timed-out', generation, 'batch-limit');
+        const remaining = this.limits.totalMs - (performance.now() - started);
+        const timeout = Math.min(this.limits.batchMs, remaining);
+        activeDeadline = remaining <= this.limits.batchMs ? 'time-limit' : 'batch-timeout';
         const progressed = await boundedLoad(
-          () => this.adapter.load(id === null ? 'older' : this.adapter.direction(id), controller.signal, timeout), controller, timeout,
+          () => this.adapter.load(id === null ? 'older' : this.adapter.direction(id), controller.signal, timeout, id), controller, timeout,
         );
-        if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : 'cancelled';
+        if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
         if (id !== null && this.adapter.mounted(id)) {
+          activeDeadline = 'time-limit';
           const located = await boundedLoad(() => Promise.resolve(this.adapter.locate(id, controller.signal)), controller,
             Math.max(1, this.limits.totalMs - (performance.now() - started)));
-          if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : 'cancelled';
-          return this.finish(located ? 'located' : 'not-found', generation);
+          if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
+          return this.finish(located ? 'located' : 'not-found', generation, located ? 'located' : 'not-found');
         }
         stalls = progressed ? 0 : stalls + 1;
-        if (stalls >= this.limits.noProgress) return this.finish(id === null ? 'idle' : 'not-found', generation);
+        if (stalls >= this.limits.noProgress) return this.finish(id === null ? 'idle' : 'not-found', generation, 'stalled');
       }
-      return this.finish('timed-out', generation);
+      return this.finish('timed-out', generation, 'batch-limit');
     } catch (error) {
-      if (!live()) return generation === this.generation ? this.finish('timed-out', generation) : 'cancelled';
-      return this.finish(error instanceof DeadlineError ? 'timed-out' : 'unsupported', generation);
+      if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
+      return this.finish(error instanceof DeadlineError ? 'timed-out' : 'unsupported', generation, error instanceof DeadlineError ? timeoutReason() : 'unsupported');
     } finally {
       clearTimeout(totalTimer);
       controller.abort();
       if (generation === this.generation) this.controller = null;
     }
   }
-  private finish(state: NavState, generation: number): NavState {
+  private finish(state: NavState, generation: number, reason: NavStopReason): NavState {
     if (generation !== this.generation) return 'cancelled';
-    this.setState(state); return state;
+    this.lastStopReason = reason; this.setState(state); return state;
   }
 }
 

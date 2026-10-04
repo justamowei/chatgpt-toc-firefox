@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-toc-firefox",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -13,6 +13,7 @@
     "test:firefox-addon-lifecycle": "node tests/firefox-addon-lifecycle.mjs",
     "test:firefox-renderers": "node tests/firefox-renderers.mjs",
     "test:firefox-seen-cache": "node tests/firefox-seen-cache.mjs",
+    "test:firefox-navigation-speed": "node tests/firefox-navigation-speed.mjs",
     "package:firefox": "node scripts/package.mjs"
   },
   "devDependencies": {

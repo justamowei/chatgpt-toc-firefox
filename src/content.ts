@@ -12,6 +12,7 @@ function start(): Instance {
   let alive = true, expanded = false, query = '', renderKey = '', navigationToken = 0, uiRevision = 0;
   let returnPosition: Position | null = null, returnEpoch = -1, refreshTimer: ReturnType<typeof setTimeout> | undefined;
   let navigationPending = false, operation: AbortController | null = null;
+  let collecting = false, collectionStart = 0;
   const events = new AbortController();
   const store = new IndexStore();
   // A disabled Firefox content context cannot run teardown JavaScript. Remove
@@ -62,6 +63,9 @@ function start(): Instance {
   const navigator = new Navigator(adapter, state => {
     if (!alive) return;
     host.dataset.navigation = state; status.textContent = labels[state]; stop.hidden = state !== 'loading'; earlier.disabled = state === 'loading';
+    if (state === 'timed-out') status.textContent = navigator.lastStopReason === 'batch-limit'
+      ? `已達本次${collecting ? '收集' : '尋找'}步數上限，${collecting ? `新增 ${Math.max(0, store.entries.length - collectionStart)} 則；可繼續收集。` : '目標尚未重新掛載，可重試。'}`
+      : `已達本次${collecting ? '收集' : '尋找'}時間上限，${collecting ? `新增 ${Math.max(0, store.entries.length - collectionStart)} 則；可繼續收集。` : '目標尚未重新掛載，可重試。'}`;
   });
   let port: browser.runtime.Port | null = browser.runtime.connect({ name: 'toc-lifecycle' });
   port.onMessage.addListener(message => { if (isDispose(message)) dispose(); });
@@ -134,9 +138,14 @@ function start(): Instance {
       reset = store.merge({ ...snapshot, entries }) || reset;
     }
     reset = store.merge(snapshot, direction ?? adapter.currentDirection() ?? 'observe') || reset;
+    adapter.remember();
     if (reset) { cancel(); adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
       status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
+    if (navigator.state === 'loading') status.textContent = collecting
+      ? `正在收集較早提問 · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 已看過 ${store.entries.length} 則。`
+      : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
+      : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
   }
   function refresh(direction?: 'older' | 'newer'): void {
     collect(direction);
@@ -156,15 +165,17 @@ function start(): Instance {
       status.textContent = '此目標的順序、正文或目前分支尚未核對；請先手動捲動至該則提問。'; return;
     }
     cancel(); const token = ++navigationToken, epoch = store.epoch;
+    collecting = id === null; collectionStart = store.entries.length;
     operation = new AbortController(); navigationPending = true;
     const position = await adapter.capture(operation.signal);
     if (!alive || token !== navigationToken || epoch !== store.epoch) return;
     returnPosition = position; returnEpoch = epoch; render();
     delete host.dataset.restored;
+    adapter.begin();
     const result = await navigator.run(id);
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
-    if (id === null && result === 'idle') status.textContent = '本次載入已停止。未核對完整歷史；可返回剛才位置或繼續。';
+    if (id === null && result === 'idle') status.textContent = `連續等待未觀察到進展，本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集或返回剛才位置。`;
     updateCurrent();
   }
   async function restore(): Promise<void> {
@@ -177,8 +188,10 @@ function start(): Instance {
       status.textContent = '原答案缺少可核對的提問錨點，請先手動捲動至原答案附近。'; return;
     }
     cancel(); const token = ++navigationToken;
+    collecting = false;
     operation = new AbortController(); navigationPending = true;
     delete host.dataset.restored;
+    adapter.begin();
     const result = await navigator.run(position.id);
     if (!alive || token !== navigationToken || epoch !== store.epoch) return;
     if (result !== 'located') { navigationPending = false; status.textContent = '原閱讀位置目前未掛載，尚未恢復。'; return; }

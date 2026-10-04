@@ -6,7 +6,7 @@ import { performance } from 'node:perf_hooks';
 await mkdir('artifacts/core', { recursive: true });
 const compiled = await transform(await readFile('src/core.ts', 'utf8'), { loader: 'ts', format: 'esm', target: 'es2022' });
 await writeFile('artifacts/core/core.mjs', compiled.code);
-const { IndexStore, Navigator, validMessage, validSettings } = await import('../artifacts/core/core.mjs');
+const { IndexStore, Navigator, NAV_LIMITS, validMessage, validSettings } = await import('../artifacts/core/core.mjs');
 const entry = (id, text = id, stable = true) => ({ id, text, stable });
 const snap = (entries, branch = 'branch-A', context = '/c/synthetic') => ({ entries, branch, context });
 const ids = store => store.entries.map(e => e.id);
@@ -173,6 +173,28 @@ test('CORE-03: cancellation and supersession settle even when adapter ignores Ab
   const second = await nav.run('new'); assert.equal(second, 'located');
   mounted = true; resolveOld(true); await new Promise(resolve => setTimeout(resolve, 10));
   assert.deepEqual(located, ['new']); assert.equal(nav.state, 'located');
+  assert.equal(nav.lastStopReason, 'located');
+});
+test('collection allows 240 steps while target seeking allows 60, and each load receives its exact target', async () => {
+  for (const targetId of [null, 'offscreen-target']) {
+    const loads = [], callbacks = [];
+    const nav = new Navigator({ mounted: () => false, locate: () => false, direction: () => 'newer',
+      load: async (direction, signal, timeout, target) => { loads.push({ direction, signal, timeout, target }); return true; },
+    }, state => callbacks.push({ state, reason: nav.lastStopReason }));
+    assert.equal(await nav.run(targetId), 'timed-out'); assert.equal(nav.lastStopReason, 'batch-limit');
+    assert.equal(loads.length, targetId === null ? 240 : 60);
+    assert.ok(loads.every(load => load.target === targetId && load.direction === (targetId === null ? 'older' : 'newer') &&
+      load.timeout > 0 && load.timeout <= NAV_LIMITS.batchMs && load.signal.aborted));
+    assert.deepEqual(callbacks.at(-1), { state: 'timed-out', reason: 'batch-limit' });
+  }
+});
+test('custom collection limits fall back to batches unless explicitly overridden', async () => {
+  for (const [override, expected] of [[{}, 2], [{ collectionBatches: 5 }, 5]]) {
+    let loads = 0;
+    const nav = new Navigator({ mounted: () => false, locate: () => false, direction: () => 'older', load: async () => { loads++; return true; } },
+      () => {}, { ...limits, batches: 2, ...override });
+    assert.equal(await nav.run(null), 'timed-out'); assert.equal(loads, expected); assert.equal(nav.lastStopReason, 'batch-limit');
+  }
 });
 test('async locate completion cannot overwrite a superseding navigation state', async () => {
   let completeOld, oldSignal;
@@ -184,6 +206,7 @@ test('async locate completion cannot overwrite a superseding navigation state', 
   assert.equal(await nav.run('new'), 'located'); assert.equal(oldSignal.aborted, true);
   const count = states.length; completeOld(true);
   assert.equal(await old, 'cancelled'); assert.equal(nav.state, 'located'); assert.equal(states.length, count);
+  assert.equal(nav.lastStopReason, 'located');
 });
 test('never-resolving async locate obeys total deadline both before and after a load', { timeout: 1000 }, async () => {
   for (const initiallyMounted of [true, false]) {
@@ -191,9 +214,12 @@ test('never-resolving async locate obeys total deadline both before and after a 
     const nav = new Navigator({ mounted: () => mounted, direction: () => 'older',
       load: async () => { loads++; mounted = true; return true; },
       locate: (_id, signal) => { locateSignal = signal; return new Promise(() => {}); },
-    }, () => {}, { ...limits, totalMs: 20 });
+    // Fractional remaining delays can fire before the separately scheduled total
+    // timer. Locate still expires under the total bound, not the batch bound.
+    }, () => {}, { ...limits, totalMs: 20.75 });
     const start = performance.now();
     assert.equal(await nav.run('target'), 'timed-out'); assert.equal(nav.state, 'timed-out');
+    assert.equal(nav.lastStopReason, 'time-limit');
     assert.equal(locateSignal.aborted, true); assert.equal(loads, initiallyMounted ? 0 : 1);
     assert.ok(performance.now() - start < 250);
   }
@@ -202,10 +228,14 @@ test('CORE-03: per-batch/total deadlines are enforced and no-progress stops afte
   let loads = 0;
   const base = { mounted: () => false, locate: () => false, direction: () => 'older', load: async () => { loads++; return false; } };
   const stall = new Navigator(base, () => {}, limits); assert.equal(await stall.run('absent'), 'not-found'); assert.equal(loads, 3);
+  assert.equal(stall.lastStopReason, 'stalled');
+  const collection = new Navigator(base, () => {}, limits); assert.equal(await collection.run(null), 'idle'); assert.equal(collection.lastStopReason, 'stalled');
   const stuck = new Navigator({ ...base, load: () => new Promise(() => {}) }, () => {}, limits);
   const started = performance.now(); assert.equal(await stuck.run('absent'), 'timed-out'); assert.ok(performance.now() - started < 250);
+  assert.equal(stuck.lastStopReason, 'batch-timeout');
   const total = new Navigator({ ...base, load: () => new Promise(() => {}) }, () => {}, { ...limits, totalMs: 15, batchMs: 100 });
   assert.equal(await total.run('absent'), 'timed-out');
+  assert.equal(total.lastStopReason, 'time-limit');
 });
 test('navigation locates target that arrives in the third nominal no-progress batch', async () => {
   let loads = 0; let located = 0;

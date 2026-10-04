@@ -206,6 +206,8 @@ GPT-6.1 Sol high唯讀固定5aa規格審查已完成，未修改來源／測試�
 獨立審查以另一支記憶體編譯腳本重算56筆trace，所有欄位一致；28次共同ID順序無矛盾。63→56排除的7份都是缺context，只有一份生成中。另確認同ID／全文的conversation-turn-N會重編／重用，不能用slot換號判定分支。修正文檔等待延遲說法：存檔間隔含其他工具操作，未量測精確載入耗時。子代理未改檔案或操作瀏覽器，報告docs/iab-live-independent-review.md。
 # 2026-10-03 已觀察快取修正候選
 
+2026-10-04：使用者確認已見提問保留可用；回報收集1–2則觸載入上限及離屏導航慢。v0.3.1新增分離預算、適應掛載等待、長回答正文內部跨越、位置線索直接跳轉與範圍修正，核心22／型別PASS。原生速度回歸仍進行中，未交付新版資料夾。詳見 docs/navigation-speed-v0.3.1.md。
+
 使用者詢問找不到 v0.3.0 manifest 後，已將既有 production build（fixture=false）完整複製到 sibling `outputs/Firefox-測試版-v0.3.0`，含 manifest、三個JS、options.html、host.css、build-info與讀我。六個正式檔案逐一SHA-256核對、manifest version=0.3.0；與已驗收產品4c3d838建置一致，沒有修改源碼或重建不同產品。此為明示候選测试版的可暫時載入資料夾，真實Firefox LIVE門檻維持未完成，尚未操作使用者Firefox安裝。
 
 產品驗收固定來源 `4c3d838d187b0e2771bbf58d6ba00ddc0b07a4b2`，已push且遠端SHA一致。GPT-6.1 Sol high 獨立核心20／重播20窗口／Firefox本機快取8項通過；正式content hash `441c92cc5731915fca39a2b4c7f471498d65216f26e83e8ab942b291acda2a36`。報告見 docs/acceptance-seen-cache-v0.3.0.md。後續文件提交不改產品源碼。真實Firefox整體addon仍未LIVE驗收。

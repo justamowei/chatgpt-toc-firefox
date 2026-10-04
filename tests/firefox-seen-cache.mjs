@@ -93,7 +93,7 @@ try {
     await evaluate(`history.pushState({},'', '/c/virtual-collection');window.fixture.mode('virtual');`);
     await wait(async () => (await state()).items.length === 10 && (await state()).items[0].id === 'branch-A:u-10');
     await click('#toc-earlier');
-    await driver.wait(async () => (await state()).nav === 'idle', 20000);
+    await driver.wait(async () => (await state()).nav === 'idle', 65000);
     assert.equal((await state()).items.length, 20);
     assert.match((await state()).scope, /目前掛載 10 則/);
     // This older fixture replaces two disjoint ten-turn windows. Collection
