@@ -505,3 +505,11 @@ source 22cc60b 實作完整歷史來源與獨立索引；掛載目錄原保守�
 離屏尋找先嘗試已觀察純數字位置，再用可信順序和實際user座標修正範圍；不能用尾端保留訊息代替目前scrollTop錨點。幾何改變清界限，重新掛載後精確核對ID／角色／正文／context／epoch／viewport才成功。取消沒有晚到捲動／高亮，保留已見快取。總時間、單批等待及步數上限須明示，並顯示本次新增數。
 
 驗收涵蓋40題／60000px回答／500ms空窗口、18000px高度改變、已見離屏直接定位、中途停止、原快取8項與核心22項。Firefox本機測試與真實IAB幾何觀察分開，整體addon真實Firefox LIVE仍待完成；候選不可稱全量或正式版。來源與證據見 docs/navigation-speed-v0.3.1.md。Git每功能或30有效分鐘commit／每次push核對SHA的規則持續適用。
+
+## 2026-10-05：v0.3.1 r2 掛載／收集規格
+
+高度鏈更新須區分已確認全局順序與暫時局部順序：全局已確認後只更新同時掛載的全局相鄰兩端，不得以保留尾端跨越未知／卸載區間覆寫既有相鄰span；全局尚未知時可記錄局部DOM span，但導航必須逐link核對當前successor。往返、root替換與非同步evict後須驗證仍使用已測完整鏈，不能只核對measuredSpans數量。
+
+使用者回報初版v0.3.1新增0無進展與離屏not-found。本輪收集改為實際viewport反覆top0、兩次穩定可見見證後sweep0.85viewport至原閱讀訊息附近；不跳過中間未知提問，不把到頂或自然idle當全集證明。高度保存body與user-span純數字、局部DOM順序提供實測，全球順序可核對且每link successor／width有效才估算。有限locate重試、只捲動conversation root、offset返回連續600ms稳定／24px、取消後不得scroll。多層marker、root替換與非同步evict須回歸；診斷只有revision、geometry及numeric移動。
+
+原未完成Firefox LIVE門檻維持，不能把localhost模型當使用者根因已確認。未操作其profile／登入／安全設定，Windows native工具上輪因URL政策通道不支援而強制停止。來源、測試與限制見docs/scroll-mechanism-v0.3.1-r2.md；每功能或30有效分鐘commit／每次push核對SHA持續適用。

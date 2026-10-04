@@ -224,3 +224,9 @@ v0.3.0 將已觀察提問與目前 DOM 掛載分開；加入長期正文見證�
 真實ChatGPT IAB原生PageUp觀察到高度10792→12840／top1497→2882；未執行addon，Control+Home亦未到頭，不能冒稱完整LIVE。正式content SHA1d0d8cd1ca057ca0e53ac5179c4a55e522c178d9b5e501336d967b2d4fd85e84，已核對六檔並準備sibling outputs/Firefox-測試版-v0.3.1/manifest.json候選副本。沒有操作使用者Firefox安裝，真實Firefox完整addon及簽章仍未驗收。
 
 固定產品來源f9974ec的GPT-6.1 Sol high獨立驗收完成：typecheck／核心22、原生Firefox本機速度4／快取8通過，40題31.192秒、離屏1.408秒、18000px高度變動後4.256秒。獨立前後source/tests/scripts/package/manifests均與固定來源一致，正式content hash未變。獨立報告docs/acceptance-navigation-v0.3.1.md、兩份JSON已收進匿名證據目錄。後續文件提交不改產品，候選副本非正式LIVE或簽章版。
+
+## 2026-10-05：v0.3.1 r2 主端回歸完成
+
+依使用者回報新增0無進展／離屏not-found，修正為actual scroll viewport、head確認+sweep到原訊息附近、實測user span鏈、暫時定位失敗有限重試與返回offset連續600ms穩定。診斷revision2026-10-05-r2。最後補上全局已確認順序的高度span保留，避免保留尾端覆寫完整相鄰鏈；MECH05在往返後驗證仍使用height鏈。核心26／geometry9／typecheck／Firefox掛載7／速度4／快取8全部主端PASS，正式build/lint0 errors／warnings／notices。40題32.849秒43scroll自然idle、離屏1.189秒、高度變動1.206秒。固定產品source31608f2c3766d282f66c65a6d15ab63ceaf894a1與遠端相同。獨立GPT-6.1 Sol high對最後提交重新typecheck／core26／geometry9／原生機制7／速度4／快取8全部PASS；40題33.273秒43步、離屏1.405秒、高度改變後1.426秒。不沿用舊979候選結果，見docs/acceptance-v0.3.1-r2.md。
+
+純數字／合成JSON證據docs/evidence/scroll-mechanism-2026-10-05；正式content 4e74710ce1c34f69313886eb6973612b3ed183c0f1e9262e3f820339e84f492b，fixture2675b598be58e8c4d954bdf622b1b08f8a41a03511bf8317931496afb2b42098。已準備sibling Firefox-測試版-v0.3.1-r2與六檔hash核對，不覆蓋舊候選。沒有操作使用者Firefox安裝，真實Firefox新流程完整addon尚未LIVE驗收，實際根因仍不能以合成模型斷言。
