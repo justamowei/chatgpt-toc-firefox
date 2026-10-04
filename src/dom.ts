@@ -121,10 +121,11 @@ export class DomAdapter implements NavigationAdapter {
       const rect = t.node.getBoundingClientRect();
       return { id: t.stableId!, role: t.role, y: scroller.scrollTop + rect.top - top, height: rect.height };
     });
-    // Each actual DOM window proves its own relative order even while global
-    // cached order has gaps. A later inserted ID invalidates that old span's
-    // successor until its new endpoints are measured together.
-    this.geometry.observe(measured, measured.filter(t => t.role === 'user').map(t => t.id), scroller.clientWidth);
+    // With confirmed global order, preserve adjacent spans across gappy windows
+    // and pinned tail turns. While order is ambiguous, record local DOM pairs;
+    // an inserted ID invalidates their successor until both endpoints coexist.
+    this.geometry.observe(measured, this.store.ordered ? this.store.entries.map(e => e.id)
+      : measured.filter(t => t.role === 'user').map(t => t.id), scroller.clientWidth);
   }
   begin(collect = false): void {
     this.seek = null; this.lastAttempt = null; this.lastLoadReport = { phase: collect ? 'head' : 'scan', added: 0, steps: 0 };

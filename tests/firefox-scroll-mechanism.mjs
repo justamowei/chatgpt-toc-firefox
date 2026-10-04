@@ -73,7 +73,7 @@ try {
   await test('MECH-05: diagnostic exposes geometry and actual movement without message IDs or text',async()=>{
     await click('#toc-list button[data-entry-id="mechanism:u-7"]');await driver.wait(async()=>(await state()).nav==='located',16000);
     await click('#toc-diagnose');const raw=await evaluate(`return document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-diagnosis').textContent`);
-    const d=JSON.parse(raw);assert.ok(d.navigation.scroll);assert.ok(d.navigation.lastAttempt);assert.equal(d.navigation.scroll.tag,'DIV');assert.ok(!raw.includes('mechanism:u-'));assert.ok(!raw.includes('掛載機制測試'));
+    const d=JSON.parse(raw);assert.ok(d.navigation.scroll);assert.ok(d.navigation.lastAttempt);assert.equal(d.navigation.scroll.tag,'DIV');assert.equal(d.navigation.lastAttempt.method,'measured-turn-spans');assert.ok(!raw.includes('mechanism:u-'));assert.ok(!raw.includes('掛載機制測試'));
     return d.navigation;
   });
 }catch(error){results.push({name:'execution',status:'FAIL',error:error.message,ui:await state().catch(()=>null),stats:await evaluate(`return window.mechanism?.stats()`).catch(()=>null)});console.error(error);await session.screenshot('failure.png').catch(()=>{});process.exitCode=1;}
