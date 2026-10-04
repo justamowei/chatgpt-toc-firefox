@@ -289,7 +289,8 @@ export class DomAdapter implements NavigationAdapter {
           if (targetId !== null && this.mounted(targetId)) { finishProgress(); return; }
           // New mounted windows settle quickly. Traverse within long answers
           // without a fixed 1.8s penalty. Empty/loading windows keep waiting.
-          if (settled && elapsed >= 240 && witnesses.length > 0 && (changedWindow || moved)) { finishProgress(); return; }
+          const seekWindow = targetId !== null && (changedWindow || moved) && this.nearestPrompt(scroller) !== null;
+          if (settled && elapsed >= 240 && ((witnesses.length > 0 && (changedWindow || moved)) || seekWindow)) { finishProgress(); return; }
           if (elapsed >= Math.max(0, timeout - 200)) { finishProgress(); return; }
           timer = setTimeout(poll, 80);
         };
@@ -304,10 +305,9 @@ export class DomAdapter implements NavigationAdapter {
   }
   private nearestPrompt(scroller: HTMLElement): string | null {
     const top = this.viewport(scroller).top;
-    const candidates = this.store.entries.filter(e => {
-      const node = this.nodes.get(e.id);
-      return !!node?.isConnected && Math.abs(node.getBoundingClientRect().top - top) <= scroller.clientHeight * 2;
-    });
+    // Even an overscan/pinned turn may bound the target at its own measured y.
+    // It never places that bound at scrollTop or proves viewport coverage.
+    const candidates = this.store.entries.filter(e => this.nodes.get(e.id)?.isConnected);
     candidates.sort((a, b) => Math.abs(this.nodes.get(a.id)!.getBoundingClientRect().top - top) - Math.abs(this.nodes.get(b.id)!.getBoundingClientRect().top - top));
     return candidates[0]?.id ?? null;
   }

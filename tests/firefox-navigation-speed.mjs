@@ -70,5 +70,5 @@ try {
     assert.notEqual((await state()).highlight,'speed:u-1');
     return { state:'cancelled', retained:40, noLateScroll:true, noLateTargetHighlight:true };
   });
-} catch (error) { results.push({ name:'execution',status:'FAIL',error:error.message,ui:await state().catch(()=>null) });console.error(error);await session.screenshot('speed-fail.png').catch(()=>{});process.exitCode=1; }
+} catch (error) { results.push({ name:'execution',status:'FAIL',error:error.message,ui:await state().catch(()=>null),commands:await evaluate(`return window.speedFixture?.commands`).catch(()=>null) });console.error(error);await session.screenshot('speed-fail.png').catch(()=>{});process.exitCode=1; }
 finally {const caps=await driver.getCapabilities();await writeFile(resolve(artifacts,'results.json'),JSON.stringify({date:new Date().toISOString(),firefox:caps.get('browserVersion'),source:'synthetic virtual renderer on localhost; not ChatGPT LIVE',build:JSON.parse(await readFile('dist/fixture/build-info.json','utf8')),results},null,2));await session.close();}
