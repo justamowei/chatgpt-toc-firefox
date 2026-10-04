@@ -1,6 +1,6 @@
 import { DEFAULT_SETTINGS, IndexStore, Navigator, normalize, validSettings, type NavState, type Position } from './core';
 import { DomAdapter } from './dom';
-import { supported } from './config';
+import { supported, BUILD_REVISION } from './config';
 import { styles } from './styles';
 type Instance = { show(): void; dispose(): void };
 const world = globalThis as typeof globalThis & { __chatgptToc?: Instance };
@@ -52,8 +52,9 @@ function start(): Instance {
     // Counts only; no conversation text, IDs, URLs, or account information.
     const counts: Record<string, number> = {};
     for (const [label, selector] of Object.entries({ main: 'main', legacyRole: '[data-message-author-role]', turnShell: '[data-testid^="conversation-turn-"][data-turn]', turnKey: '[data-turn-key]', userBubble: '[data-user-message-bubble]', conversationRole: '[data-conversation-role]', agentStart: '[data-chatgpt-agent-turn-start]' })) counts[label] = document.querySelectorAll(selector).length;
-    diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, collected: store.entries.length,
-      observed: store.retainedCount, mounted: store.mounted.size, quarantined: store.quarantine.reduce((n, g) => n + g.entries.length, 0), ...counts }, null, 2); diagnosis.hidden = false;
+    diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, revision: BUILD_REVISION, collected: store.entries.length,
+      observed: store.retainedCount, mounted: store.mounted.size, quarantined: store.quarantine.reduce((n, g) => n + g.entries.length, 0),
+      navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
   footer.append(earlier, back, stop, settings, disable, diagnose);
   const hint = make('div', 'hint', 'Alt＋Shift＋O 開啟 · Esc 收合');
@@ -143,7 +144,7 @@ function start(): Instance {
       status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
-      ? `正在收集較早提問 · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 已看過 ${store.entries.length} 則。`
+      ? `${adapter.lastLoadReport.phase === 'head' ? '正在移至頁首，等待較早訊息掛載' : '正在從頁首逐段收集至原閱讀訊息附近'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 已看過 ${store.entries.length} 則。`
       : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
       : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
   }
@@ -171,11 +172,13 @@ function start(): Instance {
     if (!alive || token !== navigationToken || epoch !== store.epoch) return;
     returnPosition = position; returnEpoch = epoch; render();
     delete host.dataset.restored;
-    adapter.begin();
+    adapter.begin(id === null);
     const result = await navigator.run(id);
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
-    if (id === null && result === 'idle') status.textContent = `連續等待未觀察到進展，本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集或返回剛才位置。`;
+    if (id === null && result === 'idle') status.textContent = adapter.collectionFinished
+      ? `本次已從頁首掃描至原閱讀訊息附近，新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可返回剛才位置。`
+      : `連續等待未觀察到進展，本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。請開啟頁面診斷檢查捲動；完整歷史尚未核對。`;
     updateCurrent();
   }
   async function restore(): Promise<void> {

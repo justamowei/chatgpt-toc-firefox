@@ -33,12 +33,12 @@ try {
     const initial = (await state()).ids.length;
     await evaluate(`window.speedFixture.resetCommands()`);
     const started = performance.now(); await click('#toc-earlier');
-    await wait(async () => (await state()).ids.length === 40, 55000);
-    const elapsed = performance.now() - started; await click('#toc-stop');
+    await wait(async () => { const s=await state(); return s.nav === 'idle' && s.ids.length === 40 && !s.scope.includes('順序待核對'); }, 55000);
+    const elapsed = performance.now() - started;
     const s = await state(); assert.deepEqual(s.ids, Array.from({length:40},(_,i)=>'speed:u-'+i));
     assert.ok(!s.scope.includes('順序待核對'));
     const commands = await evaluate(`return window.speedFixture.commands`);
-    assert.ok(commands.some(c => c.from - c.to > 50000), 'Only the mounted long answer interior may be skipped');
+    assert.ok(commands.some(c => c.to - c.from > 50000), 'The forward sweep skips a mounted long answer interior after the head jump');
     assert.ok(elapsed < 55000); await session.screenshot('collected-40.png');
     return { initial, collected:40, elapsedMs:Math.round(elapsed), steps:commands.length, longAnswerJump:true, emptyHydrationMs:500, exactOrder:true };
   });
