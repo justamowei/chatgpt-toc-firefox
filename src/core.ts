@@ -222,9 +222,15 @@ export class Navigator {
           const located = await boundedLoad(() => Promise.resolve(this.adapter.locate(id, controller.signal)), controller,
             Math.max(1, this.limits.totalMs - (performance.now() - started)));
           if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
-          return this.finish(located ? 'located' : 'not-found', generation, located ? 'located' : 'not-found');
+          if (located) return this.finish('located', generation, 'located');
+          // scrollIntoView can evict or replace a mounted node before exact-ID
+          // verification finishes. A failed attempt is not proof of absence;
+          // keep seeking within the same cancellation and load limits.
         }
         if (performance.now() - started >= this.limits.totalMs) return this.finish('timed-out', generation, 'time-limit');
+        // Check after locating the previous batch's result so the final stalled
+        // or permitted load still gets one chance to verify its exact target.
+        if (stalls >= this.limits.noProgress) return this.finish(id === null ? 'idle' : 'not-found', generation, 'stalled');
         if (batch === batchLimit) return this.finish('timed-out', generation, 'batch-limit');
         const remaining = this.limits.totalMs - (performance.now() - started);
         const timeout = Math.min(this.limits.batchMs, remaining);
@@ -233,15 +239,7 @@ export class Navigator {
           () => this.adapter.load(id === null ? 'older' : this.adapter.direction(id), controller.signal, timeout, id), controller, timeout,
         );
         if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
-        if (id !== null && this.adapter.mounted(id)) {
-          activeDeadline = 'time-limit';
-          const located = await boundedLoad(() => Promise.resolve(this.adapter.locate(id, controller.signal)), controller,
-            Math.max(1, this.limits.totalMs - (performance.now() - started)));
-          if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
-          return this.finish(located ? 'located' : 'not-found', generation, located ? 'located' : 'not-found');
-        }
         stalls = progressed ? 0 : stalls + 1;
-        if (stalls >= this.limits.noProgress) return this.finish(id === null ? 'idle' : 'not-found', generation, 'stalled');
       }
       return this.finish('timed-out', generation, 'batch-limit');
     } catch (error) {

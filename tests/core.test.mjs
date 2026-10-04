@@ -242,6 +242,58 @@ test('navigation locates target that arrives in the third nominal no-progress ba
   const nav = new Navigator({ mounted: () => loads === 3, locate: () => { located++; return true; }, direction: () => 'older', load: async () => { loads++; return false; } }, () => {}, limits);
   assert.equal(await nav.run('target'), 'located'); assert.equal(located, 1);
 });
+test('an initially mounted target evicted during locate is loaded again and verified by exact ID', async () => {
+  let mounted = true, loads = 0;
+  const attempts = [], states = [];
+  const nav = new Navigator({ mounted: id => id === 'exact-target' && mounted, direction: () => 'older',
+    locate: (id, signal) => { attempts.push(id); assert.equal(signal.aborted, false); mounted = attempts.length > 1; return mounted; },
+    load: async (_direction, signal, _timeout, id) => { assert.equal(id, 'exact-target'); assert.equal(signal.aborted, false); loads++; mounted = true; return true; },
+  }, state => states.push(state), limits);
+  assert.equal(await nav.run('exact-target'), 'located'); assert.equal(nav.lastStopReason, 'located');
+  assert.equal(loads, 1); assert.deepEqual(attempts, ['exact-target', 'exact-target']);
+  assert.deepEqual(states, ['loading', 'located']);
+});
+test('a target mounted by load can fail verification and succeed after one further load', async () => {
+  let mounted = false, loads = 0, attempts = 0;
+  const events = [];
+  const nav = new Navigator({ mounted: id => id === 'target' && mounted, direction: () => 'newer',
+    locate: id => { assert.equal(id, 'target'); attempts++; events.push('locate'); if (attempts === 1) { mounted = false; return false; } return true; },
+    load: async (direction, _signal, _timeout, id) => { assert.equal(id, 'target'); assert.equal(direction, 'newer'); loads++; events.push('load'); mounted = true; return true; },
+  }, () => {}, { ...limits, batches: 2 });
+  assert.equal(await nav.run('target'), 'located'); assert.equal(nav.lastStopReason, 'located');
+  assert.equal(loads, 2); assert.equal(attempts, 2);
+  assert.deepEqual(events, ['load', 'locate', 'load', 'locate']);
+});
+test('permanently failed mounted verification stays bounded with one attempt per loaded window', async () => {
+  for (const progressed of [true, false]) {
+    let loads = 0, attempts = 0; const states = [];
+    const nav = new Navigator({ mounted: () => true, direction: () => 'older',
+      locate: () => { attempts++; return false; }, load: async () => { loads++; return progressed; },
+    }, state => states.push(state), { ...limits, batches: 2, noProgress: 2 });
+    assert.equal(await nav.run('target'), progressed ? 'timed-out' : 'not-found');
+    assert.equal(nav.lastStopReason, progressed ? 'batch-limit' : 'stalled');
+    assert.equal(loads, 2); assert.equal(attempts, 3);
+    assert.equal(states.includes('located'), false);
+  }
+});
+test('retrying locate retains total deadline and cancellation even if the adapter ignores abort', { timeout: 1000 }, async () => {
+  for (const cancel of [false, true]) {
+    let attempts = 0, loads = 0, retrySignal, completeRetry;
+    const states = [];
+    const nav = new Navigator({ mounted: () => true, direction: () => 'older',
+      locate: (_id, signal) => { attempts++; if (attempts === 1) return false; retrySignal = signal; return new Promise(resolve => { completeRetry = resolve; }); },
+      load: async () => { loads++; return true; },
+    }, state => states.push(state), { ...limits, totalMs: 25 });
+    const pending = nav.run('target');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(attempts, 2); assert.equal(loads, 1);
+    if (cancel) nav.cancel();
+    assert.equal(await pending, cancel ? 'cancelled' : 'timed-out');
+    assert.equal(nav.lastStopReason, cancel ? 'cancelled' : 'time-limit'); assert.equal(retrySignal.aborted, true);
+    const count = states.length; completeRetry(true); await new Promise(resolve => setTimeout(resolve, 0));
+    assert.equal(states.length, count); assert.equal(states.includes('located'), false); assert.equal(loads, 1);
+  }
+});
 test('batch timeout aborts adapter signal; superseded tasks report their own cancelled result', async () => {
   let signal;
   const adapter = { mounted: id => id === 'new', locate: () => true, direction: () => 'older', load: (_direction, value) => { signal = value; return new Promise(() => {}); } };
