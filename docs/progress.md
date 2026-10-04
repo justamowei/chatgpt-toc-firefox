@@ -216,3 +216,11 @@ GPT-6.1 Sol high唯讀固定5aa規格審查已完成，未修改來源／測試�
 
 v0.3.0 將已觀察提問與目前 DOM 掛載分開；加入長期正文見證、順序區段、隔離舊版本、即時 Observer 收集、70% viewport 步進、精確返回版本核對和 SPA 舊內容排除。核心 20 項 PASS；本機 Firefox 快取前 5 項 PASS。新增 2 項回歸尚待最終執行。真實 IAB 執行同一份提問解析器取得 20 個窗口，本機當前快取保留預期 12 則而頁尾只掛載 2 則，精確全文／ID／順序一致。附加元件未在真實 Firefox ChatGPT 上完成驗收；候選不等於 LIVE PASS。見 docs/seen-cache-v0.3.0.md。
 
+
+## 2026-10-04：v0.3.1 導航修正本機回歸完成
+
+產品來源f9974ec368d81e4a25cc9e2583ebf6e55dbcb63d，commit／push／遠端SHA核對一致。核心22、typecheck、Firefox本機速度4、快取8通過；正式build與lint0 errors／0 warnings／0 notices。40題從4收齊40共31.165秒，離屏1.397秒，高度變動18000px後4.193秒，取消無晚到動作且保留40。詳見docs/navigation-speed-v0.3.1.md；GPT-6.1 Sol high固定SHA獨立複驗進行中。
+
+真實ChatGPT IAB原生PageUp觀察到高度10792→12840／top1497→2882；未執行addon，Control+Home亦未到頭，不能冒稱完整LIVE。正式content SHA1d0d8cd1ca057ca0e53ac5179c4a55e522c178d9b5e501336d967b2d4fd85e84，已核對六檔並準備sibling outputs/Firefox-測試版-v0.3.1/manifest.json候選副本。沒有操作使用者Firefox安裝，真實Firefox完整addon及簽章仍未驗收。
+
+固定產品來源f9974ec的GPT-6.1 Sol high獨立驗收完成：typecheck／核心22、原生Firefox本機速度4／快取8通過，40題31.192秒、離屏1.408秒、18000px高度變動後4.256秒。獨立前後source/tests/scripts/package/manifests均與固定來源一致，正式content hash未變。獨立報告docs/acceptance-navigation-v0.3.1.md、兩份JSON已收進匿名證據目錄。後續文件提交不改產品，候選副本非正式LIVE或簽章版。

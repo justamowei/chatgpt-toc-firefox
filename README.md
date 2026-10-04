@@ -2,7 +2,7 @@
 
 自製 ChatGPT Web 對話目錄與導航擴充功能，Firefox 桌面版為第一優先。
 
-**目前有效方向（2026-10-03）：** v0.3.0 是已觀察提問快取候選版本。卸載、空窗口或槽位換號不刪已看過的穩定提問；畫面顯示已看過／目前掛載，搜尋涵蓋已觀察資料。按「收集較早提問」以重疊步進收集；未看過的舊提問仍須讓網站掛載。只保存在當前分頁記憶體，刷新／換對話／停用後清除。正式 runtime 未接入歷史 API。見 [修正驗證](docs/seen-cache-v0.3.0.md)與 [DOM 快取方案](docs/observed-dom-cache-plan.md)。
+**目前有效方向（2026-10-04）：** v0.3.1 是已觀察提問快取與導航候選版本。卸載、空窗口或槽位換號不刪已看過的穩定提問；搜尋涵蓋已觀察資料。收集改成自適應重疊步進，最多240步／60秒；离屏定位先用已觀察位置，再核對重新掛載的精確訊息。只保存在當前分頁記憶體，刷新／換對話／停用後清除。正式 runtime 未接入歷史 API。Firefox 本機速度4項／快取8項通過，真實Firefox整體addon LIVE仍未完成。見 [v0.3.1修正驗證](docs/navigation-speed-v0.3.1.md)與 [DOM 快取方案](docs/observed-dom-cache-plan.md)。
 
 **2026-10-03 真實使用失敗：** 使用者回報 v0.2.0 完整載入顯示「對話超出本次載入上限」，目錄仍隨頁面掛載數變化。完整歷史目標標記 LIVE FAIL，不能視為問題已解決。具體超限類型待取得數值證據；後續修正版必須先通過真實 Firefox 長對話驗收再交付。見[失敗與交付門檻](docs/live-history-failure.md)。
 
@@ -19,6 +19,7 @@ v0.2.0 是已撤回的完整歷史實驗，舊[說明](docs/full-history-v0.2.0.
 - [原型驗收報告](docs/prototype-acceptance.md)：交付來源、測試結果、套件hash與未完成項目。
 - [sub-agent獨立驗收](docs/acceptance-final.md)：固定快照重建、原生回歸與canonical套件核對。
 - [v0.3.0 候選獨立驗收](docs/acceptance-seen-cache-v0.3.0.md)：GPT-6.1 Sol high 固定 SHA 檢查與 Firefox 本機快取重跑；真實 Firefox LIVE 尚未完成。
+- [v0.3.1 候選獨立驗收](docs/acceptance-navigation-v0.3.1.md)：固定來源核心22項、Firefox本機速度4項／快取8項與正式build hash核對。
 
 ## 版本管理
 

@@ -497,3 +497,11 @@ source 22cc60b 實作完整歷史來源與獨立索引；掛載目錄原保守�
 使用者要求先處理5–7則虛擬化窗口卸載、保留已看過的項目，並用computer觀察真實Firefox。正式content/dom/turns/package/lock/manifest恢復到5aa5102 v0.1.1，與該source逐檔diff為空。正式build content SHA0f2d006125a6c643f0354fdeeeebab728dd431014f4cccb6cbace60e89be766b，與既有v0.1.1一致；typecheck/build/lint(0/0/0)/core12 PASS。不把撤回當快取問題已修好，使用者Firefox已安裝v0.2.0尚未透過UI換載。
 
 不抹Git歷史，保留3bedace實驗／合成報告但標withdrawn；新DOM資料保留規格見docs/observed-dom-cache-plan.md。已确认IndexStore的branch=null卸載reset／filter是資料丟失機制；新的已觀察快取尚未實作，真實分支與渲染訊號需先看Firefox。CUA inventory無native apps/Firefox，只有空IAB/MCPApps；本輪工具無node_repl/sky，插件搜尋Firefox無結果，沒有親自進入實際頁面。之前API network大小問題不再需要；不繞政策限制。後續需可用且允許的Firefox控制通道。
+
+## 2026-10-04：v0.3.1 收集與定位契約
+
+使用者確認快取可保留所有已看過訊息，但收集只新增1–2則後顯示「已達載入上限；可稍後重試」。舊20步／60秒共同限制與固定1.8秒等待改為：收集240步、seek60步，總時間仍60秒；穩定掛載自適應等待，收集每步0.85 viewport留重疊，可跨明確已掛載assistant正文內部，遇其他turn相交則不跨越。不得以空窗口或scrollTop為零宣稱完整。
+
+離屏尋找先嘗試已觀察純數字位置，再用可信順序和實際user座標修正範圍；不能用尾端保留訊息代替目前scrollTop錨點。幾何改變清界限，重新掛載後精確核對ID／角色／正文／context／epoch／viewport才成功。取消沒有晚到捲動／高亮，保留已見快取。總時間、單批等待及步數上限須明示，並顯示本次新增數。
+
+驗收涵蓋40題／60000px回答／500ms空窗口、18000px高度改變、已見離屏直接定位、中途停止、原快取8項與核心22項。Firefox本機測試與真實IAB幾何觀察分開，整體addon真實Firefox LIVE仍待完成；候選不可稱全量或正式版。來源與證據見 docs/navigation-speed-v0.3.1.md。Git每功能或30有效分鐘commit／每次push核對SHA的規則持續適用。

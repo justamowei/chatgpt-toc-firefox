@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-04T15:34:53.770Z",
+  "firefox": "157.0",
+  "source": "synthetic virtual renderer on localhost; not ChatGPT LIVE",
+  "build": {
+    "version": "0.3.1",
+    "fixture": true,
+    "hashes": {
+      "background.js": "8081a2f22c734deba874c64b5d68ac5e07814eac29efb4cc1a26e7a4e01bb7ff",
+      "content.js": "1910298695341b3b6d20b17b89356a12d5c759da52a3c799c69b652cc2ef794e",
+      "options.js": "febbd740915f6b41763d8549492ccb5177796dff2d6cf3477e3f2e021e419443",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "fbc849f0af4b24c89360b59ca8b55d0ccd423429f737b0db422a651d57a5c6a4",
+      "manifest.json": "9796621f5f92d9f5bd21be044ccac59f0cb88df18c78a4db72ad411a66505dbf"
+    }
+  },
+  "results": [
+    {
+      "name": "SPEED-01: collect all40 through a60000px answer and500ms empty hydration",
+      "status": "PASS",
+      "actual": {
+        "initial": 4,
+        "collected": 40,
+        "elapsedMs": 31192,
+        "steps": 43,
+        "longAnswerJump": true,
+        "emptyHydrationMs": 500,
+        "exactOrder": true
+      }
+    },
+    {
+      "name": "SPEED-02: offscreen known prompt jumps directly and verifies remounted identity",
+      "status": "PASS",
+      "actual": {
+        "elapsedMs": 1408,
+        "jumpCommands": 2,
+        "exactHighlight": "speed:u-3"
+      }
+    },
+    {
+      "name": "SPEED-03: stale positions after an18000px layout shift are refined without wrong highlight",
+      "status": "PASS",
+      "actual": {
+        "elapsedMs": 4256,
+        "commands": 6,
+        "exactHighlight": "speed:u-25",
+        "staleGeometry": true
+      }
+    },
+    {
+      "name": "SPEED-04: stop during far navigation prevents late movement/highlight and retains40",
+      "status": "PASS",
+      "actual": {
+        "state": "cancelled",
+        "retained": 40,
+        "noLateScroll": true,
+        "noLateTargetHighlight": true
+      }
+    }
+  ]
+}

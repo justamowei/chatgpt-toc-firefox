@@ -18,7 +18,9 @@ v0.3.0 的收集和尋找共用最多20批／60秒，每步0.7 viewport且固定
 
 核心22項、typecheck、正式建置與lint（0 errors／0 warnings／0 notices）通過。GPT-6.1 Sol high唯讀審查指出的deadline分類、錯用scrollTop界限、舊幾何嘗試紀錄、空窗口過早步進、跨回答其他turn檢查均已修正。
 
-隔離Firefox157.0速度4項／快取8項通過。40題含60000px回答、500ms空白掛載延遲：從4題收齊40題，精確順序一致，31.165秒／43次scroll。已觀察離屏提問定位1.397秒／2次scroll；插入18000px高度後修正位置4.193秒／6次scroll，精確ID高亮；中途停止沒有晚到scroll／高亮，快取40題保留。收齊40後測試主動停止，並非證明產品能判定整段歷史完整。GPT-6.1 Sol high固定SHA獨立複驗待完成。
+隔離Firefox157.0速度4項／快取8項通過。40題含60000px回答、500ms空白掛載延遲：從4題收齊40題，精確順序一致，31.165秒／43次scroll。已觀察離屏提問定位1.397秒／2次scroll；插入18000px高度後修正位置4.193秒／6次scroll，精確ID高亮；中途停止沒有晚到scroll／高亮，快取40題保留。收齊40後測試主動停止，並非證明產品能判定整段歷史完整。
+
+GPT-6.1 Sol high固定來源 `f9974ec368d81e4a25cc9e2583ebf6e55dbcb63d` 獨立核心22項／速度4項／快取8項通過；獨立量測收齊40共31.192秒，離屏1.408秒、高度變動4.256秒，正式content hash核對一致。見[獨立驗收](acceptance-navigation-v0.3.1.md)及[evidence](evidence/navigation-speed-2026-10-04/README.md)。
 
 初次速度測試的頁面realm覆寫scrollTo無法記錄extension realm方法，已改成真實scroll事件。其後高度改變樣本曾失敗：空白區沒有鄰近user而等到單批期限。修正後可用任何已掛載user的「實際座標」收縮seek範圍，不能把其所在位置等同目前scrollTop；空白seek有可核對界限時可續搜尋，但收集仍需可見訊息，不能跳過尚未載入的未知提問。
 
