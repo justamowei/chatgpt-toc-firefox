@@ -175,14 +175,14 @@ test('CORE-03: cancellation and supersession settle even when adapter ignores Ab
   assert.deepEqual(located, ['new']); assert.equal(nav.state, 'located');
   assert.equal(nav.lastStopReason, 'located');
 });
-test('collection allows 240 steps while target seeking allows 60, and each load receives its exact target', async () => {
+test('collection allows 2400 steps while target seeking allows 60, and each load receives its exact target', async () => {
   for (const targetId of [null, 'offscreen-target']) {
     const loads = [], callbacks = [];
     const nav = new Navigator({ mounted: () => false, locate: () => false, direction: () => 'newer',
       load: async (direction, signal, timeout, target) => { loads.push({ direction, signal, timeout, target }); return true; },
     }, state => callbacks.push({ state, reason: nav.lastStopReason }));
     assert.equal(await nav.run(targetId), 'timed-out'); assert.equal(nav.lastStopReason, 'batch-limit');
-    assert.equal(loads.length, targetId === null ? 240 : 60);
+    assert.equal(loads.length, targetId === null ? 2400 : 60);
     assert.ok(loads.every(load => load.target === targetId && load.direction === (targetId === null ? 'older' : 'newer') &&
       load.timeout > 0 && load.timeout <= NAV_LIMITS.batchMs && load.signal.aborted));
     assert.deepEqual(callbacks.at(-1), { state: 'timed-out', reason: 'batch-limit' });
@@ -195,6 +195,26 @@ test('custom collection limits fall back to batches unless explicitly overridden
       () => {}, { ...limits, batches: 2, ...override });
     assert.equal(await nav.run(null), 'timed-out'); assert.equal(loads, expected); assert.equal(nav.lastStopReason, 'batch-limit');
   }
+});
+
+test('collection has its own total deadline while seeking retains the shorter deadline', async () => {
+  for (const [target, expectedLoads] of [[null, 3], ['target', 1]]) {
+    let loads = 0;
+    const nav = new Navigator({ mounted: () => false, locate: () => false, direction: () => 'older', load: async () => {
+      loads++; await new Promise(resolve => setTimeout(resolve, 35)); return true;
+    } }, () => {}, { ...limits, totalMs: 20, collectionTotalMs: 200, batchMs: 100, batches: 3 });
+    assert.equal(await nav.run(target), 'timed-out');
+    assert.equal(loads, expectedLoads);
+    assert.equal(nav.lastStopReason, target === null ? 'batch-limit' : 'time-limit');
+  }
+});
+
+test('collection deadline aborts a never-resolving load and cannot report a late success', async () => {
+  let signal;
+  const nav = new Navigator({ mounted: () => false, locate: () => false, direction: () => 'older',
+    load: (_direction, input) => { signal = input; return new Promise(() => {}); },
+  }, () => {}, { ...limits, collectionTotalMs: 25, batchMs: 100 });
+  assert.equal(await nav.run(null), 'timed-out'); assert.equal(nav.lastStopReason, 'time-limit'); assert.equal(signal.aborted, true);
 });
 test('async locate completion cannot overwrite a superseding navigation state', async () => {
   let completeOld, oldSignal;

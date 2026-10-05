@@ -144,7 +144,7 @@ function start(): Instance {
       status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
-      ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 已看過 ${store.entries.length} 則。`
+      ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 5 分鐘，可按停止。`
       : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
       : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
   }

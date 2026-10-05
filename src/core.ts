@@ -186,8 +186,8 @@ export interface NavigationAdapter {
   load(direction: 'older' | 'newer', signal: AbortSignal, timeout: number, targetId?: string | null): Promise<boolean>;
   direction(id: string): 'older' | 'newer';
 }
-export interface Limits { totalMs: number; batches: number; collectionBatches?: number; batchMs: number; noProgress: number; }
-export const NAV_LIMITS: Limits = { totalMs: 60_000, batches: 60, collectionBatches: 240, batchMs: 8_000, noProgress: 3 };
+export interface Limits { totalMs: number; collectionTotalMs?: number; batches: number; collectionBatches?: number; batchMs: number; noProgress: number; }
+export const NAV_LIMITS: Limits = { totalMs: 60_000, collectionTotalMs: 300_000, batches: 60, collectionBatches: 2400, batchMs: 8_000, noProgress: 3 };
 export type NavStopReason = 'none' | 'located' | 'not-found' | 'stalled' | 'batch-limit' | 'time-limit' | 'batch-timeout' | 'cancelled' | 'unsupported';
 export class Navigator {
   state: NavState = 'idle';
@@ -205,9 +205,10 @@ export class Navigator {
     const generation = ++this.generation, controller = new AbortController(); this.controller = controller;
     const live = () => generation === this.generation && !controller.signal.aborted;
     const started = performance.now();
+    const totalMs = id === null ? this.limits.collectionTotalMs ?? this.limits.totalMs : this.limits.totalMs;
     this.lastStopReason = 'none'; this.setState('loading');
     let totalExpired = false;
-    const totalTimer = setTimeout(() => { totalExpired = true; controller.abort(); }, this.limits.totalMs);
+    const totalTimer = setTimeout(() => { totalExpired = true; controller.abort(); }, totalMs);
     const batchLimit = id === null ? this.limits.collectionBatches ?? this.limits.batches : this.limits.batches;
     // Timer delays round fractional milliseconds. Track which bound is active
     // instead of guessing its origin from the elapsed time after it fires.
@@ -220,19 +221,19 @@ export class Navigator {
         if (id !== null && this.adapter.mounted(id)) {
           activeDeadline = 'time-limit';
           const located = await boundedLoad(() => Promise.resolve(this.adapter.locate(id, controller.signal)), controller,
-            Math.max(1, this.limits.totalMs - (performance.now() - started)));
+            Math.max(1, totalMs - (performance.now() - started)));
           if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
           if (located) return this.finish('located', generation, 'located');
           // scrollIntoView can evict or replace a mounted node before exact-ID
           // verification finishes. A failed attempt is not proof of absence;
           // keep seeking within the same cancellation and load limits.
         }
-        if (performance.now() - started >= this.limits.totalMs) return this.finish('timed-out', generation, 'time-limit');
+        if (performance.now() - started >= totalMs) return this.finish('timed-out', generation, 'time-limit');
         // Check after locating the previous batch's result so the final stalled
         // or permitted load still gets one chance to verify its exact target.
         if (stalls >= this.limits.noProgress) return this.finish(id === null ? 'idle' : 'not-found', generation, 'stalled');
         if (batch === batchLimit) return this.finish('timed-out', generation, 'batch-limit');
-        const remaining = this.limits.totalMs - (performance.now() - started);
+        const remaining = totalMs - (performance.now() - started);
         const timeout = Math.min(this.limits.batchMs, remaining);
         activeDeadline = remaining <= this.limits.batchMs ? 'time-limit' : 'batch-timeout';
         const progressed = await boundedLoad(

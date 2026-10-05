@@ -289,7 +289,7 @@ export class DomAdapter implements NavigationAdapter {
     // disjoint pinned tail never supplies this witness in a cold conversation.
     for (const window of windows) {
       const ids = users(window);
-      for (let i = 1; i < ids.length && this.adjacent.size < 5000; i++) this.adjacent.set(ids[i - 1], ids[i]);
+      for (let i = 1; i < ids.length; i++) if (this.adjacent.has(ids[i - 1]) || this.adjacent.size < 5000) this.adjacent.set(ids[i - 1], ids[i]);
     }
     if (this.store.ordered) for (let i = 1; i < windows.length;) {
       const left = users(windows[i - 1]).at(-1), right = users(windows[i])[0];
