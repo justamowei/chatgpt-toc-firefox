@@ -35,7 +35,7 @@ const quiet = () => driver.wait(async()=>await evaluate(`return window.mechanism
 try {
   await test('MECH-01: real nested-scroll shape ignores a non-scrollable outer marker and moves hidden inner root',async()=>{
     await setup();await click('#toc-earlier');
-    await driver.wait(async()=>await evaluate(`return window.mechanism.events.length>1 && window.mechanism.getRoot().scrollTop<1000`),9000);
+    await driver.wait(async()=>await evaluate(`return window.mechanism.events.length>1 && window.mechanism.getRoot().scrollTop<1000`),30000);
     await driver.wait(async()=>(await state()).ids.some(id=>id==='mechanism:u-0'),10000);
     const stats=await evaluate(`return window.mechanism.stats()`);assert.ok(stats.unmounts>0);return stats;
   });
@@ -44,11 +44,11 @@ try {
     const s=await state();assert.deepEqual(s.ids,Array.from({length:18},(_,i)=>'mechanism:u-'+i));assert.ok(s.scope.includes('歷史尚未完整'));assert.ok(!s.scope.includes('順序待核對'));
     await session.screenshot('collected-18-nested.png');return {collected:18,exactOrder:true,scope:s.scope,stats:await evaluate(`return window.mechanism.stats()`)};
   });
-  await test('MECH-HEIGHT: warm measured turn spans accelerate a far user jump',async()=>{
+  await test('MECH-ANCHOR: warm offscreen target is reached through live mounted turn anchors',async()=>{
     await evaluate(`window.mechanism.tail();`);await quiet();await click('#toc-list button[data-entry-id="mechanism:u-7"]');
     await driver.wait(async()=>(await state()).nav==='located'&&(await state()).highlight==='mechanism:u-7',16000);
     await click('#toc-diagnose');const d=JSON.parse(await evaluate(`return document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-diagnosis').textContent`));
-    assert.equal(d.navigation.lastAttempt.method,'measured-turn-spans');return {method:d.navigation.lastAttempt.method,exactHighlight:'mechanism:u-7',geometry:d.navigation.geometry};
+    assert.equal(d.navigation.lastAttempt.method,'mounted-edge-anchor');return {method:d.navigation.lastAttempt.method,exactHighlight:'mechanism:u-7',geometry:d.navigation.geometry};
   });
   await test('MECH-03: replacing scroll root during navigation recovers the exact target',async()=>{
     await evaluate(`window.mechanism.tail();`);await quiet();const armed=await evaluate(`return window.mechanism.replace()`);await click('#toc-list button[data-entry-id="mechanism:u-2"]');
@@ -73,7 +73,7 @@ try {
   await test('MECH-05: diagnostic exposes geometry and actual movement without message IDs or text',async()=>{
     await click('#toc-list button[data-entry-id="mechanism:u-7"]');await driver.wait(async()=>(await state()).nav==='located',16000);
     await click('#toc-diagnose');const raw=await evaluate(`return document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-diagnosis').textContent`);
-    const d=JSON.parse(raw);assert.ok(d.navigation.scroll);assert.ok(d.navigation.lastAttempt);assert.equal(d.navigation.scroll.tag,'DIV');assert.equal(d.navigation.lastAttempt.method,'measured-turn-spans');assert.ok(!raw.includes('mechanism:u-'));assert.ok(!raw.includes('掛載機制測試'));
+    const d=JSON.parse(raw);assert.ok(d.navigation.scroll);assert.ok(d.navigation.lastAttempt);assert.equal(d.navigation.scroll.tag,'DIV');assert.equal(d.navigation.lastAttempt.method,'mounted-edge-anchor');assert.ok(!raw.includes('mechanism:u-'));assert.ok(!raw.includes('掛載機制測試'));
     return d.navigation;
   });
 }catch(error){results.push({name:'execution',status:'FAIL',error:error.message,ui:await state().catch(()=>null),stats:await evaluate(`return window.mechanism?.stats()`).catch(()=>null)});console.error(error);await session.screenshot('failure.png').catch(()=>{});process.exitCode=1;}

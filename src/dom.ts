@@ -3,8 +3,6 @@ import { FIXTURE } from './config';
 import { readTurns } from './turns';
 import { HeightLedger } from './geometry';
 type Direction = 'older' | 'newer';
-type Hint = { y: number; extent: number };
-type Bounds = { lower?: number; upper?: number; extent: number; attempts: Set<number>; hinted: boolean };
 export interface LoadReport { phase: 'scan' | 'answer' | 'jump' | 'refine' | 'head' | 'sweep'; added: number; steps: number; }
 type Attempt = { method: string; before: number; requested: number; after: number; heightBefore: number; heightAfter: number; scrollEvents: number; replaced: boolean };
 export class DomAdapter implements NavigationAdapter {
@@ -17,11 +15,10 @@ export class DomAdapter implements NavigationAdapter {
   private returnWitness: Position | null = null;
   private loadDirection: Direction | null = null;
   private loadSignal: AbortSignal | null = null;
-  private hints = new Map<string, Hint>();
   private hintEpoch = -1;
-  private seek: Bounds | null = null;
   private geometry = new HeightLedger();
-  private collection: { stage: 'head' | 'sweep' | 'done'; endId: string | null; headWitness: string | null } | null = null;
+  private adjacent = new Map<string, string>();
+  private collection: { stage: 'head' | 'sweep' | 'done'; boundary: string | null; repeats: number } | null = null;
   private lastAttempt: Attempt | null = null;
   lastLoadReport: LoadReport = { phase: 'scan', added: 0, steps: 0 };
   constructor(private store: IndexStore, private refresh: (direction?: Direction) => void) {}
@@ -100,23 +97,12 @@ export class DomAdapter implements NavigationAdapter {
       scrollable.find(root => !root.closest('[data-testid^="conversation-turn-"], [data-turn-id][data-turn]')) ??
       stationary ?? document.scrollingElement as HTMLElement ?? document.documentElement;
   }
-  // Position hints are plain numeric data, never detached DOM references. They
-  // accelerate attempts; only exact remounted ID/role/text can report success.
+  // Height measurements remain diagnostic; anchor walking never navigates
+  // using stale absolute positions in ChatGPT's changing virtual height model.
   remember(): void {
-    if (this.hintEpoch !== this.store.epoch) { this.hints.clear(); this.geometry.reset(); this.seek = null; this.collection = null; this.hintEpoch = this.store.epoch; }
-    const allowed = new Set(this.store.entries.filter(e => e.stable).map(e => e.id));
-    if (this.returnWitness) allowed.add(this.returnWitness.id);
-    for (const id of this.hints.keys()) if (!allowed.has(id)) this.hints.delete(id);
+    if (this.hintEpoch !== this.store.epoch) { this.geometry.reset(); this.adjacent.clear(); this.collection = null; this.hintEpoch = this.store.epoch; }
     const scroller = this.scroller(this.nodes.values().next().value);
     const top = scroller === document.scrollingElement ? 0 : scroller.getBoundingClientRect().top + scroller.clientTop;
-    for (const [id, node] of this.nodes) if (allowed.has(id) && node.isConnected) {
-      const hint = { y: scroller.scrollTop + node.getBoundingClientRect().top - top, extent: Math.max(0, scroller.scrollHeight - scroller.clientHeight) };
-      const old = this.hints.get(id);
-      if (this.seek && old && Math.abs(old.y - hint.y) > 8) {
-        this.seek.lower = undefined; this.seek.upper = undefined; this.seek.attempts.clear();
-      }
-      this.hints.set(id, hint);
-    }
     const measured = readTurns().filter(t => t.stableId && t.node.isConnected).map(t => {
       const rect = t.node.getBoundingClientRect();
       return { id: t.stableId!, role: t.role, y: scroller.scrollTop + rect.top - top, height: rect.height };
@@ -128,16 +114,15 @@ export class DomAdapter implements NavigationAdapter {
       : measured.filter(t => t.role === 'user').map(t => t.id), scroller.clientWidth);
   }
   begin(collect = false): void {
-    this.seek = null; this.lastAttempt = null; this.lastLoadReport = { phase: collect ? 'head' : 'scan', added: 0, steps: 0 };
-    const scroller = this.scroller(this.nodes.values().next().value);
-    this.collection = collect ? { stage: 'head', endId: this.returnWitness?.id ?? this.viewportWitness(scroller)[0]?.[0] ?? null, headWitness: null } : null;
+    this.lastAttempt = null; this.lastLoadReport = { phase: collect ? 'head' : 'scan', added: 0, steps: 0 };
+    this.collection = collect ? { stage: 'head', boundary: null, repeats: 0 } : null;
   }
   get collectionFinished(): boolean { return this.collection?.stage === 'done'; }
   diagnostic(): object {
     const root = this.scroller(this.nodes.values().next().value);
     return { scroll: { tag: root.tagName, marked: root.hasAttribute('data-scroll-root'), overflow: getComputedStyle(root).overflowY,
       client: root.clientHeight, width: root.clientWidth, height: root.scrollHeight, top: root.scrollTop, connected: root.isConnected },
-      geometry: this.geometry.diagnostic(), collection: this.collection?.stage ?? null, lastAttempt: this.lastAttempt };
+      geometry: this.geometry.diagnostic(), adjacentWitnesses: this.adjacent.size, collection: this.collection?.stage ?? null, lastAttempt: this.lastAttempt };
   }
   private top(node: HTMLElement): number {
     const scroller = this.scroller(node);
@@ -186,8 +171,9 @@ export class DomAdapter implements NavigationAdapter {
       !readTurns().some(e => e.node === node && e.stableId === id && e.role === turn.role && e.text === turn.text)) return false;
     let scrollWrites = 0, lastWrite = -Infinity;
     const place = (current: HTMLElement): void => {
-      const root = this.scroller(current), viewport = this.viewport(root);
-      root.scrollTo({ top: root.scrollTop + current.getBoundingClientRect().top - viewport.top - 16, behavior: 'instant' });
+      // Let the browser resolve all scrolling ancestors and lazy turn shells,
+      // just as selecting an already mounted message does.
+      this.shell(current).scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
       lastWrite = performance.now(); scrollWrites++;
     };
     // Move just the live conversation viewport. scrollIntoView can move other
@@ -273,160 +259,137 @@ export class DomAdapter implements NavigationAdapter {
     const firstVisible = anchor ? this.store.entries.findIndex(e => e.id === anchor.id) : -1;
     return target >= 0 && firstVisible >= 0 && target < firstVisible ? 'older' : 'newer';
   }
+  private shell(node: HTMLElement): HTMLElement {
+    return node.closest<HTMLElement>('[data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]') ?? node;
+  }
+  private frontier(root: HTMLElement): { node: HTMLElement; ids: string[] }[] {
+    const shells = new Map<HTMLElement, string[]>();
+    for (const turn of readTurns()) if (turn.stableId && turn.node.isConnected) {
+      const shell = this.shell(turn.node);
+      if (!shell.isConnected || shell.getBoundingClientRect().height <= 0) continue;
+      const ids = shells.get(shell) ?? []; ids.push(turn.stableId); shells.set(shell, ids);
+    }
+    const windows: { node: HTMLElement; ids: string[] }[][] = [];
+    let previous: HTMLElement | null = null;
+    for (const [node, ids] of shells) {
+      const rect = node.getBoundingClientRect(), before = previous?.getBoundingClientRect();
+      // Slots are only local continuity hints, never message identity or proof
+      // of complete history. Large spacers and skipped slots split pinned tails.
+      const slot = Number(node.getAttribute('data-testid')?.match(/^conversation-turn-(\d+)$/)?.[1]);
+      const prevSlot = Number(previous?.getAttribute('data-testid')?.match(/^conversation-turn-(\d+)$/)?.[1]);
+      const split = !before || rect.top - before.bottom > Math.max(100, root.clientHeight * .35) ||
+        (Number.isFinite(slot) && Number.isFinite(prevSlot) && slot > prevSlot + (previous ? shells.get(previous)?.length ?? 1 : 1));
+      if (split) windows.push([]);
+      windows[windows.length - 1].push({ node, ids }); previous = node;
+    }
+    const userIds = new Set(this.store.entries.filter(e => e.stable).map(e => e.id));
+    const users = (window: typeof windows[number]) => window.flatMap(item => item.ids).filter(id => userIds.has(id));
+    // Remember only physically continuous local user pairs. A later large
+    // layout gap can then be crossed using its live mounted neighbor, while a
+    // disjoint pinned tail never supplies this witness in a cold conversation.
+    for (const window of windows) {
+      const ids = users(window);
+      for (let i = 1; i < ids.length && this.adjacent.size < 5000; i++) this.adjacent.set(ids[i - 1], ids[i]);
+    }
+    if (this.store.ordered) for (let i = 1; i < windows.length;) {
+      const left = users(windows[i - 1]).at(-1), right = users(windows[i])[0];
+      const rank = left ? this.store.entries.findIndex(e => e.id === left) : -1;
+      if (left && right && this.adjacent.get(left) === right && this.store.entries[rank + 1]?.id === right) {
+        windows[i - 1].push(...windows[i]); windows.splice(i, 1);
+      } else i++;
+    }
+    const viewport = this.viewport(root);
+    const distance = (window: typeof windows[number]) => Math.min(...window.map(({ node }) => {
+      const rect = node.getBoundingClientRect();
+      return rect.bottom >= viewport.top && rect.top <= viewport.bottom ? 0 : Math.min(Math.abs(rect.top - viewport.bottom), Math.abs(rect.bottom - viewport.top));
+    }));
+    windows.sort((a, b) => distance(a) - distance(b));
+    return windows[0] ?? [];
+  }
   async load(direction: Direction, signal: AbortSignal, timeout: number, targetId: string | null = null): Promise<boolean> {
     if (signal.aborted) return false;
-    if (this.store.context !== location.origin + location.pathname) throw new Error('Conversation changed');
     const epoch = this.store.epoch, context = location.origin + location.pathname;
-    const before = new Set(this.store.entries.filter(e => e.stable).map(e => e.id));
-    const first = this.nodes.values().next().value;
-    const scroller = this.scroller(first);
+    if (this.store.context !== context) throw new Error('Conversation changed');
     if (targetId === null && this.collection?.stage === 'done') return false;
-    if (targetId === null && this.collection?.stage === 'sweep') {
-      const end = this.collection.endId ? this.nodes.get(this.collection.endId) : null, viewport = this.viewport(scroller);
-      if (end?.isConnected && end.getBoundingClientRect().bottom > viewport.top && end.getBoundingClientRect().top < viewport.bottom) {
-        this.collection.stage = 'done'; return false;
-      }
-      direction = 'newer';
-    }
-    this.loadDirection = direction; this.loadSignal = signal;
-    const scrollBefore = scroller.scrollTop, extentBefore = scroller.scrollHeight;
-    const beforeNodes = this.viewportWitness(scroller);
-    const beforeIds = [...this.nodes.keys()].join('|');
-    const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    let phase: LoadReport['phase'] = 'scan';
-    let method = 'overlap';
-    let destination = scrollBefore + (direction === 'older' ? -1 : 1) * Math.max(100, scroller.clientHeight * .85);
-    if (targetId !== null) {
-      if (!this.seek) this.seek = { extent: max, attempts: new Set(), hinted: false };
-      // A virtualizer can change its height model. Old bounds cannot prove a
-      // new coordinate range; discard them and continue using verified mounts.
-      if (Math.abs(this.seek.extent - max) > scroller.clientHeight * .5) {
-        this.seek.lower = undefined; this.seek.upper = undefined; this.seek.extent = max;
-        this.seek.attempts.clear();
-      }
-      const rank = this.store.entries.findIndex(e => e.id === (this.returnWitness?.id === targetId ? this.returnWitness.anchorId ?? targetId : targetId));
-      const anchor = this.nearestPrompt(scroller);
-      if (anchor && rank >= 0) {
-        const current = this.store.entries.findIndex(e => e.id === anchor);
-        const y = scrollBefore + this.nodes.get(anchor)!.getBoundingClientRect().top - this.top(this.nodes.get(anchor)!);
-        // A below-viewport anchor is not at scrollTop. Bounds use the observed
-        // prompt's actual coordinate, not the current scrollbar coordinate.
-        if (current < rank) this.seek.lower = Math.max(0, Math.min(max, y));
-        else if (current > rank) this.seek.upper = Math.max(0, Math.min(max, y));
-        if (this.seek.lower !== undefined && this.seek.upper !== undefined && this.seek.lower >= this.seek.upper) {
-          this.seek.lower = undefined; this.seek.upper = undefined;
-        }
-      }
-      const hint = this.hints.get(targetId);
-      const viewportTop = this.viewport(scroller).top;
-      const estimate = this.store.ordered ? this.geometry.estimate(targetId, this.store.entries.flatMap(e => {
-        const node = this.nodes.get(e.id);
-        return node?.isConnected ? [{ id: e.id, y: scrollBefore + node.getBoundingClientRect().top - viewportTop }] : [];
-      }), this.store.entries.map(e => e.id), scroller.clientWidth) : null;
-      if (!this.seek.hinted && (estimate !== null || hint)) {
-        this.seek.hinted = true; phase = 'jump';
-        method = estimate !== null ? 'measured-turn-spans' : 'saved-position';
-        destination = (estimate ?? (hint!.extent > 0 ? hint!.y * max / hint!.extent : hint!.y)) - scroller.clientHeight * .15;
-      } else if (rank >= 0 && anchor) {
-        const lower = this.seek.lower ?? 0, upper = this.seek.upper ?? max;
-        if (upper - lower > scroller.clientHeight * 1.5) {
-          phase = 'refine'; destination = (lower + upper) / 2;
-          method = 'measured-bounds';
-        }
-      }
-      destination = Math.max(0, Math.min(max, destination));
-      const key = Math.round(destination / 16);
-      if (phase !== 'scan' && (this.seek.attempts.has(key) || Math.abs(destination - scrollBefore) < scroller.clientHeight * .25)) {
-        phase = 'scan'; destination = scrollBefore + (direction === 'older' ? -1 : 1) * Math.max(100, scroller.clientHeight * .85);
-      }
-      this.seek.attempts.add(Math.round(destination / 16));
-    } else {
-      if (this.collection?.stage === 'head') { phase = 'head'; method = 'repeat-head'; destination = 0; }
-      else {
-      if (this.collection?.stage === 'sweep') { phase = 'sweep'; method = 'head-overlap-sweep'; }
-      const viewport = this.viewport(scroller);
-      const turns = readTurns();
-      for (const turn of turns) {
-        if (turn.role !== 'assistant' || !turn.stableId || !turn.node.isConnected) continue;
-        if (!turn.node.matches('[data-message-author-role="assistant"], [data-conversation-role="assistant"]')) continue;
-        const rect = turn.node.getBoundingClientRect();
-        const crossesTurn = (edge: number) => turns.some(other => other.node !== turn.node && other.stableId !== turn.stableId &&
-          other.node.getBoundingClientRect().bottom > Math.min(viewport.top, edge) && other.node.getBoundingClientRect().top < Math.max(viewport.top, edge));
-        // Skip only the interior of this exact mounted answer, retaining an
-        // overlapping viewport at its edge. Never jump across unknown turns.
-        if (direction === 'older' && rect.top < viewport.top - scroller.clientHeight * .5 && rect.bottom > viewport.top + scroller.clientHeight * .2 && !crossesTurn(rect.top)) {
-          phase = 'answer'; destination = scrollBefore + rect.top - viewport.top + scroller.clientHeight * .2; break;
-        }
-        if (direction === 'newer' && rect.top < viewport.bottom - scroller.clientHeight * .2 && rect.bottom > viewport.bottom + scroller.clientHeight * .5 && !crossesTurn(rect.bottom)) {
-          phase = 'answer'; destination = scrollBefore + rect.bottom - viewport.bottom - scroller.clientHeight * .2; break;
-        }
-      }
-      }
-    }
+    if (targetId === null && this.collection?.stage === 'sweep') direction = 'newer';
+    const root = this.scroller(this.nodes.values().next().value);
+    const window = this.frontier(root), edge = direction === 'older' ? window[0] : window.at(-1);
+    const signature = (items: typeof window) => items.flatMap(item => item.ids).join('|');
+    const beforeSignature = signature(window), before = new Set(this.store.entries.map(e => e.id));
+    const phase: LoadReport['phase'] = targetId === null && this.collection ? direction === 'older' ? 'head' : 'sweep' : 'scan';
     this.lastLoadReport = { phase, added: this.lastLoadReport.added, steps: this.lastLoadReport.steps + 1 };
-    const attempt: Attempt = { method, before: scrollBefore, requested: Math.max(0, Math.min(max, destination)), after: scrollBefore,
-      heightBefore: extentBefore, heightAfter: extentBefore, scrollEvents: 0, replaced: false };
+    this.loadDirection = direction; this.loadSignal = signal;
+    const attempt: Attempt = { method: edge ? 'mounted-edge-anchor' : 'wait-for-mounted-anchor', before: root.scrollTop,
+      requested: root.scrollTop, after: root.scrollTop, heightBefore: root.scrollHeight, heightAfter: root.scrollHeight, scrollEvents: 0, replaced: false };
     this.lastAttempt = attempt;
     const observeScroll = () => { attempt.scrollEvents++; };
-    scroller.addEventListener('scroll', observeScroll, { passive: true });
+    // Ancestors can differ from the old inferred root. Events are diagnostic
+    // only; scroll pixels and events never prove a new mounted window.
+    document.addEventListener('scroll', observeScroll, { capture: true, passive: true });
     try {
-      scroller.scrollTo({ top: attempt.requested, behavior: 'instant' });
+      if (edge?.node.isConnected && !signal.aborted) {
+        edge.node.scrollIntoView({ block: direction === 'older' ? 'start' : 'end', inline: 'nearest', behavior: 'instant' });
+        attempt.requested = root.scrollTop;
+      }
       return await new Promise<boolean>(resolve => {
         const started = performance.now();
-        let stableSince = started, lastSignature = '', timer: ReturnType<typeof setTimeout>;
-        const finish = (progress: boolean) => { clearTimeout(timer); signal.removeEventListener('abort', aborted); resolve(progress); };
+        let timer: ReturnType<typeof setTimeout>, nudged = false, finished = false;
+        let changedSince = started, last = beforeSignature;
+        const finish = (progress: boolean) => {
+          if (finished) return; finished = true; clearTimeout(timer); signal.removeEventListener('abort', aborted); resolve(progress);
+        };
         const aborted = () => finish(false);
         const poll = () => {
-          if (signal.aborted || this.store.epoch !== epoch || location.origin + location.pathname !== context) { finish(false); return; }
+          if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) { finish(false); return; }
           this.refresh(direction);
-          if (signal.aborted || this.store.epoch !== epoch) { finish(false); return; }
-          attempt.after = scroller.scrollTop; attempt.heightAfter = scroller.scrollHeight;
-          if (!scroller.isConnected || this.scroller(this.nodes.values().next().value) !== scroller) {
-            attempt.replaced = true; finish(true); return;
-          }
+          if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) { finish(false); return; }
+          const currentRoot = this.scroller(this.nodes.values().next().value), current = this.frontier(currentRoot), currentSignature = signature(current);
+          attempt.after = currentRoot.scrollTop; attempt.heightAfter = currentRoot.scrollHeight;
+          attempt.replaced ||= currentRoot !== root || !root.isConnected;
           const added = this.store.entries.filter(e => e.stable && !before.has(e.id)).length;
-          const witnesses = this.viewportWitness(scroller);
-          const signature = [...this.nodes.keys()].join('|') + ':' + Math.round(scroller.scrollTop) + ':' + scroller.scrollHeight;
-          if (signature !== lastSignature) { stableSince = performance.now(); lastSignature = signature; }
-          const moved = Math.abs(scroller.scrollTop - scrollBefore) > 2 || Math.abs(scroller.scrollHeight - extentBefore) > 8 ||
-            witnesses.some(([id, y]) => beforeNodes.some(([oldId, oldY]) => id === oldId && Math.abs(y - oldY) > 8));
-          const changedWindow = beforeIds !== [...this.nodes.keys()].join('|');
-          const elapsed = performance.now() - started, settled = performance.now() - stableSince >= 120;
-          const finishProgress = () => { this.lastLoadReport.added += added; finish(added > 0 || moved || changedWindow || attempt.scrollEvents > 0); };
-          if (phase === 'head' && settled && elapsed >= 600 && witnesses.length > 0) {
-            if (scroller.scrollTop <= 2) {
-              const witness = witnesses.map(([id]) => id).join('|') + ':' + scroller.scrollHeight;
-              if (this.collection?.headWitness === witness) { this.collection.stage = 'sweep'; this.lastLoadReport.added += added; finish(true); return; }
-              if (this.collection) this.collection.headWitness = witness;
-            } else if (this.collection) this.collection.headWitness = null;
-            finishProgress(); return;
+          const elapsed = performance.now() - started;
+          if (currentSignature !== last) { last = currentSignature; changedSince = performance.now(); }
+          if (current.length && (added > 0 || currentSignature !== beforeSignature) && elapsed >= 320 && performance.now() - changedSince >= 160) {
+            this.lastLoadReport.added += added;
+            if (targetId === null && this.collection) { this.collection.boundary = null; this.collection.repeats = 0; }
+            finish(true); return;
           }
-          if (targetId !== null && this.mounted(targetId)) { finishProgress(); return; }
-          // New mounted windows settle quickly. Traverse within long answers
-          // without a fixed 1.8s penalty. Empty/loading windows keep waiting.
-          const seekWindow = targetId !== null && (changedWindow || moved) && this.nearestPrompt(scroller) !== null;
-          if (phase !== 'head' && settled && elapsed >= 240 && ((witnesses.length > 0 && (changedWindow || moved || attempt.scrollEvents > 0)) || seekWindow)) { finishProgress(); return; }
-          if (elapsed >= Math.max(0, timeout - 200)) { finishProgress(); return; }
+          if (targetId !== null && this.mounted(targetId)) { this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return; }
+          // At an already aligned edge, cross slightly beyond it once. Reacquire
+          // a live shell/root after asynchronous mounts, never retain old writes.
+          if (!nudged && elapsed >= 640 && current.length && currentSignature === beforeSignature) {
+            nudged = true;
+            const boundary = direction === 'older' ? current[0] : current.at(-1)!;
+            const rect = boundary.node.getBoundingClientRect(), viewport = this.viewport(currentRoot);
+            const top = currentRoot.scrollTop + (direction === 'older' ? rect.top - viewport.top : rect.bottom - viewport.bottom) +
+              (direction === 'older' ? -1 : 1) * Math.max(80, currentRoot.clientHeight * .45);
+            currentRoot.scrollTo({ top, behavior: 'instant' }); attempt.requested = top;
+          }
+          if (elapsed >= Math.min(1600, Math.max(0, timeout - 200)) && current.length) {
+            this.lastLoadReport.added += added;
+            if (targetId === null && this.collection) {
+              if (this.collection.boundary === currentSignature) this.collection.repeats++;
+              else { this.collection.boundary = currentSignature; this.collection.repeats = 1; }
+              if (this.collection.repeats >= 2) {
+                this.collection.stage = this.collection.stage === 'head' ? 'sweep' : 'done';
+                this.collection.boundary = null; this.collection.repeats = 0; finish(this.collection.stage === 'sweep'); return;
+              }
+              // One stalled edge is not the end: give the renderer another try.
+              finish(true); return;
+            }
+            finish(added > 0 || currentSignature !== beforeSignature); return;
+          }
+          if (elapsed >= Math.max(0, timeout - 200)) { finish(false); return; }
           timer = setTimeout(poll, 80);
         };
         signal.addEventListener('abort', aborted, { once: true }); timer = setTimeout(poll, 80);
       });
-    } finally { scroller.removeEventListener('scroll', observeScroll); if (this.loadSignal === signal) { this.loadSignal = null; this.loadDirection = null; } }
-  }
-  private viewportWitness(scroller: HTMLElement): [string, number][] {
-    const rect = this.viewport(scroller);
-    return [...this.nodes].filter(([, node]) => node.isConnected && node.getBoundingClientRect().bottom > rect.top && node.getBoundingClientRect().top < rect.bottom)
-      .map(([id, node]) => [id, node.getBoundingClientRect().top] as [string, number]);
-  }
-  private nearestPrompt(scroller: HTMLElement): string | null {
-    const top = this.viewport(scroller).top;
-    // Even an overscan/pinned turn may bound the target at its own measured y.
-    // It never places that bound at scrollTop or proves viewport coverage.
-    const candidates = this.store.entries.filter(e => this.nodes.get(e.id)?.isConnected);
-    candidates.sort((a, b) => Math.abs(this.nodes.get(a.id)!.getBoundingClientRect().top - top) - Math.abs(this.nodes.get(b.id)!.getBoundingClientRect().top - top));
-    return candidates[0]?.id ?? null;
+    } finally {
+      document.removeEventListener('scroll', observeScroll, { capture: true });
+      if (this.loadSignal === signal) { this.loadSignal = null; this.loadDirection = null; }
+    }
   }
   clearHighlight(): void { this.highlightCleanup?.(); }
   clearReturnWitness(): void { this.returnWitness = null; }
-  dispose(): void { this.clearHighlight(); this.clearReturnWitness(); this.nodes.clear(); this.hints.clear(); this.geometry.reset(); this.collection = null; this.seek = null; }
+  dispose(): void { this.clearHighlight(); this.clearReturnWitness(); this.nodes.clear(); this.geometry.reset(); this.adjacent.clear(); this.collection = null; }
 }

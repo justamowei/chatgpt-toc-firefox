@@ -41,7 +41,7 @@ function start(): Instance {
   const scope = make('div', 'scope'), list = make('ul', 'list'), status = make('p', 'status');
   scope.id = 'toc-scope'; list.id = 'toc-list'; status.id = 'toc-status'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
   const footer = make('footer');
-  const earlier = button('收集較早提問', () => { void navigate(null); }); earlier.id = 'toc-earlier';
+  const earlier = button('收集整段對話', () => { void navigate(null); }); earlier.id = 'toc-earlier';
   const back = button('回到剛才位置', () => { void restore(); }); back.id = 'toc-back';
   const stop = button('停止', cancel); stop.id = 'toc-stop';
   const settings = button('設定', () => { void browser.runtime.sendMessage({ kind: 'options:open' }).catch(() => { if (alive) status.textContent = '無法開啟設定，請從 Firefox 附加元件頁開啟。'; }); });
@@ -144,7 +144,7 @@ function start(): Instance {
       status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
-      ? `${adapter.lastLoadReport.phase === 'head' ? '正在移至頁首，等待較早訊息掛載' : '正在從頁首逐段收集至原閱讀訊息附近'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 已看過 ${store.entries.length} 則。`
+      ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 已看過 ${store.entries.length} 則。`
       : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
       : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
   }
@@ -177,7 +177,7 @@ function start(): Instance {
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
     if (id === null && result === 'idle') status.textContent = adapter.collectionFinished
-      ? `本次已從頁首掃描至原閱讀訊息附近，新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可返回剛才位置。`
+      ? `本次已向前、向後巡覽，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；兩端連續未觀察到進展。完整歷史尚未核對；可返回剛才位置。`
       : `連續等待未觀察到進展，本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。請開啟頁面診斷檢查捲動；完整歷史尚未核對。`;
     updateCurrent();
   }
