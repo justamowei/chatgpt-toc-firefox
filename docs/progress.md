@@ -230,3 +230,11 @@ v0.3.0 將已觀察提問與目前 DOM 掛載分開；加入長期正文見證�
 依使用者回報新增0無進展／離屏not-found，修正為actual scroll viewport、head確認+sweep到原訊息附近、實測user span鏈、暫時定位失敗有限重試與返回offset連續600ms穩定。診斷revision2026-10-05-r2。最後補上全局已確認順序的高度span保留，避免保留尾端覆寫完整相鄰鏈；MECH05在往返後驗證仍使用height鏈。核心26／geometry9／typecheck／Firefox掛載7／速度4／快取8全部主端PASS，正式build/lint0 errors／warnings／notices。40題32.849秒43scroll自然idle、離屏1.189秒、高度變動1.206秒。固定產品source31608f2c3766d282f66c65a6d15ab63ceaf894a1與遠端相同。獨立GPT-6.1 Sol high對最後提交重新typecheck／core26／geometry9／原生機制7／速度4／快取8全部PASS；40題33.273秒43步、離屏1.405秒、高度改變後1.426秒。不沿用舊979候選結果，見docs/acceptance-v0.3.1-r2.md。
 
 純數字／合成JSON證據docs/evidence/scroll-mechanism-2026-10-05；正式content 4e74710ce1c34f69313886eb6973612b3ed183c0f1e9262e3f820339e84f492b，fixture2675b598be58e8c4d954bdf622b1b08f8a41a03511bf8317931496afb2b42098。已準備sibling Firefox-測試版-v0.3.1-r2與六檔hash核對，不覆蓋舊候選。沒有操作使用者Firefox安裝，真實Firefox新流程完整addon尚未LIVE驗收，實際根因仍不能以合成模型斷言。
+
+## 2026-10-05：v0.3.1 r3 訊息錨點巡覽
+
+使用者回報r2仍無效果，建議重複定位當前最遠掛載訊息。真實已授權IAB透過locator定位section6→4→2→1，觀察較早窗口陸續掛載與root高度6653→5629→6653→6669；slots只作當前DOM描述。未執行addon，並非Firefox LIVE。
+
+固定產品535a4ffe0fbde463b97c687e4e8dab93f7814bf0已push，遠端一致。改採outer shell原生scrollIntoView、連續窗口與pinned tail隔離、實測相鄰ID見證+當前successor核對；新ID／window change才作進展。收集older後newer，5分鐘／2400步，seek60秒／60步；兩端無進展不證明完整。診斷revision2026-10-05-r3。
+
+主端typecheck/core28/geometry9、新anchor5、原native機制7/速度4/快取8全部PASS；正式build/lint0/0/0。獨立GPT-6.1 Sol high固定archive重建typecheck/core28/geometry9/anchor5全部PASS。40題47.289秒、遠距13.167秒、18000px留白後5.591秒；不再宣稱r2的1秒級遠距。正式content55e9d391826942df3b132e2046787434785abaf50748e9181178782d7d4c3bda、fixture974bcf84877947f9d0a36484c5387f1e71617d69134c5ae2e2586df64c82dfed。未覆蓋舊r2，sibling Firefox-測試版-v0.3.1-r3六檔核對完成。證據/限制見docs/anchor-walk-v0.3.1-r3.md及docs/acceptance-v0.3.1-r3.md；真實Firefox ChatGPT完整addon仍未LIVE驗收。

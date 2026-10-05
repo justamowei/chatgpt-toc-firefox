@@ -1,4 +1,6 @@
-# Firefox v0.3.1 r2 快取與導航候選：開發驗收用
+# Firefox v0.3.1 r3 錨點巡覽候選：開發驗收用
+
+2026-10-05 r3：當前候選改用訊息錨點巡覽。副本`outputs/Firefox-測試版-v0.3.1-r3/manifest.json`，診斷revision應為`2026-10-05-r3`。移除舊暫時附加元件、載入r3、重整ChatGPT後，按「收集整段對話」，最多5分鐘，可按停止。見[r3方案](anchor-walk-v0.3.1-r3.md)。下方r2範圍保留歷史參考。
 
 2026-10-05：當前v0.3.1 r2保留已觀察提問，改成頁首確認後往下逐段收集，修正容器選擇、非同步卸載重試與返回位置核對。manifest仍為0.3.1，revision為`2026-10-05-r2`。整體addon在真實Firefox ChatGPT仍待驗收。v0.2.0歷史API方向仍已撤回。見[r2候選驗證](scroll-mechanism-v0.3.1-r2.md)。
 

@@ -1,5 +1,7 @@
 # ChatGPT 自製對話導航器：開發規劃 v1.4（Firefox 優先）
 
+2026-10-05 r3有效規格：依使用者建議改採連續掛載窗口outer shell錨點巡覽，older後newer補收整段，收集5分鐘／2400步、seek60秒／60步。大gap與pinned tail須隔離；進展以新ID／窗口，不能只看scroll事件。停滯不作完整證明，ID／正文／epoch精確核對持續適用。[r3方案](anchor-walk-v0.3.1-r3.md)優先於下方舊高度推估與head-sweep規格。Git每功能／30有效分鐘commit，每次push核對遠端SHA不變。
+
 **2026-10-03 有效實作方向：** 完整歷史 API／縮頁方案已撤回，當前 v0.3.0 只做已觀察提問保留與逐段收集。具體規格以 [DOM 快取方案](observed-dom-cache-plan.md)及 [v0.3.0 候選驗證](seen-cache-v0.3.0.md)為準；舊版本規劃／驗收敘述保留為歷史。Git 每功能或30分鐘commit、每次push並核對遠端SHA繼續適用。真實 IAB 同一解析器及本機快取已核對12則，Firefox本機8+3項回歸通過；真實Firefox完整addon驗收仍待完成，不宣稱完整載入所有未看過提問。
 
 規劃日期：2026-10-02（Asia/Taipei）  
