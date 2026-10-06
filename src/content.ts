@@ -57,7 +57,7 @@ function start(): Instance {
       navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
   footer.append(earlier, back, stop, settings, disable, diagnose);
-  const hint = make('div', 'hint', 'Alt＋Shift＋O 開啟 · Esc 收合');
+  const hint = make('div', 'hint', 'Shift＋O 開啟 · Esc 收合');
   panel.append(header, searchWrap, scope, list, status, footer, diagnosis, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
   const adapter = new DomAdapter(store, refresh);
   const labels: Record<NavState, string> = { idle: '請選取已收錄的提問。', loading: '正在尋找訊息…', located: '已定位並高亮正確訊息。', cancelled: '已停止導航。', 'timed-out': '已達載入上限；可稍後重試。', unsupported: '目前頁面無法完成導航，請更新導航器。', 'not-found': '尚未找到這則訊息，可繼續載入。' };
@@ -120,8 +120,13 @@ function start(): Instance {
       const archived = store.quarantine.flatMap(group => group.entries).filter(entry => !query || normalize(entry.text).includes(normalize(query)));
       if (archived.length) list.append(make('li', 'empty', '曾看過／分支未核對 · 僅供搜尋，不提供定位'));
       for (const entry of archived) { const row = make('li', 'archived'); row.textContent = entry.text.slice(0, 180); row.title = entry.text; list.append(row); }
-      const railEntries = expanded || store.entries.length <= 5 ? store.entries
-        : Array.from({ length: 5 }, (_, index) => store.entries[Math.round(index * (store.entries.length - 1) / 4)]);
+      // The rail is a direct shortcut to live prompts, never a sample of
+      // retained history. The expanded text list still contains the full cache.
+      const liveEntries = new Map(store.entries.map(entry => [entry.id, entry]));
+      const railEntries = [...store.mounted].flatMap(id => {
+        const entry = liveEntries.get(id);
+        return entry && adapter.canLocate(id) ? [entry] : [];
+      });
       for (const entry of railEntries) {
         const mark = button('', () => { void navigate(entry.id); }, 'mark', false); mark.dataset.entryId = entry.id;
         mark.title = entry.text.slice(0, 180); mark.setAttribute('aria-label', `定位：${entry.text.slice(0, 180)}`); mark.disabled = !selectable(entry.id, entry.stable); markers.append(mark);
@@ -217,6 +222,14 @@ function start(): Instance {
     if ((navigationPending || navigator.state === 'loading') && event.isTrusted && !event.composedPath().includes(host)) cancel();
   }, { capture: true, passive: true, signal: events.signal });
   input.addEventListener('input', () => { query = input.value; render(); }, { signal: events.signal });
+  document.addEventListener('keydown', event => {
+    if (!event.shiftKey || event.ctrlKey || event.altKey || event.metaKey || event.key.toLowerCase() !== 'o' ||
+      event.repeat || event.isComposing || event.keyCode === 229 || event.defaultPrevented) return;
+    const editing = event.composedPath().some(target => target instanceof HTMLElement &&
+      (target.isContentEditable || target.matches('input, textarea, select, [role~="textbox"], [role~="combobox"]')));
+    if (editing) return;
+    event.preventDefault(); event.stopPropagation(); setExpanded(true);
+  }, { capture: true, signal: events.signal });
   shadow.addEventListener('keydown', event => {
     const key = event as KeyboardEvent;
     if (key.key === 'Escape') { key.preventDefault(); cancel(); setExpanded(false); }
