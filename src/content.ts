@@ -83,6 +83,7 @@ function start(): Instance {
   function setExpanded(value: boolean, focus = true, persist = true): void {
     if (!alive) return;
     expanded = value; panel.hidden = !expanded; toggle.setAttribute('aria-expanded', String(expanded));
+    render();
     if (focus) uiRevision++;
     if (focus) (expanded ? input : toggle).focus({ preventScroll: true });
     if (persist) void browser.runtime.sendMessage({ kind: 'settings:set', expanded }).catch(() => {});
@@ -100,7 +101,7 @@ function start(): Instance {
       (store.quarantine.length ? `另有 ${store.retainedCount - store.entries.length} 筆曾看過資料已隔離，僅供搜尋。` : '') +
       (store.limitReason ? `已達${store.limitReason === 'entries' ? '5000 筆記錄' : '500 萬字元'}保留上限，已停止新增；現有資料仍可搜尋。` : '');
     back.disabled = !returnPosition || returnEpoch !== store.epoch;
-    const key = JSON.stringify([store.cacheRevision, query, [...store.mounted]]);
+    const key = JSON.stringify([store.cacheRevision, query, [...store.mounted], expanded]);
     if (key !== renderKey) {
       renderKey = key;
       const focused = shadow.activeElement instanceof HTMLElement ? shadow.activeElement.dataset.entryId : undefined;
@@ -119,7 +120,9 @@ function start(): Instance {
       const archived = store.quarantine.flatMap(group => group.entries).filter(entry => !query || normalize(entry.text).includes(normalize(query)));
       if (archived.length) list.append(make('li', 'empty', '曾看過／分支未核對 · 僅供搜尋，不提供定位'));
       for (const entry of archived) { const row = make('li', 'archived'); row.textContent = entry.text.slice(0, 180); row.title = entry.text; list.append(row); }
-      for (const entry of store.entries) {
+      const railEntries = expanded || store.entries.length <= 5 ? store.entries
+        : Array.from({ length: 5 }, (_, index) => store.entries[Math.round(index * (store.entries.length - 1) / 4)]);
+      for (const entry of railEntries) {
         const mark = button('', () => { void navigate(entry.id); }, 'mark', false); mark.dataset.entryId = entry.id;
         mark.title = entry.text.slice(0, 180); mark.setAttribute('aria-label', `定位：${entry.text.slice(0, 180)}`); mark.disabled = !selectable(entry.id, entry.stable); markers.append(mark);
       }
