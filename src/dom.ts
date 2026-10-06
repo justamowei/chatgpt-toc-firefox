@@ -4,7 +4,8 @@ import { readTurns } from './turns';
 import { HeightLedger } from './geometry';
 type Direction = 'older' | 'newer';
 export interface LoadReport { phase: 'scan' | 'answer' | 'jump' | 'refine' | 'head' | 'sweep'; added: number; steps: number; }
-type Attempt = { method: string; before: number; requested: number; after: number; heightBefore: number; heightAfter: number; scrollEvents: number; replaced: boolean };
+type Attempt = { method: string; before: number; requested: number; after: number; heightBefore: number; heightAfter: number; scrollEvents: number; replaced: boolean;
+  boundary?: { physical: boolean; stableMs: number; probes: number; loading: boolean } };
 export class DomAdapter implements NavigationAdapter {
   nodes = new Map<string, HTMLElement>();
   private transient = new WeakMap<HTMLElement, string>();
@@ -18,7 +19,7 @@ export class DomAdapter implements NavigationAdapter {
   private hintEpoch = -1;
   private geometry = new HeightLedger();
   private adjacent = new Map<string, string>();
-  private collection: { stage: 'head' | 'sweep' | 'done'; boundary: string | null; repeats: number } | null = null;
+  private collection: { stage: 'head' | 'sweep' | 'done' } | null = null;
   private lastAttempt: Attempt | null = null;
   lastLoadReport: LoadReport = { phase: 'scan', added: 0, steps: 0 };
   constructor(private store: IndexStore, private refresh: (direction?: Direction) => void) {}
@@ -115,7 +116,7 @@ export class DomAdapter implements NavigationAdapter {
   }
   begin(collect = false): void {
     this.lastAttempt = null; this.lastLoadReport = { phase: collect ? 'head' : 'scan', added: 0, steps: 0 };
-    this.collection = collect ? { stage: 'head', boundary: null, repeats: 0 } : null;
+    this.collection = collect ? { stage: 'head' } : null;
   }
   get collectionFinished(): boolean { return this.collection?.stage === 'done'; }
   diagnostic(): object {
@@ -335,6 +336,8 @@ export class DomAdapter implements NavigationAdapter {
         const started = performance.now();
         let timer: ReturnType<typeof setTimeout>, nudged = false, finished = false;
         let changedSince = started, last = beforeSignature;
+        let boundarySince = started, boundaryKey = '', boundaryRoot: HTMLElement | null = null, boundaryNode: HTMLElement | null = null;
+        let probes = 0, lastProbe = -Infinity;
         const finish = (progress: boolean) => {
           if (finished) return; finished = true; clearTimeout(timer); signal.removeEventListener('abort', aborted); resolve(progress);
         };
@@ -351,32 +354,38 @@ export class DomAdapter implements NavigationAdapter {
           if (currentSignature !== last) { last = currentSignature; changedSince = performance.now(); }
           if (current.length && (added > 0 || currentSignature !== beforeSignature) && elapsed >= 320 && performance.now() - changedSince >= 160) {
             this.lastLoadReport.added += added;
-            if (targetId === null && this.collection) { this.collection.boundary = null; this.collection.repeats = 0; }
             finish(true); return;
           }
           if (targetId !== null && this.mounted(targetId)) { this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return; }
-          // At an already aligned edge, cross slightly beyond it once. Reacquire
-          // a live shell/root after asynchronous mounts, never retain old writes.
-          if (!nudged && elapsed >= 640 && current.length && currentSignature === beforeSignature) {
+          const boundary = direction === 'older' ? current[0] : current.at(-1);
+          const viewport = this.viewport(currentRoot), rect = boundary?.node.getBoundingClientRect();
+          const loading = !!document.querySelector('main[aria-busy="true"], main [aria-busy="true"], main [data-loading="true"], main [role="progressbar"], main [data-testid="loading-conversation"]');
+          const physical = !!rect && (direction === 'older'
+            ? currentRoot.scrollTop <= 2 && rect.top >= viewport.top - 2 && rect.top < viewport.bottom
+            : currentRoot.scrollTop + currentRoot.clientHeight >= currentRoot.scrollHeight - 2 && rect.bottom <= viewport.bottom + 2 && rect.bottom > viewport.top);
+          const key = `${currentSignature}:${currentRoot.scrollHeight}:${currentRoot.clientHeight}:${currentRoot.clientWidth}:${Math.round(currentRoot.scrollTop)}:${Math.round(viewport.top)}:${Math.round(viewport.bottom)}:${Math.round(rect?.top ?? 0)}:${Math.round(rect?.bottom ?? 0)}`;
+          if (!physical || loading || boundaryRoot !== currentRoot || boundaryNode !== boundary?.node || boundaryKey !== key) {
+            boundarySince = performance.now(); probes = 0; lastProbe = -Infinity;
+          }
+          boundaryRoot = currentRoot; boundaryNode = boundary?.node ?? null; boundaryKey = key;
+          attempt.boundary = { physical, loading, probes, stableMs: Math.round(performance.now() - boundarySince) };
+          // A stalled middle window is not the start of a conversation. Probe
+          // the same direction and allow slow mounts; reverse only after a live
+          // physical boundary stays stable for six seconds and two clamp probes.
+          const repeatBoundaryProbe = targetId === null && physical && !loading && probes < 2 && elapsed >= 3200 && performance.now() - lastProbe >= 2400;
+          if (currentSignature === beforeSignature && boundary?.node.isConnected && rect && ((!nudged && elapsed >= 640) || repeatBoundaryProbe)) {
             nudged = true;
-            const boundary = direction === 'older' ? current[0] : current.at(-1)!;
-            const rect = boundary.node.getBoundingClientRect(), viewport = this.viewport(currentRoot);
             const top = currentRoot.scrollTop + (direction === 'older' ? rect.top - viewport.top : rect.bottom - viewport.bottom) +
               (direction === 'older' ? -1 : 1) * Math.max(80, currentRoot.clientHeight * .45);
             currentRoot.scrollTo({ top, behavior: 'instant' }); attempt.requested = top;
+            if (physical && !loading && Math.abs(currentRoot.scrollTop - attempt.after) <= 2) { probes++; lastProbe = performance.now(); }
           }
-          if (elapsed >= Math.min(1600, Math.max(0, timeout - 200)) && current.length) {
+          if (targetId === null && this.collection && physical && !loading && probes >= 2 && performance.now() - boundarySince >= 6000) {
+            this.collection.stage = this.collection.stage === 'head' ? 'sweep' : 'done';
+            this.lastLoadReport.added += added; finish(this.collection.stage === 'sweep'); return;
+          }
+          if (elapsed >= Math.min(targetId === null ? 6500 : 1600, Math.max(0, timeout - 200)) && current.length) {
             this.lastLoadReport.added += added;
-            if (targetId === null && this.collection) {
-              if (this.collection.boundary === currentSignature) this.collection.repeats++;
-              else { this.collection.boundary = currentSignature; this.collection.repeats = 1; }
-              if (this.collection.repeats >= 2) {
-                this.collection.stage = this.collection.stage === 'head' ? 'sweep' : 'done';
-                this.collection.boundary = null; this.collection.repeats = 0; finish(this.collection.stage === 'sweep'); return;
-              }
-              // One stalled edge is not the end: give the renderer another try.
-              finish(true); return;
-            }
             finish(added > 0 || currentSignature !== beforeSignature); return;
           }
           if (elapsed >= Math.max(0, timeout - 200)) { finish(false); return; }
