@@ -1,5 +1,7 @@
 # ChatGPT 對話導航器（Firefox 優先）
 
+**目前候選：v0.3.1 r4（2026-10-06-r4）**。修正收集過早反向；縮小目錄最多 5 個標記，展開保留全部提問，標題橫排並改用灰白／炭灰與淡靛色。見 [r4 修正與限制](docs/boundary-compact-v0.3.1-r4.md) 及 [獨立驗收](docs/acceptance-v0.3.1-r4.md)。真實 ChatGPT Firefox addon LIVE 尚未完成；下文早期候選資訊保留作歷史紀錄。
+
 自製 ChatGPT Web 對話目錄與導航擴充功能，Firefox 桌面版為第一優先。
 
 **目前有效方向（2026-10-05 r3）：** 使用者回報r2仍失敗，改採反覆選取當前連續掛載窗口邊緣訊息，以原生scrollIntoView觸發下一批掛載。收集向前再向後巡覽，最多5分鐘／2400步；離屏导航沿同樣錨點尋找。revision=`2026-10-05-r3`。真實IAB已觀察到錨點帶動更早掛載，完整addon的Firefox LIVE仍未完成。見[r3方案](docs/anchor-walk-v0.3.1-r3.md)。下方r2紀錄為歷史候選。

@@ -1,5 +1,9 @@
 # 開發與 Git 同步紀錄
 
+## 2026-10-06：r4 候選完成
+
+UI commit eb347bd 與 runtime/test commit 8f2daab1536ad9e30abc74479a8dfa3854766d57 已 push 並核對遠端。主流程核心 28、幾何 9、邊界 5、介面 4、錨點 5、捲動機制 7、跳轉回歸 4、快取 8 全部通過；固定 SHA 獨立驗收另見 [報告](acceptance-v0.3.1-r4.md)。候選資料夾 Firefox-測試版-v0.3.1-r4 的 6 個 production 檔案核對 SHA256。真實 ChatGPT Firefox addon LIVE 尚未完成。詳見 [r4 說明](boundary-compact-v0.3.1-r4.md)。
+
 時間皆為 Asia/Taipei。
 
 ## 2026-10-02 18:30：建立版本管理

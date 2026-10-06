@@ -1,0 +1,96 @@
+{
+  "date": "2026-10-06T03:06:17.193Z",
+  "firefox": "157.0",
+  "source": "localhost delayed outer-shell renderer, native root geometry and content-visibility; not ChatGPT LIVE",
+  "liveChatGptAddon": false,
+  "build": {
+    "version": "0.3.1",
+    "revision": "2026-10-06-r4",
+    "fixture": true,
+    "hashes": {
+      "background.js": "8081a2f22c734deba874c64b5d68ac5e07814eac29efb4cc1a26e7a4e01bb7ff",
+      "content.js": "78506c23baa39469da1b73214001b8c418f47c3e56c58fb48ece825b2c668f70",
+      "options.js": "febbd740915f6b41763d8549492ccb5177796dff2d6cf3477e3f2e021e419443",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "9796621f5f92d9f5bd21be044ccac59f0cb88df18c78a4db72ad411a66505dbf"
+    }
+  },
+  "results": [
+    {
+      "name": "BOUNDARY-01: second older request waits five seconds and fills all thirty before reverse",
+      "status": "PASS",
+      "elapsedMs": 22920,
+      "actual": {
+        "collected": 30,
+        "exactOrder": true,
+        "delayedMountMs": 5003,
+        "newerAfterFirstZero": true,
+        "firstHeadAt": 7664,
+        "firstClampAt": 7891,
+        "firstNewerAt": 13984
+      }
+    },
+    {
+      "name": "BOUNDARY-02: frozen middle stops finitely without reverse while older space remains",
+      "status": "PASS",
+      "elapsedMs": 20321,
+      "actual": {
+        "collected": 7,
+        "remainingOlderPixels": 58057,
+        "newerArrivals": 0,
+        "elapsedMs": 19926,
+        "status": "連續等待未觀察到進展，本次新增 0 則。請開啟頁面診斷檢查捲動；完整歷史尚未核對。"
+      }
+    },
+    {
+      "name": "BOUNDARY-03: placeholder, slots, root, height and viewport shifts reset head evidence",
+      "status": "PASS",
+      "elapsedMs": 21906,
+      "actual": {
+        "collected": 30,
+        "exactOrder": true,
+        "changes": [
+          "loading-start",
+          "slot-renumber",
+          "root-replaced",
+          "height-expanded",
+          "height-restored",
+          "loading-finished",
+          "viewport-shift",
+          "viewport-restored"
+        ],
+        "stableAfterLastChangeMs": 6561,
+        "firstHeadAt": 75,
+        "firstClampAt": 415,
+        "firstNewerAt": 13077
+      }
+    },
+    {
+      "name": "BOUNDARY-04: cancellation during five-second pending mount has no late root movement or highlight",
+      "status": "PASS",
+      "elapsedMs": 6766,
+      "actual": {
+        "state": "cancelled",
+        "lateRootScrollEvents": 0,
+        "lateEdgeArrivals": 0,
+        "lateHighlight": false,
+        "retained": 15,
+        "rendererCompleted": true
+      }
+    },
+    {
+      "name": "BOUNDARY-05: isolated viewport movement invalidates six-second proof with unchanged IDs and extent",
+      "status": "PASS",
+      "elapsedMs": 21792,
+      "actual": {
+        "collected": 30,
+        "exactOrder": true,
+        "stableAfterGeometryRestoreMs": 6556,
+        "firstHeadAt": 82,
+        "firstClampAt": 428,
+        "firstNewerAt": 13086
+      }
+    }
+  ]
+}

@@ -1,4 +1,6 @@
-# Firefox v0.3.1 r3 錨點巡覽候選：開發驗收用
+# Firefox v0.3.1 r4：開發驗收版
+
+目前使用 **v0.3.1 r4**：選 sibling `outputs/Firefox-測試版-v0.3.1-r4/manifest.json`。先移除舊暫時附加元件，再載入 r4、重新整理 ChatGPT，診斷應為 `2026-10-06-r4`。詳見 [r4 規則、驗收與限制](boundary-compact-v0.3.1-r4.md)。下文 r3/r2 路徑保留為歷史說明，安裝以本段為準。
 
 2026-10-05 r3：當前候選改用訊息錨點巡覽。副本`outputs/Firefox-測試版-v0.3.1-r3/manifest.json`，診斷revision應為`2026-10-05-r3`。移除舊暫時附加元件、載入r3、重整ChatGPT後，按「收集整段對話」，最多5分鐘，可按停止。見[r3方案](anchor-walk-v0.3.1-r3.md)。下方r2範圍保留歷史參考。
 

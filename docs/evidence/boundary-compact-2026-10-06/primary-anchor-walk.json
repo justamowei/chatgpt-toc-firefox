@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-06T03:08:32.305Z",
+  "firefox": "157.0",
+  "source": "localhost renderer contract, native Firefox scrollIntoView and content-visibility shells; not ChatGPT LIVE",
+  "liveChatGptAddon": false,
+  "build": {
+    "version": "0.3.1",
+    "revision": "2026-10-06-r4",
+    "fixture": true,
+    "hashes": {
+      "background.js": "8081a2f22c734deba874c64b5d68ac5e07814eac29efb4cc1a26e7a4e01bb7ff",
+      "content.js": "78506c23baa39469da1b73214001b8c418f47c3e56c58fb48ece825b2c668f70",
+      "options.js": "febbd740915f6b41763d8549492ccb5177796dff2d6cf3477e3f2e021e419443",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "9796621f5f92d9f5bd21be044ccac59f0cb88df18c78a4db72ad411a66505dbf"
+    }
+  },
+  "results": [
+    {
+      "name": "ANCHOR-01: cold seven-message tail traverses native outer shells and collects all thirty exactly",
+      "status": "PASS",
+      "elapsedMs": 17717,
+      "actual": {
+        "cold": 7,
+        "collected": 30,
+        "orderExact": true,
+        "windows": [
+          23,
+          19,
+          15,
+          11,
+          7,
+          3,
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          25
+        ],
+        "nativeShellCalls": 14
+      }
+    },
+    {
+      "name": "ANCHOR-02: observed offscreen targets remount by adjacent windows and highlight exact IDs",
+      "status": "PASS",
+      "elapsedMs": 5014,
+      "actual": [
+        {
+          "target": 3,
+          "exactHighlight": "anchor:u-3",
+          "nativeShellCalls": 6
+        },
+        {
+          "target": 24,
+          "exactHighlight": "anchor:u-24",
+          "nativeShellCalls": 5
+        }
+      ]
+    },
+    {
+      "name": "ANCHOR-03: cold middle retains pinned tail and fills every unknown intervening prompt",
+      "status": "PASS",
+      "elapsedMs": 16366,
+      "actual": {
+        "collected": 30,
+        "pinnedTailRetained": 2,
+        "unknownMiddleActuallyMounted": true,
+        "windows": [
+          12,
+          8,
+          4,
+          0,
+          4,
+          8,
+          12,
+          16,
+          20,
+          24,
+          25
+        ]
+      }
+    },
+    {
+      "name": "ANCHOR-04: stationary anchor has a finite no-progress stop without inventing a complete index",
+      "status": "PASS",
+      "elapsedMs": 20189,
+      "actual": {
+        "state": "idle",
+        "collected": 7,
+        "outerCalls": 3,
+        "elapsedMs": 19747,
+        "status": "連續等待未觀察到進展，本次新增 0 則。請開啟頁面診斷檢查捲動；完整歷史尚未核對。"
+      }
+    },
+    {
+      "name": "ANCHOR-05: cancelling an in-flight edge mount prevents late scrolling or highlight",
+      "status": "PASS",
+      "elapsedMs": 1983,
+      "actual": {
+        "state": "cancelled",
+        "lateAnchorCalls": 0,
+        "lateRootWrites": 0,
+        "lateHighlight": false,
+        "retained": 11
+      }
+    }
+  ]
+}
