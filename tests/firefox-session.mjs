@@ -19,7 +19,7 @@ export async function fixtureSession(folder = 'artifacts/firefox-fixture', optio
     const binary = await download('0.37.1', resolve('../../work/geckodriver'));
     const profileRoot = resolve('../../work/firefox-fixture/profiles'); await mkdir(profileRoot, { recursive: true });
     const options = new firefox.Options().setBinary(process.env.FIREFOX_BINARY || 'C:/Program Files/Mozilla Firefox/firefox.exe').addArguments('-headless').windowSize({ width: 1200, height: 900 });
-    const service = new firefox.ServiceBuilder(binary).setStdio('ignore').addArguments('--allow-system-access', '--profile-root', profileRoot);
+    const service = new firefox.ServiceBuilder(binary).setStdio(process.env.TOC_FIREFOX_DEBUG ? 'inherit' : 'ignore').addArguments('--allow-system-access', '--profile-root', profileRoot);
     driver = await new Builder().forBrowser('firefox').setFirefoxOptions(options).setFirefoxService(service).build();
     const addon = await driver.installAddon(resolve('dist/fixture'), true);
     await driver.setContext(firefox.Context.CHROME);
