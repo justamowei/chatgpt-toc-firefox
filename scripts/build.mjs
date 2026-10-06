@@ -26,7 +26,8 @@ const manifest = JSON.parse(await readFile('manifests/firefox.json', 'utf8'));
 if (fixture) {
   manifest.name += '（合成測試專用）';
   manifest.browser_specific_settings.gecko.id = 'chatgpt-toc-fixture@local.codex';
-  manifest.optional_host_permissions = ['http://127.0.0.1/*'];
+  manifest.host_permissions = ['http://127.0.0.1/*'];
+  delete manifest.optional_host_permissions;
 }
 await writeFile(resolve(out, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n');
 // Git's Windows checkout may use CRLF; ship the same text bytes as git archive.

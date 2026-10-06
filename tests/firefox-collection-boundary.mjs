@@ -13,7 +13,7 @@ const { driver, artifacts, action } = session;
 const evaluate = (code, ...args) => driver.executeScript(code, ...args);
 const results = [];
 const expected = Array.from({ length: 30 }, (_, i) => 'boundary:u-' + i);
-const state = () => evaluate(`const h=document.getElementById('chatgpt-toc-root');if(!h)return null;const s=h.shadowRoot;return {nav:h.dataset.navigation,status:s.querySelector('#toc-status').textContent,scope:s.querySelector('#toc-scope').textContent,ids:[...s.querySelectorAll('#toc-list button')].map(b=>b.dataset.entryId),highlight:document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')};`);
+const state = () => evaluate(`const h=document.getElementById('chatgpt-toc-root');if(!h)return null;const s=h.shadowRoot;return {nav:h.dataset.navigation,expanded:s.querySelector('.toggle').getAttribute('aria-expanded')==='true',status:s.querySelector('#toc-status').textContent,scope:s.querySelector('#toc-scope').textContent,ids:[...s.querySelectorAll('#toc-list button')].map(b=>b.dataset.entryId),highlight:document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')};`);
 const stats = () => evaluate('return window.boundaryFixture.stats();');
 async function click(selector) {
   const shadow = await (await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();
@@ -65,7 +65,7 @@ async function setup(mode) {
       const next=direction==='older'?Math.max(0,start-size+1):Math.min(count-size,start+size-1);
       if(next===start)return;
       if(direction==='older')olderRequests++;
-      const delay=(mode==='delay'||mode==='cancel')&&direction==='older'&&olderRequests===2?5000:130;
+      const delay=(mode==='delay'||mode==='cancel'||mode==='slow-mount')&&direction==='older'&&olderRequests===2?(mode==='slow-mount'?25000:5000):130;
       const request={direction,from:start,to:next,delay,at:performance.now(),committedAt:null};requests.push(request);pending=request;
       // Repeated edge observations do not restart or cancel a pending response.
       setTimeout(()=>{start=next;render();request.committedAt=performance.now();pending=null;},delay);
@@ -89,7 +89,9 @@ async function setup(mode) {
     render();attach();root.scrollTop=tops[start+2]+20;
     window.boundaryFixture={stats(){return {mode,start,top:root.scrollTop,height:root.scrollHeight,client:root.clientHeight,pending:pending?{...pending}:null,mounts:mounts.map(e=>({...e})),arrivals:arrivals.map(e=>({...e})),events:events.map(e=>({...e})),requests:requests.map(e=>({...e})),changes:changes.map(e=>({...e})),headClamps:headClamps.map(e=>({...e}))};}};
   `, mode);
-  await action();await driver.wait(async () => (await state())?.ids.length === 7, 10000);await action();
+  await action();await driver.wait(async () => !!(await state()), 10000);
+  if (!(await state()).expanded) await click('.toggle');
+  await driver.wait(async () => (await state())?.ids.length === 7, 10000);
 }
 async function finish(ms = 70000) { await driver.wait(async () => (await state()).nav !== 'loading', ms); }
 function verifySweep(fixture) {
@@ -117,11 +119,12 @@ try {
     const proof=verifySweep(f);await session.screenshot('delayed-older-thirty.png');
     return {collected:30,exactOrder:true,delayedMountMs:Math.round(delayed.committedAt-delayed.at),newerAfterFirstZero:true,...proof};
   });
-  await test('BOUNDARY-02: frozen middle stops finitely without reverse while older space remains', async()=>{
-    await setup('freeze');const began=Date.now();await click('#toc-earlier');await finish(30000);const s=await state(),f=await stats();
-    assert.equal(s.nav,'idle');assert.equal(s.ids.length,7);assert.equal(f.mounts.length,1);assert.ok(f.top>f.client,'The frozen root still has substantial older space');
-    assert.equal(f.arrivals.filter(a=>a.direction==='newer').length,0);assert.equal(f.headClamps.length,0);assert.ok(Date.now()-began<30000);
-    return {collected:7,remainingOlderPixels:Math.round(f.top),newerArrivals:0,elapsedMs:Date.now()-began,status:s.status};
+  await test('BOUNDARY-02: frozen middle remains retryable beyond three empty batches until explicit stop', async()=>{
+    await setup('freeze');const began=Date.now();await click('#toc-earlier');await driver.sleep(22000);const pending=await state(),f=await stats();
+    assert.equal(pending.nav,'loading');assert.equal(pending.ids.length,7);assert.equal(f.mounts.length,1);assert.ok(f.top>f.client,'The frozen root still has substantial older space');
+    assert.equal(f.arrivals.filter(a=>a.direction==='newer').length,0);assert.equal(f.headClamps.length,0);
+    await click('#toc-stop');await driver.wait(async()=> (await state()).nav==='cancelled',6000);const s=await state();
+    return {collected:7,remainingOlderPixels:Math.round(f.top),newerArrivals:0,retryableBeforeStop:true,elapsedMs:Date.now()-began,status:s.status};
   });
   await test('BOUNDARY-03: placeholder, slots, root, height and viewport shifts reset head evidence', async()=>{
     await setup('boundary-reset');await click('#toc-earlier');await finish();const s=await state(),f=await stats();
@@ -147,6 +150,12 @@ try {
     const restored=f.changes.at(-1),firstNewer=f.arrivals.find(a=>a.direction==='newer');
     assert.ok(firstNewer.at-restored.at>=5900,'Viewport movement alone must reset proof before the first batch could declare its head');
     return {collected:30,exactOrder:true,stableAfterGeometryRestoreMs:Math.round(firstNewer.at-restored.at),...proof};
+  });
+  await test('BOUNDARY-06: a 25-second middle mount survives repeated empty batches without early reverse', async()=>{
+    await setup('slow-mount');await click('#toc-earlier');await finish(100000);const s=await state(),f=await stats();
+    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expected);
+    const delayed=f.requests.filter(r=>r.direction==='older')[1];assert.equal(delayed.delay,25000);assert.ok(delayed.committedAt-delayed.at>=24900);
+    const proof=verifySweep(f);return {collected:30,exactOrder:true,delayedMountMs:Math.round(delayed.committedAt-delayed.at),...proof};
   });
 }catch(error){console.error(error);await session.screenshot('boundary-failure.png').catch(()=>{});process.exitCode=1;}
 finally {

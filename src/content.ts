@@ -2,6 +2,8 @@ import { DEFAULT_SETTINGS, IndexStore, Navigator, normalize, validSettings, type
 import { DomAdapter } from './dom';
 import { supported, BUILD_REVISION } from './config';
 import { styles } from './styles';
+import { cancelsNavigation } from './interaction';
+import { PersistentIndex, runtimeIndexBackend } from './persistence';
 type Instance = { show(): void; dispose(): void };
 const world = globalThis as typeof globalThis & { __chatgptToc?: Instance };
 if (window === window.top && !browser.extension.inIncognitoContext && supported(location.href)) {
@@ -9,12 +11,21 @@ if (window === window.top && !browser.extension.inIncognitoContext && supported(
   else world.__chatgptToc = start();
 }
 function start(): Instance {
-  let alive = true, expanded = false, query = '', renderKey = '', navigationToken = 0, uiRevision = 0;
+  let alive = true, expanded = false, query = '', railKey = '', navigationToken = 0, uiRevision = 0;
+  let currentPrompt: string | undefined, listGeneration = 0, listQuery = '', listOrdered = true, listSegments = '';
+  let renderedEntries: typeof store.entries = [], renderedQuarantine: typeof store.quarantine = [];
+  const listButtons = new Map<string, HTMLButtonElement>(), railButtons = new Map<string, HTMLButtonElement>();
+  let currentLocatable = new Set<string>();
+  let listBuilt = false, listFrame: number | undefined, currentFrame: number | undefined;
   let returnPosition: Position | null = null, returnEpoch = -1, refreshTimer: ReturnType<typeof setTimeout> | undefined;
   let navigationPending = false, operation: AbortController | null = null;
   let collecting = false, collectionStart = 0;
   const events = new AbortController();
   const store = new IndexStore();
+  let restoredContext = '', restoreToken = 0;
+  const persistence = new PersistentIndex(runtimeIndexBackend(), store, {
+    incognito: browser.extension.inIncognitoContext, onStatus: () => { if (alive) render(); },
+  });
   // A disabled Firefox content context cannot run teardown JavaScript. Remove
   // its inert DOM when a new context starts, before creating the single root.
   for (const stale of document.querySelectorAll('#chatgpt-toc-root')) stale.remove();
@@ -83,56 +94,101 @@ function start(): Instance {
   function setExpanded(value: boolean, focus = true, persist = true): void {
     if (!alive) return;
     expanded = value; panel.hidden = !expanded; toggle.setAttribute('aria-expanded', String(expanded));
-    render();
+    if (expanded) render();
     if (focus) uiRevision++;
     if (focus) (expanded ? input : toggle).focus({ preventScroll: true });
     if (persist) void browser.runtime.sendMessage({ kind: 'settings:set', expanded }).catch(() => {});
   }
   function updateCurrent(): void {
     if (!alive) return;
-    const prompt = [...adapter.nodes].filter(([id]) => store.entries.some(e => e.id === id)).sort((a, b) => Math.abs(a[1].getBoundingClientRect().top - 90) - Math.abs(b[1].getBoundingClientRect().top - 90))[0]?.[0];
-    for (const node of shadow.querySelectorAll<HTMLButtonElement>('[data-entry-id]')) node.setAttribute('aria-current', String(node.dataset.entryId === prompt));
+    let prompt: string | undefined, distance = Infinity;
+    for (const [id, node] of adapter.nodes) if (store.mounted.has(id) && node.isConnected) {
+      const next = Math.abs(node.getBoundingClientRect().top - 90);
+      if (next < distance) { distance = next; prompt = id; }
+    }
+    if (currentPrompt !== prompt) {
+      for (const buttons of [listButtons, railButtons]) {
+        if (currentPrompt) buttons.get(currentPrompt)?.setAttribute('aria-current', 'false');
+        if (prompt) buttons.get(prompt)?.setAttribute('aria-current', 'true');
+      }
+      currentPrompt = prompt;
+    }
   }
   function render(): void {
     if (!alive) return;
-    const entries = store.search(query);
     scope.textContent = `本頁已看過 ${store.entries.length} 則 · 目前掛載 ${store.mounted.size} 則。歷史尚未完整；${store.branchConfidence === 'unverified' ? '當前分支未完整核對；' : ''}搜尋涵蓋已觀察資料。` +
       (!store.ordered ? '部分順序待核對，按觀察區段分組。' : '') +
       (store.quarantine.length ? `另有 ${store.retainedCount - store.entries.length} 筆曾看過資料已隔離，僅供搜尋。` : '') +
-      (store.limitReason ? `已達${store.limitReason === 'entries' ? '5000 筆記錄' : '500 萬字元'}保留上限，已停止新增；現有資料仍可搜尋。` : '');
+      (store.limitReason ? `已達${store.limitReason === 'entries' ? '5000 筆記錄' : '500 萬字元'}保留上限，已停止新增；現有資料仍可搜尋。` : '') +
+      ({ loading: ' 正在讀取本機目錄。', pending: ' 本機目錄儲存中。', saved: ' 已儲存於本機。', error: ' 本機儲存失敗，本頁資料仍保留。', off: '' }[persistence.status]);
     back.disabled = !returnPosition || returnEpoch !== store.epoch;
-    const key = JSON.stringify([store.cacheRevision, query, [...store.mounted], expanded]);
-    if (key !== renderKey) {
-      renderKey = key;
+    currentLocatable = adapter.locatableIds();
+    const selectable = (id: string, stable: boolean) => stable &&
+      (store.mounted.has(id) ? currentLocatable.has(id) : store.ordered && !store.quarantine.length);
+    // Collapse is a visibility update. Retain list nodes and its scroll position;
+    // refresh cached rows only when data/search/order actually changes.
+    const segmentKey = store.ordered ? '' : store.segments.map(s => `${s.ordered}:${s.ids.join('|')}`).join(';');
+    const changed = !listBuilt || listQuery !== query || listOrdered !== store.ordered || listSegments !== segmentKey ||
+      renderedEntries.length !== store.entries.length || store.entries.some((e, i) => e !== renderedEntries[i]) ||
+      renderedQuarantine.length !== store.quarantine.length || store.quarantine.some((g, i) => g !== renderedQuarantine[i]);
+    if (expanded && changed) {
+      listBuilt = true; listQuery = query; listOrdered = store.ordered; listSegments = segmentKey;
+      renderedEntries = [...store.entries]; renderedQuarantine = [...store.quarantine];
+      const entries = store.search(query), matches = new Map(entries.map(e => [e.id, e]));
+      const generation = ++listGeneration;
+      if (listFrame !== undefined) cancelAnimationFrame(listFrame);
       const focused = shadow.activeElement instanceof HTMLElement ? shadow.activeElement.dataset.entryId : undefined;
-      list.replaceChildren(); markers.replaceChildren();
-      const selectable = (id: string, stable: boolean) => stable &&
-        (adapter.canLocate(id) || (store.ordered && !store.quarantine.length && !store.mounted.has(id)));
+      list.replaceChildren(); listButtons.clear();
+      const rows: (() => HTMLLIElement)[] = [];
       for (const [index, segment] of store.segments.entries()) {
-        const visible = entries.filter(entry => segment.ids.includes(entry.id));
+        const visible = segment.ids.flatMap(id => matches.has(id) ? [matches.get(id)!] : []);
         if (!visible.length) continue;
-        if (!store.ordered) list.append(make('li', 'empty', `觀察區段 ${index + 1} · ${segment.ordered ? '區段內順序已核對' : '區段內順序待核對'}`));
+        if (!store.ordered) rows.push(() => make('li', 'empty', `觀察區段 ${index + 1} · ${segment.ordered ? '區段內順序已核對' : '區段內順序待核對'}`));
         for (const entry of visible) {
+        rows.push(() => {
         const row = make('li'); const choice = button(entry.text.slice(0, 180), () => { void navigate(entry.id); }, 'entry', false);
-        choice.dataset.entryId = entry.id; choice.title = entry.text; choice.disabled = !selectable(entry.id, entry.stable); row.append(choice); list.append(row);
+        choice.dataset.entryId = entry.id; choice.title = entry.text; choice.disabled = !selectable(entry.id, entry.stable);
+        choice.setAttribute('aria-current', String(entry.id === currentPrompt)); listButtons.set(entry.id, choice); row.append(choice); return row;
+        });
         }
       }
       const archived = store.quarantine.flatMap(group => group.entries).filter(entry => !query || normalize(entry.text).includes(normalize(query)));
-      if (archived.length) list.append(make('li', 'empty', '曾看過／分支未核對 · 僅供搜尋，不提供定位'));
-      for (const entry of archived) { const row = make('li', 'archived'); row.textContent = entry.text.slice(0, 180); row.title = entry.text; list.append(row); }
+      if (archived.length) rows.push(() => make('li', 'empty', '曾看過／分支未核對 · 僅供搜尋，不提供定位'));
+      for (const entry of archived) rows.push(() => { const row = make('li', 'archived'); row.textContent = entry.text.slice(0, 180); row.title = entry.text; return row; });
+      if (!entries.length && !archived.length) rows.push(() => make('li', 'empty', query ? '沒有符合的已觀察提問。' : '尚未辨識到提問；可捲動對話讓網站掛載訊息。'));
+      let cursor = 0;
+      const appendBatch = () => {
+        listFrame = undefined;
+        if (!alive || generation !== listGeneration) return;
+        const fragment = document.createDocumentFragment();
+        const until = Math.min(rows.length, cursor + 60);
+        while (cursor < until) fragment.append(rows[cursor++]());
+        list.append(fragment);
+        if (focused && expanded) listButtons.get(focused)?.focus({ preventScroll: true });
+        if (cursor < rows.length) listFrame = requestAnimationFrame(appendBatch);
+        list.setAttribute('aria-busy', String(cursor < rows.length));
+      };
+      appendBatch();
+    } else if (expanded) {
+      for (const entry of store.entries) { const row = listButtons.get(entry.id); if (row) {
+        const disabled = !selectable(entry.id, entry.stable); if (row.disabled !== disabled) row.disabled = disabled;
+      } }
+    }
+    const key = JSON.stringify([store.cacheRevision, [...store.mounted]]);
+    if (key !== railKey) {
+      railKey = key; markers.replaceChildren(); railButtons.clear();
       // The rail is a direct shortcut to live prompts, never a sample of
       // retained history. The expanded text list still contains the full cache.
       const liveEntries = new Map(store.entries.map(entry => [entry.id, entry]));
       const railEntries = [...store.mounted].flatMap(id => {
         const entry = liveEntries.get(id);
-        return entry && adapter.canLocate(id) ? [entry] : [];
+        return entry && currentLocatable.has(id) ? [entry] : [];
       });
       for (const entry of railEntries) {
         const mark = button('', () => { void navigate(entry.id); }, 'mark', false); mark.dataset.entryId = entry.id;
-        mark.title = entry.text.slice(0, 180); mark.setAttribute('aria-label', `定位：${entry.text.slice(0, 180)}`); mark.disabled = !selectable(entry.id, entry.stable); markers.append(mark);
+        mark.title = entry.text.slice(0, 180); mark.setAttribute('aria-label', `定位：${entry.text.slice(0, 180)}`); mark.disabled = !selectable(entry.id, entry.stable);
+        mark.setAttribute('aria-current', String(entry.id === currentPrompt)); railButtons.set(entry.id, mark); markers.append(mark);
       }
-      if (!entries.length && !archived.length) list.append(make('li', 'empty', query ? '沒有符合的已觀察提問。' : '尚未辨識到提問；可捲動對話讓網站掛載訊息。'));
-      if (focused) [...list.querySelectorAll<HTMLButtonElement>('[data-entry-id]')].find(node => node.dataset.entryId === focused)?.focus({ preventScroll: true });
     }
     updateCurrent();
   }
@@ -140,6 +196,7 @@ function start(): Instance {
     if (!alive) return;
     if (!supported(location.href)) { dispose(); return; }
     const snapshot = adapter.read();
+    if (store.context && (store.context !== snapshot.context || store.branch !== snapshot.branch)) void persistence.flush().catch(() => {});
     let reset = false;
     // Capture short-lived, first-seen removed prompts as plain data before the
     // UI debounce. Never carry removed content across a route/known branch.
@@ -150,6 +207,17 @@ function start(): Instance {
     adapter.remember();
     if (reset) { cancel(); adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
       status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
+    if (restoredContext !== snapshot.context) {
+      restoredContext = snapshot.context; const token = ++restoreToken, context = snapshot.context;
+      void persistence.restore(context, () => adapter.read()).then(restored => {
+        if (!alive || token !== restoreToken || store.context !== context) return;
+        if (restored) { cancel(); adapter.remember(); render(); }
+        persistence.schedule();
+      }).catch(() => { if (alive && token === restoreToken) persistence.schedule(); });
+    } else persistence.schedule();
+    if (collecting && store.limitReason && (navigationPending || navigator.state === 'loading')) {
+      cancel(); status.textContent = '已達本機保留上限，收集已停止；已收錄資料仍可搜尋。';
+    }
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
       ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 5 分鐘，可按停止。`
@@ -163,8 +231,10 @@ function start(): Instance {
   function queue(records: MutationRecord[] = []): void {
     if (!alive) return;
     if (store.context !== location.origin + location.pathname) { clearTimeout(refreshTimer); refreshTimer = undefined; refresh(); return; }
-    collect(undefined, records);
-    if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; render(); }, 120);
+    // Removed mounts must be captured immediately; ordinary streaming/scroll
+    // events share one read so a token stream cannot rebuild the index per event.
+    if (store.context === location.origin + location.pathname && adapter.readRemoved(records).length) collect(undefined, records);
+    if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; collect(); render(); }, 120);
   }
   async function navigate(id: string | null): Promise<void> {
     if (!alive) return;
@@ -185,8 +255,8 @@ function start(): Instance {
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
     if (id === null && result === 'idle') status.textContent = adapter.collectionFinished
-      ? `本次已向前、向後巡覽，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；兩端連續未觀察到進展。完整歷史尚未核對；可返回剛才位置。`
-      : `連續等待未觀察到進展，本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。請開啟頁面診斷檢查捲動；完整歷史尚未核對。`;
+      ? `本次已向前、向後巡覽，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；兩端已確認穩定捲動邊界。完整歷史尚未核對；可返回剛才位置。`
+      : `本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集。`;
     updateCurrent();
   }
   async function restore(): Promise<void> {
@@ -216,9 +286,17 @@ function start(): Instance {
   const routeTimer = setInterval(() => { if (alive && store.context !== location.origin + location.pathname) refresh(); }, 500);
   window.addEventListener('popstate', refreshRoute, { signal: events.signal });
   function refreshRoute(): void { refresh(); }
-  window.addEventListener('pagehide', dispose, { signal: events.signal });
-  document.addEventListener('scroll', () => { queue(); updateCurrent(); }, { capture: true, passive: true, signal: events.signal });
+  window.addEventListener('pagehide', event => {
+    if (event.persisted) { cancel(); void persistence.flush().catch(() => {}); }
+    else dispose();
+  }, { signal: events.signal });
+  window.addEventListener('pageshow', () => { if (alive) refresh(); }, { signal: events.signal });
+  document.addEventListener('scroll', event => {
+    if (event.composedPath().includes(host)) return;
+    if (currentFrame === undefined) currentFrame = requestAnimationFrame(() => { currentFrame = undefined; queue(); updateCurrent(); });
+  }, { capture: true, passive: true, signal: events.signal });
   for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown', 'input']) document.addEventListener(type, event => {
+    if (type === 'keydown' && !cancelsNavigation(event as KeyboardEvent)) return;
     if ((navigationPending || navigator.state === 'loading') && event.isTrusted && !event.composedPath().includes(host)) cancel();
   }, { capture: true, passive: true, signal: events.signal });
   input.addEventListener('input', () => { query = input.value; render(); }, { signal: events.signal });
@@ -242,7 +320,10 @@ function start(): Instance {
   input.addEventListener('keydown', event => { if (event.key === 'ArrowDown' || event.key === 'Enter') { event.preventDefault(); list.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus(); } }, { signal: events.signal });
   function dispose(): void {
     if (!alive) return;
+    void persistence.flush().catch(() => {}); persistence.dispose(); restoreToken++;
     alive = false; cancel(); events.abort(); observer.disconnect(); clearTimeout(refreshTimer); clearInterval(routeTimer);
+    if (listFrame !== undefined) cancelAnimationFrame(listFrame);
+    if (currentFrame !== undefined) cancelAnimationFrame(currentFrame);
     browser.runtime.onMessage.removeListener(runtimeListener); port?.disconnect(); port = null; adapter.dispose(); store.reset(); host.remove();
     delete world.__chatgptToc;
   }

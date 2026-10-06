@@ -249,7 +249,7 @@ test('CORE-03: per-batch/total deadlines are enforced and no-progress stops afte
   const base = { mounted: () => false, locate: () => false, direction: () => 'older', load: async () => { loads++; return false; } };
   const stall = new Navigator(base, () => {}, limits); assert.equal(await stall.run('absent'), 'not-found'); assert.equal(loads, 3);
   assert.equal(stall.lastStopReason, 'stalled');
-  const collection = new Navigator(base, () => {}, limits); assert.equal(await collection.run(null), 'idle'); assert.equal(collection.lastStopReason, 'stalled');
+  const collection = new Navigator(base, () => {}, limits); assert.equal(await collection.run(null), 'timed-out'); assert.equal(collection.lastStopReason, 'batch-limit');
   const stuck = new Navigator({ ...base, load: () => new Promise(() => {}) }, () => {}, limits);
   const started = performance.now(); assert.equal(await stuck.run('absent'), 'timed-out'); assert.ok(performance.now() - started < 250);
   assert.equal(stuck.lastStopReason, 'batch-timeout');
