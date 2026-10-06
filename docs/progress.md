@@ -1,5 +1,9 @@
 # 開發與 Git 同步紀錄
 
+## 2026-10-06：r5 修改與部分驗收
+
+固定runtime/test本機來源 992757435d30459be80586ee4e2682a3abc99f39；typecheck/core28/geometry9/build/lint完成，IAB localhost+runtime-shim實際觀察120快取對6／0／5掛載、ShiftO開啟、正常輸入O、精確跳轉及離屏搜尋。原生FirefoxUI7與ChatGPTLIVE仍PENDING，原因與自動執行拒絕見 [r5文件](mounted-rail-v0.3.1-r5.md)。一般Git同步的credential-manager已停止，連接器checkpoint分支另備份原始bundle；不把備份commit當作本機原始commit的相同SHA。
+
 ## 2026-10-06：r4 候選完成
 
 UI commit eb347bd 與 runtime/test commit 8f2daab1536ad9e30abc74479a8dfa3854766d57 已 push 並核對遠端。主流程核心 28、幾何 9、邊界 5、介面 4、錨點 5、捲動機制 7、跳轉回歸 4、快取 8 全部通過；固定 SHA 獨立驗收另見 [報告](acceptance-v0.3.1-r4.md)。候選資料夾 Firefox-測試版-v0.3.1-r4 的 6 個 production 檔案核對 SHA256。真實 ChatGPT Firefox addon LIVE 尚未完成。詳見 [r4 說明](boundary-compact-v0.3.1-r4.md)。

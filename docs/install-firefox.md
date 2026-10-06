@@ -1,4 +1,6 @@
-# Firefox v0.3.1 r4：開發驗收版
+# Firefox v0.3.1 r5：開發候選與待驗收
+
+目前最新開發候選為 **v0.3.1 r5**，路徑 `outputs/Firefox-測試版-v0.3.1-r5/manifest.json`；診斷 2026-10-06-r5。原生 UI7／ChatGPT LIVE 尚未完成；請先閱讀 [r5 規則與驗收限制](mounted-rail-v0.3.1-r5.md)。Shift + O 適用已啟用頁面，首次手動啟用或自動模式的既有授權規則保留。下文 r4/r3/r2 為歷史資訊。
 
 目前使用 **v0.3.1 r4**：選 sibling `outputs/Firefox-測試版-v0.3.1-r4/manifest.json`。先移除舊暫時附加元件，再載入 r4、重新整理 ChatGPT，診斷應為 `2026-10-06-r4`。詳見 [r4 規則、驗收與限制](boundary-compact-v0.3.1-r4.md)。下文 r3/r2 路徑保留為歷史說明，安裝以本段為準。
 

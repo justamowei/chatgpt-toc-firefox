@@ -1,5 +1,9 @@
 # ChatGPT 自製對話導航器：開發規劃 v1.4（Firefox 優先）
 
+## 2026-10-06：r5 掛載格子與快捷鍵
+
+最新要求取代 r4 抽樣：右側開合均按現在mounted且canLocate提問列格子，無固定5格上限；文字列表與搜尋保留全cache。Shift + O 在已啟用頁面非編輯區開啟；避免IME、repeat、其他modifier與輸入框干擾。規格與驗收範圍見 [r5](mounted-rail-v0.3.1-r5.md)。原生UI7受執行政策阻礙，保持PENDING，不沿用舊PASS；credential-manager因使用者確認記憶體錯誤停用，Git用connector checkpoint另行備份原始commits，既有分支push仍待恢復。
+
 ## 2026-10-06：r4 收集與介面規格
 
 收集不得以兩次短暫停滯判定到頂；須實際容器邊界、可見外殼、沒有載入、穩定 6 秒與兩次同方向限制探測。中段停滯保留方向並有限停止。縮小標記最多 5 個，展開／搜尋保留全部已收錄提問，橫排「目錄」與中性灰／靛色。規範、驗收及限制見 [r4 說明](boundary-compact-v0.3.1-r4.md)。每功能或 30 有效分鐘 commit、每次 push 並核對遠端 SHA 的規則持續適用。
