@@ -1,0 +1,34 @@
+{
+  "runtimeCommit": "2c9d0d2aa9f95336c449981d58d4360bc7d16d3f",
+  "production": {
+    "version": "0.3.2",
+    "revision": "2026-10-07-v032",
+    "fixture": false,
+    "hashes": {
+      "background.js": "530cc697404d34a8b21c2fb0fd15cfcc1ba680d7c1edd36a75e18c293ca644b4",
+      "content.js": "82868d66d5fc233b6222d8eb48a5149ebc9286f18033a84479456b9c175e1dd1",
+      "options.js": "76a40d39850ec5d8100399caf4b8db0b8f4f2f6e740f9757e1ea7151c70865cc",
+      "options.html": "4520902ab1b480178dc76b6ab1031682f1e3f07b0cdc316aa04184810fcc6e87",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "72a60a8c6f85f9edac476f2f70074d0ff5edee695ce29001c62dd3ec92235ef9"
+    }
+  },
+  "fixture": {
+    "version": "0.3.2",
+    "revision": "2026-10-07-v032",
+    "fixture": true,
+    "hashes": {
+      "background.js": "570e254687a7ccd1a7e8d0febbef7259aba54ff4bb0b8c0341313e338eb1afa6",
+      "content.js": "d1d5f19dc0ccee7a1209c3d13a34fbd669a3bbcbbf9ee1a2d0cd2df86e659637",
+      "options.js": "c92d11e48e612e9b3511bca446e7358ec0883613a018668ff784b3a77ca88003",
+      "options.html": "4520902ab1b480178dc76b6ab1031682f1e3f07b0cdc316aa04184810fcc6e87",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "fb5629184946b0f478bb8af735430cd90798f8df6b3d3c672b742579edf46a1f"
+    }
+  },
+  "tests": {
+    "pure": 74,
+    "native": 18,
+    "chatGptLive": "PENDING"
+  }
+}

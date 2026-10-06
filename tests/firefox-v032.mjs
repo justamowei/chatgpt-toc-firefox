@@ -12,6 +12,11 @@ async function click(selector){const s=await(await driver.findElement(By.id('cha
 async function test(name,run){const actual=await run();results.push({name,status:'PASS',actual});console.log(name+' PASS '+JSON.stringify(actual));}
 async function mount(ids){await evaluate(`const m=document.querySelector('main');m.replaceChildren();for(const i of arguments[0]){const a=document.createElement('article');a.dataset.testid='conversation-turn-'+i*2;for(const role of ['user','assistant']){const b=document.createElement('div');b.dataset.messageAuthorRole=role;b.dataset.messageId='branch-A:'+ (role==='user'?'u':'a')+'-'+i;b.textContent=i<20?(role==='user'?fixturePrompts[i]:'合成回答 '+i+'。這個頁面沒有真實聊天、帳號或網路歷史 API。'):'v032 '+role+' '+i;a.append(b);}m.append(a);}`,ids);}
 try{
+  // installAddon resolves before Firefox's asynchronous onInstalled handler.
+  // Wait for registration through the extension's own options document; this
+  // neither changes preferences nor performs a toolbar/manual enable action.
+  await driver.get(session.optionsUrl);
+  await driver.wait(async()=> await evaluate(`return (async()=> (await browser.scripting.getRegisteredContentScripts({ids:['chatgpt-toc']})).length===1)();`),20000);
   await driver.get(session.url);
   await test('V032-01 default automatic startup without toolbar action',async()=>{await wait(async()=>!!await state());const s=await state();assert.equal(s.marks,20);assert.equal(s.expanded,'false');return s;});
   // Capture the synthetic prompt text before replacing its window.
@@ -39,11 +44,20 @@ try{
     if((await state()).expanded!=='true')await click('.toggle');await wait(async()=> (await state()).rows===600);
     const s=await state();assert.equal(s.marks,20);await session.screenshot('after-refresh-cache-600-mounted-20.png');return s;
   });
-  await test('V032-05 different conversation does not inherit cached prompts',async()=>{
+  await test('V032-05 unknown branch retains 600 searchable records and promotes later exact mounts without duplicates',async()=>{
+    await evaluate(`document.querySelector('main').removeAttribute('data-fixture-branch');`);
+    await wait(async()=> (await state()).scope.includes('未完整核對') && (await state()).scope.includes('已儲存'));
+    await driver.navigate().refresh();await wait(async()=> (await state())?.scope.includes('580'));
+    if((await state()).expanded!=='true')await click('.toggle');await wait(async()=> (await state()).rows===20 && (await state()).archived===580);
+    await evaluate(`window.fixturePrompts=[...document.querySelectorAll('[data-message-author-role=user]')].map(n=>n.textContent);`);
+    await mount([111,112,113,114,115,116]);await wait(async()=> (await state()).rows===26 && (await state()).archived===574);
+    const s=await state();assert.equal(s.rows+s.archived,600);assert.equal(s.marks,6);await session.screenshot('restored-unverified-600.png');return s;
+  });
+  await test('V032-06 different conversation does not inherit cached prompts',async()=>{
     await driver.get(session.url.replace('/c/synthetic','/c/other-v032'));await wait(async()=>!!await state());await wait(async()=> (await state()).scope.includes('20 則'));
     if((await state()).expanded!=='true')await click('.toggle');await wait(async()=> (await state()).rows===20);assert.equal((await state()).archived,0);return await state();
   });
-  await test('V032-06 second ChatGPT-matched page starts automatically',async()=>{
+  await test('V032-07 second ChatGPT-matched page starts automatically',async()=>{
     await driver.switchTo().newWindow('tab');await driver.get(session.url.replace('/c/synthetic','/c/second-v032'));await wait(async()=>!!await state());assert.equal((await state()).marks,20);return await state();
   });
 }catch(error){results.push({name:'failure',status:'FAIL',error:String(error)});console.error(error);await session.screenshot('failure.png').catch(()=>{});process.exitCode=1;}
