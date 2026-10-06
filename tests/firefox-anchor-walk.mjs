@@ -15,7 +15,7 @@ const session = await fixtureSession(process.env.TOC_TEST_ARTIFACTS || 'artifact
 const { driver, artifacts, action } = session;
 const evaluate = (code, ...args) => driver.executeScript(code, ...args);
 const results = [];
-const state = () => evaluate(`const h=document.getElementById('chatgpt-toc-root');if(!h)return null;const s=h.shadowRoot;return {nav:h.dataset.navigation,status:s.querySelector('#toc-status').textContent,scope:s.querySelector('#toc-scope').textContent,ids:[...s.querySelectorAll('#toc-list button')].map(b=>b.dataset.entryId),highlight:document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')};`);
+const state = () => evaluate(`const h=document.getElementById('chatgpt-toc-root');if(!h)return null;const s=h.shadowRoot;return {nav:h.dataset.navigation,expanded:s.querySelector('.toggle').getAttribute('aria-expanded')==='true',status:s.querySelector('#toc-status').textContent,scope:s.querySelector('#toc-scope').textContent,ids:[...s.querySelectorAll('#toc-list button')].map(b=>b.dataset.entryId),highlight:document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')};`);
 const stats = () => evaluate('return window.anchorFixture.stats();');
 async function click(selector) {
   const shadow = await (await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();
@@ -64,8 +64,9 @@ async function setup(start = 23) {
     window.anchorFixture={freeze(v=true){frozen=v;},tail(){clearTimeout(timer);start=23;render();root.scrollTop=tops[25]+20;},stats(){return {start,top:root.scrollTop,mounts:mounts.slice(),calls:calls.slice(),writes:writes.slice(),events:events.slice(),lazyShells:m.querySelectorAll('section').length,contentVisibility:getComputedStyle(m.querySelector('section')).contentVisibility,rootHeight:root.scrollHeight,outerHeight:decoy.scrollHeight,outerClient:decoy.clientHeight};}};
   `, start);
   await action();
+  await driver.wait(async () => !!(await state()), 10000);
+  if (!(await state()).expanded) await click('.toggle');
   await driver.wait(async () => (await state())?.ids.length === 7, 10000);
-  await action();
 }
 async function waitFinished(ms = 65000) { await driver.wait(async () => (await state()).nav !== 'loading', ms); }
 function contiguousMounts(actual) {
@@ -104,10 +105,14 @@ try {
     assert.ok(f.mounts.some(m=>m.start===0));contiguousMounts(f);
     return {collected:30,pinnedTailRetained:2,unknownMiddleActuallyMounted:true,windows:f.mounts.map(m=>m.start)};
   });
-  await test('ANCHOR-04: stationary anchor has a finite no-progress stop without inventing a complete index', async()=>{
-    await setup();await evaluate('window.anchorFixture.freeze();');const began=Date.now();await click('#toc-earlier');await waitFinished(35000);
-    const s=await state(),f=await stats();assert.equal(s.nav,'idle');assert.equal(s.ids.length,7);assert.equal(f.mounts.length,1);assert.ok(Date.now()-began<35000);assert.ok(f.calls.length<=12,'Repeated native scroll events cannot count as unlimited progress');
-    assert.ok(s.status.includes('未觀察到進展')||s.status.includes('沒有觀察到進展'));return {state:s.nav,collected:7,outerCalls:f.calls.length,elapsedMs:Date.now()-began,status:s.status};
+  await test('ANCHOR-04: stationary middle remains retryable beyond three empty batches and can be stopped', async()=>{
+    await setup();await evaluate('window.anchorFixture.freeze();');const began=Date.now();await click('#toc-earlier');await driver.sleep(22000);
+    const pending=await state(),f=await stats();assert.equal(pending.nav,'loading');assert.equal(pending.ids.length,7);assert.equal(f.mounts.length,1);
+    assert.ok(f.top>2,'A stationary middle has not reached the physical head');assert.match(pending.scope,/歷史尚未完整/);
+    await click('#toc-stop');await driver.wait(async()=> (await state()).nav==='cancelled',6000);await driver.sleep(300);
+    const stopped=await stats();await driver.sleep(700);const after=await stats(),s=await state();
+    assert.equal(s.nav,'cancelled');assert.equal(s.ids.length,7);assert.equal(after.calls.length,stopped.calls.length);assert.equal(after.writes.length,stopped.writes.length);
+    return {state:s.nav,collected:7,retryableBeforeStop:true,outerCalls:f.calls.length,elapsedMs:Date.now()-began,status:s.status};
   });
   await test('ANCHOR-05: cancelling an in-flight edge mount prevents late scrolling or highlight', async()=>{
     await setup();await click('#toc-earlier');await driver.wait(async()=> (await stats()).calls.length>0,6000);

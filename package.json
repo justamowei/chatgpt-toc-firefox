@@ -1,7 +1,7 @@
 {
   "name": "chatgpt-toc-firefox",
-  "version": "0.3.1",
-  "tocRevision": "2026-10-06-r5",
+  "version": "0.3.2",
+  "tocRevision": "2026-10-07-v032",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,6 +10,11 @@
     "lint:firefox": "web-ext lint --source-dir dist/firefox --warnings-as-errors",
     "test:core": "node --test tests/core.test.mjs",
     "test:geometry": "node --test tests/geometry.test.mjs",
+    "test:interaction": "node --test tests/interaction.test.mjs",
+    "test:persistence": "node --test tests/persistence.test.mjs",
+    "test:background": "node --test tests/background.test.mjs",
+    "test:collection-policy": "node --test tests/collection-policy.test.mjs",
+    "test:firefox-v032": "node tests/firefox-v032.mjs",
     "test:firefox-fixture": "node tests/firefox-fixture.mjs",
     "test:firefox-permissions": "node tests/firefox-permissions.mjs",
     "test:firefox-addon-lifecycle": "node tests/firefox-addon-lifecycle.mjs",

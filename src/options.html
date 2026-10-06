@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ChatGPT 對話導航器設定</title>
 <style>body{font:16px/1.7 system-ui;margin:40px auto;padding:0 24px;max-width:680px;color:#202b38;background:#fafbfc}h1{font-size:25px}button{font:inherit;padding:10px 16px;margin:8px 8px 8px 0;border:1px solid #688396;border-radius:8px;cursor:pointer}button:focus-visible{outline:3px solid #167e8c}#status{padding:16px;background:#e9f3f3;border-radius:8px}@media(prefers-color-scheme:dark){body{background:#171c23;color:#e8ecf0}button{background:#293641;color:#fff}#status{background:#24383d}}</style></head>
-<body><h1>ChatGPT 對話導航器</h1><p>預設在 ChatGPT 分頁點擴充功能按鈕啟用。若希望每次開啟 ChatGPT 都有目錄，可授予該網站的選用權限。</p>
-<button id="enable" type="button">在 ChatGPT 自動啟用</button><button id="disable" type="button">關閉自動啟用並撤回網站權限</button><p id="status" role="status">正在讀取設定…</p>
-<p>聊天索引只留在各分頁記憶體；設定存於本機。原型只搜尋已收錄內容，尚未證明整段歷史完整。</p><script src="options.js"></script></body></html>
+<body><h1>ChatGPT 對話導航器</h1><p>預設在 ChatGPT 頁面自動顯示目錄。Firefox 安裝或更新時可能要求允許 ChatGPT 網站權限；可在此切換自動啟用。</p>
+<button id="enable" type="button">在 ChatGPT 自動啟用</button><button id="disable" type="button">關閉自動啟用</button><button id="clear" type="button">清除本機對話索引</button><p id="status" role="status">正在讀取設定…</p>
+<p>已收錄提問按對話保存於此 Firefox 的本機擴充功能儲存空間，不上傳；無痕視窗不收錄。最多保留最近使用的 12 個對話，總儲存預算為 600 萬字元，每個對話最多 5000 筆／500 萬字元。重整後核對分支與已掛載訊息；分支待核對的上次資料僅供搜尋。搜尋只涵蓋已收錄內容，不代表整段歷史完整。</p><script src="options.js"></script></body></html>

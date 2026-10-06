@@ -1,9 +1,0 @@
-{
-  "base": "16b2009b32c856426140cfaf53cd9b8c9e418da5",
-  "sourceCommit": "6339100400da8c995aa864126386675e72222742",
-  "runtimeCommit": "992757435d30459be80586ee4e2682a3abc99f39",
-  "branch": "backup/r5-source-checkpoint",
-  "bundleSha256": "bf2f31d7bbe36e29ec6a28e6f5c2b7fa6f7abc1161d16a5149e732d828f80e4e",
-  "note": "Source checkpoint plus original local commit objects. Feature branch normal push is pending; credential-manager must not be invoked.",
-  "restore": "From a clone containing the base commit: git bundle verify recovery/r5-local.bundle; git fetch recovery/r5-local.bundle 6339100400da8c995aa864126386675e72222742"
-}

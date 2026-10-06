@@ -1,15 +1,26 @@
 import { DEFAULT_SETTINGS, validMessage, validSettings, type Settings } from './core';
 import { HOSTS, supported } from './config';
+import { CacheBroker, conversationContext } from './persistence';
+const cache = new CacheBroker(browser.storage.local);
+const MIGRATION_KEY = 'toc-v032-auto-migrated';
 let settingsQueue: Promise<unknown> = Promise.resolve();
 let registrationQueue: Promise<unknown> = Promise.resolve();
 const ports = new Set<browser.runtime.Port>();
-async function settings(): Promise<Settings> {
-  const result = await browser.storage.local.get('settings');
-  return validSettings(result.settings) ? result.settings : { ...DEFAULT_SETTINGS };
+async function readSettings(): Promise<Settings> {
+  const result = await browser.storage.local.get(['settings', MIGRATION_KEY]);
+  const current = validSettings(result.settings) ? { ...result.settings } : { ...DEFAULT_SETTINGS };
+  if (result[MIGRATION_KEY] !== true) {
+    current.auto = true;
+    await browser.storage.local.set({ settings: current, [MIGRATION_KEY]: true });
+  }
+  return current;
+}
+function settings(): Promise<Settings> {
+  const task = settingsQueue.then(readSettings); settingsQueue = task.catch(() => {}); return task;
 }
 async function update(patch: Partial<Settings>): Promise<Settings> {
   const task = settingsQueue.then(async () => {
-    const next = { ...await settings(), ...patch }; await browser.storage.local.set({ settings: next }); return next;
+    const next = { ...await readSettings(), ...patch }; await browser.storage.local.set({ settings: next }); return next;
   });
   settingsQueue = task.catch(() => {}); return task;
 }
@@ -61,6 +72,16 @@ browser.runtime.onMessage.addListener((message: unknown, sender) => {
   const page = contentSender(sender), options = optionsSender(sender);
   if (!page && !options) return undefined;
   if (message.kind === 'settings:get') return settings();
+  if (message.kind === 'cache:get' && page && conversationContext(sender.url!) === message.context && sender.tab!.id !== undefined) {
+    return cache.load(message.context);
+  }
+  // A trusted isolated extension script may flush the previous SPA route after
+  // the frame URL changed, even when Firefox just woke this event page. Reads
+  // remain bound to the current route; external/page scripts cannot use this
+  // internal runtime channel. Never accept another origin or private frame.
+  if (message.kind === 'cache:set' && page && conversationContext(message.state.context) === message.state.context &&
+    new URL(sender.url!).origin === new URL(message.state.context).origin) return cache.save(message.state).then(() => true);
+  if (message.kind === 'cache:clear' && options) return cache.clear().then(() => true);
   if (message.kind === 'settings:set' && page) return update({ expanded: message.expanded });
   if (message.kind === 'options:open' && page) return browser.runtime.openOptionsPage();
   if (message.kind === 'auto:set' && options) return (async () => {
@@ -73,7 +94,10 @@ browser.runtime.onMessage.addListener((message: unknown, sender) => {
 browser.permissions.onRemoved.addListener(permissions => {
   if (!permissions.origins?.some(origin => HOSTS.includes(origin))) return;
   const stopped = stopPages();
-  void Promise.all([stopped, update({ auto: false }).then(syncRegistration)]).catch(() => {});
+  void Promise.all([stopped, syncRegistration()]).catch(() => {});
+});
+browser.permissions.onAdded.addListener(permissions => {
+  if (permissions.origins?.some(origin => HOSTS.includes(origin))) void syncRegistration().catch(() => {});
 });
 browser.runtime.onInstalled.addListener(() => { void syncRegistration().catch(() => {}); });
 browser.runtime.onStartup.addListener(() => { void syncRegistration().catch(() => {}); });
