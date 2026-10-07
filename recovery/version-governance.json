@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "73a2908390bae11e98af99fba407797466cb2550",
+  "expectedProductHead": "16b2009b32c856426140cfaf53cd9b8c9e418da5",
+  "expectedMainHead": "b1d2ea056050762f3cbd9b33ed31defc038c9483",
+  "bundleSha256": "2604a9aab90d18761c4b8a977687de6856fb9229c188fe9c4f7943c27ad02f9d",
+  "tags": {
+    "v0.1.0": "4d5de3f57c706b17f12470136cf2419840153bb9",
+    "v0.1.1": "1555b5d38afa8aecfd239da1e9695a65822b311f",
+    "v0.2.0": "e3f66412a6b6e3e7d5d764648b9e0295f9859942",
+    "v0.3.0": "d74aa53e4f84f4a2dfd7eafc42e374fe903cbb78",
+    "v0.3.1": "e7fc9fb48329e7fb5705453758a07b62fc931be7",
+    "v0.3.2": "32dd2206d838d51c2e278e95b7933a001667acbc",
+    "v0.3.3": "5a63617377aa577b3ab736e19a908079a4c92809"
+  },
+  "scope": "Restore original unchanged commits and annotated tags; fast-forward product/maintenance refs; main documentation subset only."
+}

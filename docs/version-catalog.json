@@ -1,0 +1,221 @@
+{
+  "schemaVersion": 1,
+  "policy": "version-policy.md",
+  "backfilledAt": "2026-10-07",
+  "currentVersion": "0.3.3",
+  "maintenanceBranch": "release/v0.3",
+  "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
+  "versions": [
+    {
+      "version": "0.1.0",
+      "tag": "v0.1.0",
+      "deliveryCommit": "30835220edef18266605ce3b897e58da0aff9e6a",
+      "runtimeCommit": "5cf4764741cca11cf9b52310007cb656fd5b9606",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/acceptance-final.md",
+        "docs/acceptance-native.md",
+        "docs/prototype-acceptance.md"
+      ],
+      "selection": "First documented delivery snapshot; product runtime unchanged from independently accepted source.",
+      "tagObject": "4d5de3f57c706b17f12470136cf2419840153bb9"
+    },
+    {
+      "version": "0.1.1",
+      "tag": "v0.1.1",
+      "deliveryCommit": "07137cdd811d6a32d87c14921750eac32afb84a4",
+      "runtimeCommit": "5aa5102e2cc5e605196f6edfce2fb6d6b4faf649",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/acceptance-v0.1.1.md"
+      ],
+      "selection": "First documented delivery snapshot; product runtime unchanged from independently accepted source.",
+      "tagObject": "1555b5d38afa8aecfd239da1e9695a65822b311f"
+    },
+    {
+      "version": "0.2.0",
+      "tag": "v0.2.0",
+      "deliveryCommit": "27ecb23cb2d27e235734b60c387c3d9a7ceb326a",
+      "runtimeCommit": "95c2694e03185f66a1a0dc19a62bc8280b61420e",
+      "status": "withdrawn",
+      "liveStatus": "FAIL; WITHDRAWN",
+      "acceptance": [
+        "docs/acceptance-v0.2.0.md",
+        "docs/acceptance-subagent-v0.2.0.md"
+      ],
+      "selection": "First documented delivery snapshot; product runtime unchanged from independently accepted source.",
+      "tagObject": "e3f66412a6b6e3e7d5d764648b9e0295f9859942"
+    },
+    {
+      "version": "0.3.0",
+      "tag": "v0.3.0",
+      "deliveryCommit": "288f3b0e868e0d3dfd8bc94cb717094b64ce4991",
+      "runtimeCommit": "4c3d838d187b0e2771bbf58d6ba00ddc0b07a4b2",
+      "status": "experimental-candidate",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/acceptance-seen-cache-v0.3.0.md"
+      ],
+      "selection": "First documented delivery snapshot; product runtime unchanged from independently accepted source.",
+      "tagObject": "d74aa53e4f84f4a2dfd7eafc42e374fe903cbb78"
+    },
+    {
+      "version": "0.3.1",
+      "tag": "v0.3.1",
+      "deliveryCommit": "99c3b064a55e3b36707c83630dc89c59bedcd585",
+      "runtimeCommit": "f9974ec368d81e4a25cc9e2583ebf6e55dbcb63d",
+      "status": "experimental-candidate",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/acceptance-navigation-v0.3.1.md"
+      ],
+      "selection": "First documented delivery snapshot; product runtime unchanged from independently accepted source.",
+      "tagObject": "e7fc9fb48329e7fb5705453758a07b62fc931be7"
+    },
+    {
+      "version": "0.3.2",
+      "tag": "v0.3.2",
+      "deliveryCommit": "5fd1d4dd8dfc1c12342e0a4ccbf01dc31365f748",
+      "runtimeCommit": "2c9d0d2aa9f95336c449981d58d4360bc7d16d3f",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/acceptance-v0.3.2.md",
+        "docs/release-v0.3.2.md"
+      ],
+      "selection": "First documented delivery snapshot; product runtime unchanged from independently accepted source.",
+      "tagObject": "32dd2206d838d51c2e278e95b7933a001667acbc"
+    },
+    {
+      "version": "0.3.3",
+      "tag": "v0.3.3",
+      "deliveryCommit": "56951988cb7d258eafeadacfa02174226a824093",
+      "runtimeCommit": "567dfda645d113449eece4932519da98e59e7118",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/acceptance-v0.3.3.md",
+        "docs/release-v0.3.3.md"
+      ],
+      "selection": "First documented delivery snapshot; product runtime unchanged from independently accepted source.",
+      "tagObject": "5a63617377aa577b3ab736e19a908079a4c92809"
+    }
+  ],
+  "legacyRevisions": [
+    {
+      "label": "r2",
+      "manifestVersion": "0.3.1",
+      "packageVersion": "0.3.1",
+      "revision": "2026-10-05-r2",
+      "snapshot": "fe20ec7e6bf9827046282b98120df4d5ca7ddbbd",
+      "runtimeCommit": "31608f2c3766d282f66c65a6d15ab63ceaf894a1",
+      "report": "docs/acceptance-v0.3.1-r2.md",
+      "reportBlob": "9f28bfd1c354651ff98df68bfc38f55f1ae7d8e7",
+      "snapshotRuntimeDiff": [],
+      "changedRuntimeFromInitial": [
+        "package.json",
+        "scripts/build.mjs",
+        "src/config.ts",
+        "src/content.ts",
+        "src/core.ts",
+        "src/dom.ts",
+        "src/geometry.ts"
+      ],
+      "semverTag": null,
+      "policy": "Archive metadata only; never move v0.3.1 from initial accepted delivery and never label changed runtime as the same semver release.",
+      "liveStatus": "PENDING",
+      "nativeStatus": "Historical independent native synthetic PASS documented; not LIVE."
+    },
+    {
+      "label": "r3",
+      "manifestVersion": "0.3.1",
+      "packageVersion": "0.3.1",
+      "revision": "2026-10-05-r3",
+      "snapshot": "b8e25f97c9b8c50baed169cee01e7b2a48c216f9",
+      "runtimeCommit": "535a4ffe0fbde463b97c687e4e8dab93f7814bf0",
+      "report": "docs/acceptance-v0.3.1-r3.md",
+      "reportBlob": "49776dcef2eb5e8ce9c4332c8ba9f6e29b4caee0",
+      "snapshotRuntimeDiff": [],
+      "changedRuntimeFromInitial": [
+        "package.json",
+        "scripts/build.mjs",
+        "src/config.ts",
+        "src/content.ts",
+        "src/core.ts",
+        "src/dom.ts",
+        "src/geometry.ts"
+      ],
+      "semverTag": null,
+      "policy": "Archive metadata only; never move v0.3.1 from initial accepted delivery and never label changed runtime as the same semver release.",
+      "liveStatus": "PENDING",
+      "nativeStatus": "Historical independent native synthetic PASS documented; not LIVE."
+    },
+    {
+      "label": "r4",
+      "manifestVersion": "0.3.1",
+      "packageVersion": "0.3.1",
+      "revision": "2026-10-06-r4",
+      "snapshot": "16b2009b32c856426140cfaf53cd9b8c9e418da5",
+      "runtimeCommit": "8f2daab1536ad9e30abc74479a8dfa3854766d57",
+      "report": "docs/acceptance-v0.3.1-r4.md",
+      "reportBlob": "ca0f5e6903de58cb1edbdc3c0928759469e70ef8",
+      "snapshotRuntimeDiff": [],
+      "changedRuntimeFromInitial": [
+        "package.json",
+        "scripts/build.mjs",
+        "src/config.ts",
+        "src/content.ts",
+        "src/core.ts",
+        "src/dom.ts",
+        "src/geometry.ts",
+        "src/host.css",
+        "src/styles.ts"
+      ],
+      "semverTag": null,
+      "policy": "Archive metadata only; never move v0.3.1 from initial accepted delivery and never label changed runtime as the same semver release.",
+      "liveStatus": "PENDING",
+      "nativeStatus": "Historical independent native synthetic PASS documented; not LIVE."
+    },
+    {
+      "label": "r5",
+      "manifestVersion": "0.3.1",
+      "packageVersion": "0.3.1",
+      "revision": "2026-10-06-r5",
+      "snapshot": "6339100400da8c995aa864126386675e72222742",
+      "runtimeCommit": "992757435d30459be80586ee4e2682a3abc99f39",
+      "report": "docs/acceptance-v0.3.1-r5.md",
+      "reportBlob": "83c824a582b766f4f922d929349194f687a25e8e",
+      "snapshotRuntimeDiff": [],
+      "changedRuntimeFromInitial": [
+        "package.json",
+        "scripts/build.mjs",
+        "src/config.ts",
+        "src/content.ts",
+        "src/core.ts",
+        "src/dom.ts",
+        "src/geometry.ts",
+        "src/host.css",
+        "src/styles.ts"
+      ],
+      "semverTag": null,
+      "policy": "Archive metadata only; never move v0.3.1 from initial accepted delivery and never label changed runtime as the same semver release.",
+      "liveStatus": "PENDING",
+      "nativeStatus": "Latest native UI 7 PENDING due to environment; independent static/core/geometry/build/hash PASS. Earlier native r4 PASS cannot be reused as r5 PASS."
+    }
+  ],
+  "withdrawal": {
+    "version": "v0.2.0",
+    "laterLiveFailureCommit": "5c035c30b223886201adaa88433a7fbb8019b041",
+    "liveFailureReport": "docs/live-history-failure.md",
+    "liveFailureReportBlob": "c5a59729db912c0666f91abb3bfe4aaa8b6afb98",
+    "withdrawalCommit": "08f7867bbb78188ad4a9bf01632bf0881e937c32",
+    "supersedingDocumentationCommit": "5fb49e7ccb3da8236d5499d484679ea0a9550fd6",
+    "status": "WITHDRAWN; real product goal LIVE FAIL",
+    "originalSnapshotContainsWithdrawal": false,
+    "tagAnnotationMustStateWithdrawal": true,
+    "preserveHistoricalPass": true,
+    "restoreTagToOlderRuntime": false
+  }
+}

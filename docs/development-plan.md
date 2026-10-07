@@ -1,3 +1,7 @@
+# 2026-10-07 Git與版本規範更新（優先適用）
+
+[完整規範](version-policy.md)、[版本目錄](versions.md)。每交付新版本與immutable annotatedtag，維護分支release/v0.3；v0.2.0已撤回。下方舊版本紀錄保留，不覆蓋現行Git規範。
+
 # 2026-10-07 v0.3.3 更新（本節優先）
 
 ## 三項修正
@@ -426,63 +430,19 @@ T07a 可交付誠實標示範圍的實驗原型；只有 LIVE-01–07 與相關 
 
 簽章準備、來源與測試包由主 agent 完成；Mozilla 帳號與必要授權、簽章審查結果及等待時間是外部依賴。未完成時交付原型並標示剩餘工作，不稱作正式已簽章版。
 
-## 15. Git 環境、commit 節奏與 GitHub 雲端同步
+## 15. Git、版本與GitHub同步（2026-10-07修訂）
 
-### 15.1 Git 環境與首次上雲
+本節及 [version-policy.md](version-policy.md) 為現行規定。初始Git建立与後續歷史原樣保留，不回填已成功同步。
 
-此節為使用者追加要求。暫停期間已獲授權完成GitHub私人儲存庫與首次同步；後續使用者已恢復功能開發。GIT-00已完成：私人repo https://github.com/justamowei/chatgpt-toc-firefox ，main與feat/firefox-prototype首次push成功且SHA一致。以下為已執行且後續必須持續遵守的程序：
+- 產品版本三段整數；主要能力改動增MINOR，修復／效能／相容介面改進增PATCH。manifest/package/lock版本一致。每次程式不同的交付必須新版本。
+- 每功能或30有效分鐘commit；WIP標未完成，主代理管理Git，驗收以固定SHA。
+- 每次交付建立不移動的annotatedtag vX.Y.Z。tag固定交付commit，記runtimeSHA、驗收文件與限制；metadata更新另commit。
+- feat/功能与fix/問題用於開發；release/vMAJOR.MINOR維護系列；main納入範圍已核准的變更。既有feat/firefox-prototype及backup/*保留。
+- 每checkpoint同步並核對原始SHA；雲端備份与正常同步分為BACKUP_VERIFIED／SYNC_VERIFIED。GCM禁用，必要時雲端Linux job從bundle恢復原始歷史，禁止本機執行恢復網路Git。
+- 不force-push、不改歷史或既有tag、不刪遠端分支；不同來源程式不冒充原始SHA。private維持，tag不表示公開Release或簽章。
+- GIT驗收：版本一致、版本目錄來源／runtime一致、annotatedtag object＋peeled commit一致、ref非force更新、明列LIVE／撤回／同步限制。
 
-1. 以 `outputs/chatgpt-toc` 作為獨立專案儲存庫根目錄，先確認不在另一個既有儲存庫內，避免把整個 Documents／Codex 目錄納入。
-2. 建立 `.gitignore`，排除 node_modules、建置產物、未簽章／簽章套件、暫存、測試 profile、真實聊天樣本、原始日誌、憑證與 `.env`。追蹤 source、manifest、package.json、package-lock.json、可重現腳本、合成／去識別化測試 fixture，以及必要文件。
-3. 將本計畫與驗收／進度文件納入 repo 的 docs，後續與使用者可閱讀的 outputs 文件同步。計畫變更也必須 commit，不能只更新 repo 外的副本。
-4. 初始化 Git，核對專案的 author name／email。沿用可用且適當的既有身份，必要時只設定 repo-local config；不任意修改使用者全域 Git 身份。
-5. 主分支為 `main`；實作分支為 `feat/firefox-prototype`。基礎專案／規格以初始 commit 保存；暫停前未完成的程式另以 WIP commit 保存在開發分支，測試狀態清楚標示。
-6. 雲端使用 **GitHub private repository**，暫定名稱 `chatgpt-toc-firefox`。先確認已登入的 GitHub 帳號、建立權限及名稱是否可用；若同名 repo 已存在，先核對所有權與內容，不覆蓋或直接接上未知儲存庫。
-7. 透過可用的 GitHub 工具／CLI 建立私人 repo，設定 origin。使用使用者既有登入／認證方式，不把 token 寫入 remote URL、來源或日誌。
-8. push main 與開發分支、設定 upstream；核對 GitHub 的 private 狀態、remote URL、分支與遠端 HEAD SHA 與本機一致，才標 GIT-00 完成。
-
-若尚缺 GitHub 登入／授權／目標帳號，先完成可逆的本機 Git 快照，記錄雲端同步待完成；依本次要求，雲端首次 push 完成前不繼續新增功能。不可把只有本機 commit 當作已上雲。
-
-### 15.2 Commit 觸發條件
-
-採「功能或時間，以較早達到者為準」：
-
-- 完成一項可辨識的小功能、修復、測試組或文件變更時立即 commit；不要等到整個版本才一次提交。
-- 累積 **30 分鐘有效開發時間**，即使功能尚未完成也建立 checkpoint commit；若沒有檔案變更不建立空 commit。純等待、暫停期間不計入有效開發時間。
-- 切換主要任務、交付 sub-agent 驗收、結束當輪開發或依使用者要求暫停時，優先保存已產生的變更；若暫停要求僅允許文件更新，先停止程式工作並記錄尚未 commit 的狀態，恢復時立即補快照。
-- sub-agent 不與主 agent 同時寫 Git history。主 agent 負責 commit／push；驗收 agent 以固定 commit SHA 建置、執行測試與審查。
-
-時間檢查點採 `wip: ...`，僅留在開發分支，記錄未完成內容與測試狀態。功能完成採 `feat:`、修復採 `fix:`、測試採 `test:`、文件採 `docs:`、環境採 `chore:`。Commit 訊息描述本次具體行為，避免只有「update」或「backup」。
-
-### 15.3 Commit 前的檢查
-
-- 使用 git status／diff 核對預計納入的檔案，精確 stage 相關路徑，不把真實聊天、登入資料、測試 profile 或依賴目錄混入。
-- 功能／修復完成 commit 執行與變更相符的 typecheck、lint 與測試。僅文件變更檢查文件一致性；不重跑無關的全部測試。
-- 時間 checkpoint 可保存未完成的程式；若測試失敗或未執行，commit 與進度紀錄必須寫明，不得當作已通過。
-- 計畫、驗收案例、實際程式能力與測試結果一起更新；重要測試報告對應 commit SHA、build 版本與套件 SHA-256。
-- 不為了通過檢查而移除失敗案例、縮小固定長對話樣本，或把真實驗收改成合成驗收。
-
-### 15.4 Push 與雲端核對
-
-**每一次 commit 後都 push 對應分支。** 建立 checkpoint 的目的包含雲端可恢復性，不只本機歷史。
-
-- 首次推送設定 upstream；之後確認推送成功並核對遠端分支 SHA。使用 git ls-remote 或 GitHub 分支資料驗證，不只依命令已呼叫就寫成功。
-- push 失敗時保留本機 commit，記錄失敗原因、最後成功 push SHA 與尚未同步 commit；嘗試處理可恢復的網路／認證問題，無法解除就向使用者報告，不反覆要求其已提供的授權。
-- 不 force-push、不重寫已推送 history、不刪除遠端分支；修正以新 commit 進行。需要不可逆歷史操作時另說明原因。
-- 預設在開發分支工作。main 只納入已完成且符合對應驗收範圍的變更；實驗原型可發布於開發分支，不將未驗證的長對話能力標成正式版。
-- GitHub 儲存庫持續保持 private。公開發佈、建立 Release 或上傳簽章套件是另外的交付動作，不能因一般 push 自動執行。
-
-### 15.5 Git 驗收與進度紀錄
-
-| 案例 | 通過條件 |
-|---|---|
-| GIT-01 | 專案有獨立 Git 根目錄、正確忽略規則、可核對身份、main／開發分支 |
-| GIT-02 | origin 指向已確認的 GitHub 私人 repo，本機與遠端初始 SHA 一致 |
-| GIT-03 | 功能完成或 30 分鐘檢查點有 commit；WIP 與已驗收功能清楚區分 |
-| GIT-04 | 每次 commit 後有成功 push 紀錄，失敗與待同步項目明列 |
-| GIT-05 | sub-agent 驗收固定 commit SHA，修復後以新 SHA 重驗受影響項目 |
-
-進度文件至少記錄：時間（Asia/Taipei）、branch、commit SHA、功能／WIP 摘要、測試結果、push 結果、遠端 SHA、下一步與未解除限制。
+詳見 [版本目錄](versions.md)、[完整規範](version-policy.md)。以下15.6、15.7為當時歷史狀態。
 
 ### 15.6 暫停時的歷史快照與恢復後狀態
 

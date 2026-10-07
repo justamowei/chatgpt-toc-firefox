@@ -1,0 +1,699 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-10-07",
+  "timezone": "Asia/Taipei",
+  "repository": "C:/Users/Andy/Documents/Codex/2026-10-02/new-chat-2/outputs/chatgpt-toc",
+  "baselineHead": "56951988cb7d258eafeadacfa02174226a824093",
+  "auditScope": "Read-only local Git object, snapshot, version and historical report audit. No builds or tests rerun. No Git network, GCM, browser/profile access, source/doc/Git mutations.",
+  "gitTagNamesBeforeAudit": [],
+  "protectedRuntimePaths": [
+    "src",
+    "manifests",
+    "scripts",
+    "tsconfig.json",
+    "package-lock.json"
+  ],
+  "packageRule": "All package content must match except scripts whose key starts test:; v0.3.2 has exactly one added test:background entry.",
+  "versions": [
+    {
+      "tag": "v0.1.0",
+      "recommendedSnapshot": "30835220edef18266605ce3b897e58da0aff9e6a",
+      "snapshotSubject": "docs: record independently accepted Firefox v0.1 prototype delivery",
+      "runtimeCommit": "5cf4764741cca11cf9b52310007cb656fd5b9606",
+      "manifestVersion": "0.1.0",
+      "packageVersion": "0.1.0",
+      "packageLockVersion": "0.1.0",
+      "packageLockRootVersion": "0.1.0",
+      "revision": null,
+      "snapshotSuitable": true,
+      "moreSuitableCommitRequired": false,
+      "recommendedTagType": "annotated",
+      "deliveryStatus": "experimental",
+      "liveStatus": "PENDING",
+      "acceptanceSummary": "Historical native regressions and canonical build equivalence documented; LIVE / ESR / signing pending.",
+      "reportFiles": [
+        {
+          "path": "docs/acceptance-final.md",
+          "gitBlob": "bf3af8c775fc945f3f04f2e5c9f0d9f1655b3d4c",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "The v0.1/T07a experimental prototype is reviewable and deliverable with no remaining blocking defect found in the tested scope. This conclusion combines the full fb5 native regression with independent verification of the canonical 5cf build and targeted native tests. Real ChatGPT LIVE, ESR, container/workspace and signing gates remain PENDING. Do not present this as a signed v1.0 daily-use extension or a proven solution to all long ChatGPT conversations.",
+            "LIVE-01–07 remain PENDING: no real authenticated Firefox ChatGPT session, fixed expected full-branch ID sample, ten preselected unmounted remote targets, real branch/workspace/container evidence, or live return/cancel samples. ESR and REL-01 signed installation/restart/update remain PENDING. These external gates do not prevent the explicitly allowed experimental T07a delivery, and they prevent declaring the original long-conversation problem fully solved or the product a signed daily-use release."
+          ]
+        },
+        {
+          "path": "docs/acceptance-native.md",
+          "gitBlob": "59a5095d2ee3c92bead42adbc263f868bb9d8c8f",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "LIVE-01–07, real ChatGPT selectors and expected full-branch IDs, ten real unmounted remote targets, ESR, containers/workspaces, and REL-01 signed installation/restart/update remain PENDING. No authenticated live session/fixed long sample/signed XPI was used. CPU behavior of a live long page and complete UI search latency at 1,000 prompts were not measured; the reused core search benchmark is not a live UI measurement."
+          ]
+        },
+        {
+          "path": "docs/prototype-acceptance.md",
+          "gitBlob": "c24e9fddfe3d70b01b98874be1c3db859889c2e5",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "範圍：T07a 實驗原型；真實 ChatGPT 長對話與正式日常安裝尚未通過。  ",
+            "| LIVE-01–07 | 真實ChatGPT、完整分支／全量ID、十個未掛載目標、返回、編輯／重新生成、容器／工作區 | PENDING |",
+            "目前真實adapter沒有可靠的完整分支來源，未知分支只保留目前能確認的掛載訊息。不能把合成已知分支的20則收錄當作長對話問題已解決。完成真實驗收後，才準備Mozilla unlisted簽章與正式日常安裝。"
+          ]
+        }
+      ],
+      "runtimeIsAncestor": true,
+      "runtimeDiff": [],
+      "runtimeObjects": [
+        {
+          "path": "src",
+          "runtimeObject": "839894e27010662eb0576a1f552dfcbc407faab6",
+          "snapshotObject": "839894e27010662eb0576a1f552dfcbc407faab6"
+        },
+        {
+          "path": "manifests",
+          "runtimeObject": "f9609a21c71044259bc074b98d0223f07b0c4d1e",
+          "snapshotObject": "f9609a21c71044259bc074b98d0223f07b0c4d1e"
+        },
+        {
+          "path": "scripts",
+          "runtimeObject": "513ab0161989038ef1a6dd26cfa678f26267384d",
+          "snapshotObject": "513ab0161989038ef1a6dd26cfa678f26267384d"
+        },
+        {
+          "path": "tsconfig.json",
+          "runtimeObject": "5be1c6418b67b101970ea82aa7a77553495af285",
+          "snapshotObject": "5be1c6418b67b101970ea82aa7a77553495af285"
+        },
+        {
+          "path": "package-lock.json",
+          "runtimeObject": "f8b25d10a8a2573e6c6d56187385a0a265c427f8",
+          "snapshotObject": "f8b25d10a8a2573e6c6d56187385a0a265c427f8"
+        }
+      ],
+      "packageEquivalentExceptTestScripts": true,
+      "packageDiff": [],
+      "totalDiff": [
+        "M\tREADME.md",
+        "A\tdocs/acceptance-final.md",
+        "A\tdocs/acceptance-native.md",
+        "M\tdocs/development-plan.md",
+        "M\tdocs/progress.md",
+        "A\tdocs/prototype-acceptance.md"
+      ],
+      "qualification": "Only docs/README differ from fixed accepted runtime."
+    },
+    {
+      "tag": "v0.1.1",
+      "recommendedSnapshot": "07137cdd811d6a32d87c14921750eac32afb84a4",
+      "snapshotSubject": "docs: record zero-index repair acceptance and delivery",
+      "runtimeCommit": "5aa5102e2cc5e605196f6edfce2fb6d6b4faf649",
+      "manifestVersion": "0.1.1",
+      "packageVersion": "0.1.1",
+      "packageLockVersion": "0.1.1",
+      "packageLockRootVersion": "0.1.1",
+      "revision": null,
+      "snapshotSuitable": true,
+      "moreSuitableCommitRequired": false,
+      "recommendedTagType": "annotated",
+      "deliveryStatus": "experimental",
+      "liveStatus": "PENDING",
+      "acceptanceSummary": "Independent native renderer 8/8 and probe 10/10 documented; real user zero-index repair and full LIVE pending.",
+      "reportFiles": [
+        {
+          "path": "docs/acceptance-v0.1.1.md",
+          "gitBlob": "4b40b1e66827c3def3f2fa50d20590e3231578d5",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "**固定來源 `5aa5102e2cc5e605196f6edfce2fb6d6b4faf649` 在本輪合成 DOM 與隔離原生 Firefox 驗收範圍內 PASS，未發現剩餘阻擋缺陷。** 獨立 renderer 8/8、自主 probe 10/10 通過；兩次發現的錯誤返回錨點已用相同 sample 複驗修復。這支持交付未簽章測試原型，**不代表使用者真實 ChatGPT 頁面零索引問題已確認修好**；真實頁面結果仍 PENDING。",
+            "| Case | 真實期待 | 實際結果 |",
+            "| Case | 真實期待 | 實際結果 |"
+          ]
+        }
+      ],
+      "runtimeIsAncestor": true,
+      "runtimeDiff": [],
+      "runtimeObjects": [
+        {
+          "path": "src",
+          "runtimeObject": "107124b9698d235c5b7bf4ff948da3a0079cde94",
+          "snapshotObject": "107124b9698d235c5b7bf4ff948da3a0079cde94"
+        },
+        {
+          "path": "manifests",
+          "runtimeObject": "cb0f5ac6bc4dda694b54286f216b25e11355715f",
+          "snapshotObject": "cb0f5ac6bc4dda694b54286f216b25e11355715f"
+        },
+        {
+          "path": "scripts",
+          "runtimeObject": "513ab0161989038ef1a6dd26cfa678f26267384d",
+          "snapshotObject": "513ab0161989038ef1a6dd26cfa678f26267384d"
+        },
+        {
+          "path": "tsconfig.json",
+          "runtimeObject": "5be1c6418b67b101970ea82aa7a77553495af285",
+          "snapshotObject": "5be1c6418b67b101970ea82aa7a77553495af285"
+        },
+        {
+          "path": "package-lock.json",
+          "runtimeObject": "65fd201eafa0ce905f45fda1793009c0cb6710b2",
+          "snapshotObject": "65fd201eafa0ce905f45fda1793009c0cb6710b2"
+        }
+      ],
+      "packageEquivalentExceptTestScripts": true,
+      "packageDiff": [],
+      "totalDiff": [
+        "M\tREADME.md",
+        "A\tdocs/acceptance-v0.1.1.md",
+        "M\tdocs/bugfix-v0.1.1.md",
+        "M\tdocs/progress.md",
+        "M\tdocs/prototype-acceptance.md"
+      ],
+      "qualification": "Only docs/README differ from fixed accepted runtime."
+    },
+    {
+      "tag": "v0.2.0",
+      "recommendedSnapshot": "27ecb23cb2d27e235734b60c387c3d9a7ceb326a",
+      "snapshotSubject": "docs: record independent Firefox v0.2 acceptance and delivery hashes",
+      "runtimeCommit": "95c2694e03185f66a1a0dc19a62bc8280b61420e",
+      "manifestVersion": "0.2.0",
+      "packageVersion": "0.2.0",
+      "packageLockVersion": "0.2.0",
+      "packageLockRootVersion": "0.2.0",
+      "revision": null,
+      "snapshotSuitable": true,
+      "moreSuitableCommitRequired": false,
+      "recommendedTagType": "annotated",
+      "deliveryStatus": "withdrawn",
+      "liveStatus": "FAIL; WITHDRAWN",
+      "acceptanceSummary": "Original synthetic 38/38 and independent native 42/42 documented; later real product goal LIVE FAIL and API-history withdrawal override historical PASS.",
+      "reportFiles": [
+        {
+          "path": "docs/acceptance-v0.2.0.md",
+          "gitBlob": "9e3f38db62ab3ec843b4ba6c81e4446ac65c3169",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "FULL-07 的真實登入／內部 schema、FULL-11 的整段 expected ID／順序／UI 分支、其他 LIVE、Firefox ESR／容器／工作區、Mozilla 簽章與重啟升版仍 PENDING。畫面顯示伺服器分支與已核對 subset，完整 IndexStore UI proof 沒有被冒充；有界探索失敗須手動捲動。"
+          ]
+        },
+        {
+          "path": "docs/acceptance-subagent-v0.2.0.md",
+          "gitBlob": "b375e88a116fe0f2b02d8ebd5bb28c05d71a24ad",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "固定來源 **95c2694e03185f66a1a0dc19a62bc8280b61420e** 在合成隔離環境的驗收 **PASS**；本輪未再发现阻擋此原型合成驗收的缺陷。38 個單元測試、42 組原生 Firefox 測試與一項自主分頁反例複驗全通過。真實 ChatGPT 完整歷史仍 **PENDING**，此結論不能解讀為使用者真實對話已全部載入或所有畫面分支均已確認。",
+            "取消／route／dispose採task token、AbortSignal與alive/context guard；fetch忽視abort的晚到結果不會apply。snapshot與mounted IndexStore分開；不把每次只mounted7當完整proof。UI核對只涵蓋可觀測subset ID/角色/順序/正文與answer witness；畫面沒有掛載的其他分支或regen沒有觀測見證，仍不能保證即時發現。API缺revision時revisionVerified=false；first-head reread可偵測已觀测head變更，不是原子transaction，也不證明未觀測middle完全不變。",
+            "**PENDING：** LIVE-01–07、方案FULL-07真實登入/schema與FULL-11真實整段expected集合、實際OpenAI分頁／revision語義／版本變化／附件renderer與scroll掛載、Firefox ESR、容器分頁、REL-01 signing。FULL-NATIVE-07/11是合成route/dispose与pendinganswerchange，編號相近但不是方案FULL-07/11真實gate。未執行應保持PENDING，不能轉PASS。"
+          ]
+        }
+      ],
+      "runtimeIsAncestor": true,
+      "runtimeDiff": [],
+      "runtimeObjects": [
+        {
+          "path": "src",
+          "runtimeObject": "e53da7843c72fcecba738b338dc49531de9ac2f4",
+          "snapshotObject": "e53da7843c72fcecba738b338dc49531de9ac2f4"
+        },
+        {
+          "path": "manifests",
+          "runtimeObject": "f10a5242fdd792ded88f9d75c1c0424abf209ae7",
+          "snapshotObject": "f10a5242fdd792ded88f9d75c1c0424abf209ae7"
+        },
+        {
+          "path": "scripts",
+          "runtimeObject": "513ab0161989038ef1a6dd26cfa678f26267384d",
+          "snapshotObject": "513ab0161989038ef1a6dd26cfa678f26267384d"
+        },
+        {
+          "path": "tsconfig.json",
+          "runtimeObject": "5be1c6418b67b101970ea82aa7a77553495af285",
+          "snapshotObject": "5be1c6418b67b101970ea82aa7a77553495af285"
+        },
+        {
+          "path": "package-lock.json",
+          "runtimeObject": "38615acf4347f4b0ac27c0b321a8cd1ef8e13b39",
+          "snapshotObject": "38615acf4347f4b0ac27c0b321a8cd1ef8e13b39"
+        }
+      ],
+      "packageEquivalentExceptTestScripts": true,
+      "packageDiff": [],
+      "totalDiff": [
+        "A\tdocs/acceptance-subagent-v0.2.0.md",
+        "A\tdocs/acceptance-v0.2.0.md",
+        "M\tdocs/development-plan.md",
+        "M\tdocs/progress.md"
+      ],
+      "qualification": "Snapshot retains first delivery evidence; it predates LIVE failure/withdrawal. Annotated tag/catalog must explicitly carry later withdrawal; do not rewrite the snapshot or claim production acceptance."
+    },
+    {
+      "tag": "v0.3.0",
+      "recommendedSnapshot": "288f3b0e868e0d3dfd8bc94cb717094b64ce4991",
+      "snapshotSubject": "docs: record verified v0.3.0 candidate folder for temporary loading",
+      "runtimeCommit": "4c3d838d187b0e2771bbf58d6ba00ddc0b07a4b2",
+      "manifestVersion": "0.3.0",
+      "packageVersion": "0.3.0",
+      "packageLockVersion": "0.3.0",
+      "packageLockRootVersion": "0.3.0",
+      "revision": null,
+      "snapshotSuitable": true,
+      "moreSuitableCommitRequired": false,
+      "recommendedTagType": "annotated",
+      "deliveryStatus": "experimental-candidate",
+      "liveStatus": "PENDING",
+      "acceptanceSummary": "Independent core 20, replay and native cache 8/8 documented; verified temporary-load folder recorded; full Firefox ChatGPT addon LIVE pending.",
+      "reportFiles": [
+        {
+          "path": "docs/acceptance-seen-cache-v0.3.0.md",
+          "gitBlob": "9c51a9d813478ae8274aa28cd53a266aac2ec774",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "**已見資料保留的核心／本機重播及獨立本機 Firefox 八項回歸通過；真實 Firefox chatgpt.com 完整 addon LIVE 驗收仍未完成。** 本結果不批准宣稱使用者問題已全面修好或交付已驗證可用的正式安裝包。",
+            "本代理獨立 cache 執行結果為 **8/8 PASS**，Firefox **157.0**、fixture=true、`liveChatGptAddon=false`。結果保存在 [independent results.json](evidence/firefox-cache-fix-2026-10-03/independent-cache-results.json)，timestamp `2026-10-03T12:32:09.487Z`；不是主代理舊檔或尚未跑過的案例。",
+            "真實 Firefox chatgpt.com 中執行完整 addon 的程式 scroll、Observer 時序及重掛載仍未驗收；IAB 唯讀解析器＋本機 IndexStore 只能支持資料解析與保留。實際新增、編輯、答案重新生成、各種分支、網站容器、十個首中尾離屏定位／返回、手動干預／停止／切頁／停用需要分開的真實結果。正式簽章、ESR／不同 container 也未在本輪獨立執行。"
+          ]
+        }
+      ],
+      "runtimeIsAncestor": true,
+      "runtimeDiff": [],
+      "runtimeObjects": [
+        {
+          "path": "src",
+          "runtimeObject": "875fdd423441cbf0dc3553c0b3b6ce864b663bea",
+          "snapshotObject": "875fdd423441cbf0dc3553c0b3b6ce864b663bea"
+        },
+        {
+          "path": "manifests",
+          "runtimeObject": "d25d441257d924ab79af7178692b4751fbcc9982",
+          "snapshotObject": "d25d441257d924ab79af7178692b4751fbcc9982"
+        },
+        {
+          "path": "scripts",
+          "runtimeObject": "3e87fcc23b295e00efae855994d203aabab9977b",
+          "snapshotObject": "3e87fcc23b295e00efae855994d203aabab9977b"
+        },
+        {
+          "path": "tsconfig.json",
+          "runtimeObject": "5be1c6418b67b101970ea82aa7a77553495af285",
+          "snapshotObject": "5be1c6418b67b101970ea82aa7a77553495af285"
+        },
+        {
+          "path": "package-lock.json",
+          "runtimeObject": "5d5fde33d7fe491d1d2629b9b9e40175cb7e6fd4",
+          "snapshotObject": "5d5fde33d7fe491d1d2629b9b9e40175cb7e6fd4"
+        }
+      ],
+      "packageEquivalentExceptTestScripts": true,
+      "packageDiff": [],
+      "totalDiff": [
+        "M\tREADME.md",
+        "A\tdocs/acceptance-seen-cache-v0.3.0.md",
+        "M\tdocs/development-plan.md",
+        "A\tdocs/evidence/firefox-cache-fix-2026-10-03/independent-cache-results.json",
+        "M\tdocs/evidence/iab-2026-10-03/replay-result.json",
+        "M\tdocs/install-firefox.md",
+        "M\tdocs/observed-dom-cache-plan.md",
+        "M\tdocs/progress.md",
+        "M\tdocs/seen-cache-v0.3.0.md"
+      ],
+      "qualification": "Only docs/README differ from fixed accepted runtime."
+    },
+    {
+      "tag": "v0.3.1",
+      "recommendedSnapshot": "99c3b064a55e3b36707c83630dc89c59bedcd585",
+      "snapshotSubject": "docs: record independent Firefox navigation acceptance and candidate setup",
+      "runtimeCommit": "f9974ec368d81e4a25cc9e2583ebf6e55dbcb63d",
+      "manifestVersion": "0.3.1",
+      "packageVersion": "0.3.1",
+      "packageLockVersion": "0.3.1",
+      "packageLockRootVersion": "0.3.1",
+      "revision": null,
+      "snapshotSuitable": true,
+      "moreSuitableCommitRequired": false,
+      "recommendedTagType": "annotated",
+      "deliveryStatus": "experimental-candidate",
+      "liveStatus": "PENDING",
+      "acceptanceSummary": "Initial delivery only: independent core 22, native speed 4/4 and cache 8/8 documented; full LIVE pending.",
+      "reportFiles": [
+        {
+          "path": "docs/acceptance-navigation-v0.3.1.md",
+          "gitBlob": "b178833b44e3959480db61395f56eeb4729f072c",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "fixture 的長答案是具有明確 assistant marker 的本機 DOM 節點及固定 CSS 高度，不是 60,000 字真實回答。頁面會真的卸載節點、保留尾端兩輪、設定固定座標與空掛載延遲，addon 則透過原生 Firefox 執行。這是有意針對幾何及等待流程的模型，不能代表所有真實 virtualizer 行為。",
+            "真實 Firefox chatgpt.com addon 的新收集／導航速度尚未由本代理 LIVE 驗收；IAB 原生 PageUp／唯讀高度研究沒有執行 addon，也不計入本輪速度 PASS。真網站實際長對話、DOM 新變體、編輯／重新生成／分支、容器及十個首中尾定位／返回仍需相應結果。自動收集只能保留網站掛載過的提問，達期限／步數／無進展也不證明完整；目前未知分支與不持久化的限制沒有改變。"
+          ]
+        }
+      ],
+      "runtimeIsAncestor": true,
+      "runtimeDiff": [],
+      "runtimeObjects": [
+        {
+          "path": "src",
+          "runtimeObject": "9e56f4f327ab34e644284ddab0c8a34e43b5bf8a",
+          "snapshotObject": "9e56f4f327ab34e644284ddab0c8a34e43b5bf8a"
+        },
+        {
+          "path": "manifests",
+          "runtimeObject": "d016c9ba304e9de5ce949f312258c1b61c030d46",
+          "snapshotObject": "d016c9ba304e9de5ce949f312258c1b61c030d46"
+        },
+        {
+          "path": "scripts",
+          "runtimeObject": "3e87fcc23b295e00efae855994d203aabab9977b",
+          "snapshotObject": "3e87fcc23b295e00efae855994d203aabab9977b"
+        },
+        {
+          "path": "tsconfig.json",
+          "runtimeObject": "5be1c6418b67b101970ea82aa7a77553495af285",
+          "snapshotObject": "5be1c6418b67b101970ea82aa7a77553495af285"
+        },
+        {
+          "path": "package-lock.json",
+          "runtimeObject": "508fc7c12fa8b88efa212c7e19aa42edb8ab0f3b",
+          "snapshotObject": "508fc7c12fa8b88efa212c7e19aa42edb8ab0f3b"
+        }
+      ],
+      "packageEquivalentExceptTestScripts": true,
+      "packageDiff": [],
+      "totalDiff": [
+        "M\tREADME.md",
+        "A\tdocs/acceptance-navigation-v0.3.1.md",
+        "M\tdocs/development-plan.md",
+        "A\tdocs/evidence/navigation-speed-2026-10-04/README.md",
+        "A\tdocs/evidence/navigation-speed-2026-10-04/iab-geometry-anonymized.json",
+        "A\tdocs/evidence/navigation-speed-2026-10-04/independent-cache.json",
+        "A\tdocs/evidence/navigation-speed-2026-10-04/independent-speed.json",
+        "A\tdocs/evidence/navigation-speed-2026-10-04/primary-cache.json",
+        "A\tdocs/evidence/navigation-speed-2026-10-04/primary-speed.json",
+        "A\tdocs/evidence/navigation-speed-2026-10-04/source-build.json",
+        "M\tdocs/install-firefox.md",
+        "M\tdocs/navigation-speed-v0.3.1.md",
+        "M\tdocs/observed-dom-cache-plan.md",
+        "M\tdocs/progress.md"
+      ],
+      "qualification": "Only docs/README differ from fixed accepted runtime."
+    },
+    {
+      "tag": "v0.3.2",
+      "recommendedSnapshot": "5fd1d4dd8dfc1c12342e0a4ccbf01dc31365f748",
+      "snapshotSubject": "docs: verify v0.3.2 with native Firefox and fixed source checks",
+      "runtimeCommit": "2c9d0d2aa9f95336c449981d58d4360bc7d16d3f",
+      "manifestVersion": "0.3.2",
+      "packageVersion": "0.3.2",
+      "packageLockVersion": "0.3.2",
+      "packageLockRootVersion": "0.3.2",
+      "revision": "2026-10-07-v032",
+      "snapshotSuitable": true,
+      "moreSuitableCommitRequired": false,
+      "recommendedTagType": "annotated",
+      "deliveryStatus": "experimental",
+      "liveStatus": "PENDING",
+      "acceptanceSummary": "Independent fixed-source 74 pure tests and 12 artifact hashes; primary native synthetic 18/18 documented; LIVE / ESR / Android / signing pending.",
+      "reportFiles": [
+        {
+          "path": "docs/acceptance-v0.3.2.md",
+          "gitBlob": "8bd28e9d30b981114bd85fb36687bc38018191f5",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "本 verifier **未啟動 Firefox，未執行 native Firefox 或 LIVE ChatGPT 測試**。單元測試包含 synthetic/mock 以及既存匿名化資料的本機 replay；這不代表本次已在真實 ChatGPT 網站驗證。父端另行執行的 native 證據應由父端文件記載，不列為本 verifier 的實測結果。未執行 GCM、Git 網路操作或權限提升。"
+          ]
+        },
+        {
+          "path": "docs/release-v0.3.2.md",
+          "gitBlob": "c9a4f92151eef0967651b8f742b388790116ffeb",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "本版真實 ChatGPT LIVE、ESR、Android、正式簽章安裝仍待驗證。原生合成測試不能視為 LIVE，物理邊界巡覽不能視為完整 session 證明。未知分支的 F5 舊資料保留搜尋，未核對時不直接跳到舊分支。"
+          ]
+        }
+      ],
+      "runtimeIsAncestor": true,
+      "runtimeDiff": [],
+      "runtimeObjects": [
+        {
+          "path": "src",
+          "runtimeObject": "4d9c8d12081b40f0d8d0fdd7d5e362decb782c19",
+          "snapshotObject": "4d9c8d12081b40f0d8d0fdd7d5e362decb782c19"
+        },
+        {
+          "path": "manifests",
+          "runtimeObject": "836be848ddc0206d7074607d7013c92bb0b0e369",
+          "snapshotObject": "836be848ddc0206d7074607d7013c92bb0b0e369"
+        },
+        {
+          "path": "scripts",
+          "runtimeObject": "d7b5e0bea518db4560ba88e12670532e3ab8c091",
+          "snapshotObject": "d7b5e0bea518db4560ba88e12670532e3ab8c091"
+        },
+        {
+          "path": "tsconfig.json",
+          "runtimeObject": "5be1c6418b67b101970ea82aa7a77553495af285",
+          "snapshotObject": "5be1c6418b67b101970ea82aa7a77553495af285"
+        },
+        {
+          "path": "package-lock.json",
+          "runtimeObject": "f002f1ee3b53dc1fde9184e00f5da4562a00763a",
+          "snapshotObject": "f002f1ee3b53dc1fde9184e00f5da4562a00763a"
+        }
+      ],
+      "packageEquivalentExceptTestScripts": true,
+      "packageDiff": [
+        "diff --git a/package.json b/package.json",
+        "index d2a5582..599cb16 100644",
+        "--- a/package.json",
+        "+++ b/package.json",
+        "@@ -12,6 +12,7 @@",
+        "     \"test:geometry\": \"node --test tests/geometry.test.mjs\",",
+        "     \"test:interaction\": \"node --test tests/interaction.test.mjs\",",
+        "     \"test:persistence\": \"node --test tests/persistence.test.mjs\",",
+        "+    \"test:background\": \"node --test tests/background.test.mjs\",",
+        "     \"test:collection-policy\": \"node --test tests/collection-policy.test.mjs\",",
+        "     \"test:firefox-v032\": \"node tests/firefox-v032.mjs\",",
+        "     \"test:firefox-fixture\": \"node tests/firefox-fixture.mjs\","
+      ],
+      "totalDiff": [
+        "M\tREADME.md",
+        "A\tdocs/acceptance-v0.3.2.md",
+        "M\tdocs/development-plan.md",
+        "A\tdocs/evidence/v0.3.2/builds.json",
+        "A\tdocs/evidence/v0.3.2/firefox-anchor-walk.json",
+        "A\tdocs/evidence/v0.3.2/firefox-collection-boundary.json",
+        "A\tdocs/evidence/v0.3.2/firefox-v032.json",
+        "A\tdocs/evidence/v0.3.2/independent-results.json",
+        "A\tdocs/evidence/v0.3.2/independent-verification.json",
+        "M\tdocs/install-firefox.md",
+        "M\tdocs/progress.md",
+        "A\tdocs/release-v0.3.2.md",
+        "M\tpackage.json",
+        "M\ttests/firefox-v032.mjs"
+      ],
+      "qualification": "Only docs/README plus test:background script and native fixture registration/unknown-branch test setup differ. No product runtime change."
+    },
+    {
+      "tag": "v0.3.3",
+      "recommendedSnapshot": "56951988cb7d258eafeadacfa02174226a824093",
+      "snapshotSubject": "docs: record v0.3.3 Firefox recovery acceptance and upgrade steps",
+      "runtimeCommit": "567dfda645d113449eece4932519da98e59e7118",
+      "manifestVersion": "0.3.3",
+      "packageVersion": "0.3.3",
+      "packageLockVersion": "0.3.3",
+      "packageLockRootVersion": "0.3.3",
+      "revision": "2026-10-07-v033",
+      "snapshotSuitable": true,
+      "moreSuitableCommitRequired": false,
+      "recommendedTagType": "annotated",
+      "deliveryStatus": "experimental",
+      "liveStatus": "PENDING",
+      "acceptanceSummary": "Independent fixed-source 88 pure tests and 12 artifact hashes; primary native synthetic 13/13 documented; LIVE / ESR / Android / signing pending.",
+      "reportFiles": [
+        {
+          "path": "docs/acceptance-v0.3.3.md",
+          "gitBlob": "b24dd59b59052819e6ca6441ffe65062865a3084",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": []
+        },
+        {
+          "path": "docs/release-v0.3.3.md",
+          "gitBlob": "ae50c15fb8798112eba7fd2ab4e5b425896b373a",
+          "existsAtSnapshot": true,
+          "sourceReferenceMatches": true,
+          "liveStatusExcerpts": [
+            "本版仍是未簽章暫時 addon，重啟 Firefox 可能移除暫時安裝；不承諾卸載後儲存仍在。真實 ChatGPT LIVE／ESR／Android／正式簽章安裝仍待驗證，合成邊界巡覽不證明完整 session。"
+          ]
+        }
+      ],
+      "runtimeIsAncestor": true,
+      "runtimeDiff": [],
+      "runtimeObjects": [
+        {
+          "path": "src",
+          "runtimeObject": "37bed126fffca64ae10b1b0bd691c9832e6dc6a2",
+          "snapshotObject": "37bed126fffca64ae10b1b0bd691c9832e6dc6a2"
+        },
+        {
+          "path": "manifests",
+          "runtimeObject": "6ac7dadb2ecf4ecf65824bdb635b0c0397ef795f",
+          "snapshotObject": "6ac7dadb2ecf4ecf65824bdb635b0c0397ef795f"
+        },
+        {
+          "path": "scripts",
+          "runtimeObject": "d7b5e0bea518db4560ba88e12670532e3ab8c091",
+          "snapshotObject": "d7b5e0bea518db4560ba88e12670532e3ab8c091"
+        },
+        {
+          "path": "tsconfig.json",
+          "runtimeObject": "5be1c6418b67b101970ea82aa7a77553495af285",
+          "snapshotObject": "5be1c6418b67b101970ea82aa7a77553495af285"
+        },
+        {
+          "path": "package-lock.json",
+          "runtimeObject": "48cc6d03c52c52f87da4f640a800413bc9c4bf53",
+          "snapshotObject": "48cc6d03c52c52f87da4f640a800413bc9c4bf53"
+        }
+      ],
+      "packageEquivalentExceptTestScripts": true,
+      "packageDiff": [],
+      "totalDiff": [
+        "M\tREADME.md",
+        "A\tdocs/acceptance-v0.3.3.md",
+        "M\tdocs/development-plan.md",
+        "A\tdocs/evidence/v0.3.3/builds.json",
+        "A\tdocs/evidence/v0.3.3/firefox-v032.json",
+        "A\tdocs/evidence/v0.3.3/firefox-v033.json",
+        "A\tdocs/evidence/v0.3.3/independent.json",
+        "M\tdocs/install-firefox.md",
+        "M\tdocs/progress.md",
+        "A\tdocs/release-v0.3.3.md"
+      ],
+      "qualification": "Only docs/README differ from fixed accepted runtime."
+    }
+  ],
+  "legacyRevisions": [
+    {
+      "label": "r2",
+      "manifestVersion": "0.3.1",
+      "packageVersion": "0.3.1",
+      "revision": "2026-10-05-r2",
+      "snapshot": "fe20ec7e6bf9827046282b98120df4d5ca7ddbbd",
+      "runtimeCommit": "31608f2c3766d282f66c65a6d15ab63ceaf894a1",
+      "report": "docs/acceptance-v0.3.1-r2.md",
+      "reportBlob": "9f28bfd1c354651ff98df68bfc38f55f1ae7d8e7",
+      "snapshotRuntimeDiff": [],
+      "changedRuntimeFromInitial": [
+        "package.json",
+        "scripts/build.mjs",
+        "src/config.ts",
+        "src/content.ts",
+        "src/core.ts",
+        "src/dom.ts",
+        "src/geometry.ts"
+      ],
+      "semverTag": null,
+      "policy": "Archive metadata only; never move v0.3.1 from initial accepted delivery and never label changed runtime as the same semver release.",
+      "liveStatus": "PENDING",
+      "nativeStatus": "Historical independent native synthetic PASS documented; not LIVE."
+    },
+    {
+      "label": "r3",
+      "manifestVersion": "0.3.1",
+      "packageVersion": "0.3.1",
+      "revision": "2026-10-05-r3",
+      "snapshot": "b8e25f97c9b8c50baed169cee01e7b2a48c216f9",
+      "runtimeCommit": "535a4ffe0fbde463b97c687e4e8dab93f7814bf0",
+      "report": "docs/acceptance-v0.3.1-r3.md",
+      "reportBlob": "49776dcef2eb5e8ce9c4332c8ba9f6e29b4caee0",
+      "snapshotRuntimeDiff": [],
+      "changedRuntimeFromInitial": [
+        "package.json",
+        "scripts/build.mjs",
+        "src/config.ts",
+        "src/content.ts",
+        "src/core.ts",
+        "src/dom.ts",
+        "src/geometry.ts"
+      ],
+      "semverTag": null,
+      "policy": "Archive metadata only; never move v0.3.1 from initial accepted delivery and never label changed runtime as the same semver release.",
+      "liveStatus": "PENDING",
+      "nativeStatus": "Historical independent native synthetic PASS documented; not LIVE."
+    },
+    {
+      "label": "r4",
+      "manifestVersion": "0.3.1",
+      "packageVersion": "0.3.1",
+      "revision": "2026-10-06-r4",
+      "snapshot": "16b2009b32c856426140cfaf53cd9b8c9e418da5",
+      "runtimeCommit": "8f2daab1536ad9e30abc74479a8dfa3854766d57",
+      "report": "docs/acceptance-v0.3.1-r4.md",
+      "reportBlob": "ca0f5e6903de58cb1edbdc3c0928759469e70ef8",
+      "snapshotRuntimeDiff": [],
+      "changedRuntimeFromInitial": [
+        "package.json",
+        "scripts/build.mjs",
+        "src/config.ts",
+        "src/content.ts",
+        "src/core.ts",
+        "src/dom.ts",
+        "src/geometry.ts",
+        "src/host.css",
+        "src/styles.ts"
+      ],
+      "semverTag": null,
+      "policy": "Archive metadata only; never move v0.3.1 from initial accepted delivery and never label changed runtime as the same semver release.",
+      "liveStatus": "PENDING",
+      "nativeStatus": "Historical independent native synthetic PASS documented; not LIVE."
+    },
+    {
+      "label": "r5",
+      "manifestVersion": "0.3.1",
+      "packageVersion": "0.3.1",
+      "revision": "2026-10-06-r5",
+      "snapshot": "6339100400da8c995aa864126386675e72222742",
+      "runtimeCommit": "992757435d30459be80586ee4e2682a3abc99f39",
+      "report": "docs/acceptance-v0.3.1-r5.md",
+      "reportBlob": "83c824a582b766f4f922d929349194f687a25e8e",
+      "snapshotRuntimeDiff": [],
+      "changedRuntimeFromInitial": [
+        "package.json",
+        "scripts/build.mjs",
+        "src/config.ts",
+        "src/content.ts",
+        "src/core.ts",
+        "src/dom.ts",
+        "src/geometry.ts",
+        "src/host.css",
+        "src/styles.ts"
+      ],
+      "semverTag": null,
+      "policy": "Archive metadata only; never move v0.3.1 from initial accepted delivery and never label changed runtime as the same semver release.",
+      "liveStatus": "PENDING",
+      "nativeStatus": "Latest native UI 7 PENDING due to environment; independent static/core/geometry/build/hash PASS. Earlier native r4 PASS cannot be reused as r5 PASS."
+    }
+  ],
+  "withdrawnVersion": {
+    "version": "v0.2.0",
+    "laterLiveFailureCommit": "5c035c30b223886201adaa88433a7fbb8019b041",
+    "liveFailureReport": "docs/live-history-failure.md",
+    "liveFailureReportBlob": "c5a59729db912c0666f91abb3bfe4aaa8b6afb98",
+    "withdrawalCommit": "08f7867bbb78188ad4a9bf01632bf0881e937c32",
+    "supersedingDocumentationCommit": "5fb49e7ccb3da8236d5499d484679ea0a9550fd6",
+    "status": "WITHDRAWN; real product goal LIVE FAIL",
+    "originalSnapshotContainsWithdrawal": false,
+    "tagAnnotationMustStateWithdrawal": true,
+    "preserveHistoricalPass": true,
+    "restoreTagToOlderRuntime": false
+  },
+  "result": "PASS: all seven selected first-delivery/documented snapshots suitable for historical annotated tags with explicit experimental/withdrawn status; no later runtime substituted.",
+  "remotePublishingVerified": false,
+  "remotePublishingNote": "This audit does not inspect or approve GitHub Actions, cloud Git bundle restoration, remote refs or published tags; those require separate verification."
+}
