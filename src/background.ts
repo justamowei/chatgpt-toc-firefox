@@ -1,16 +1,15 @@
-import { DEFAULT_SETTINGS, validMessage, validSettings, type Settings } from './core';
+import { normalizeSettings, validMessage, validSettings, type Settings } from './core';
 import { HOSTS, supported } from './config';
 import { CacheBroker, conversationContext } from './persistence';
 const cache = new CacheBroker(browser.storage.local);
-const MIGRATION_KEY = 'toc-v032-auto-migrated';
+const MIGRATION_KEY = 'toc-v033-settings-migrated';
 let settingsQueue: Promise<unknown> = Promise.resolve();
 let registrationQueue: Promise<unknown> = Promise.resolve();
 const ports = new Set<browser.runtime.Port>();
 async function readSettings(): Promise<Settings> {
   const result = await browser.storage.local.get(['settings', MIGRATION_KEY]);
-  const current = validSettings(result.settings) ? { ...result.settings } : { ...DEFAULT_SETTINGS };
-  if (result[MIGRATION_KEY] !== true) {
-    current.auto = true;
+  const current = normalizeSettings(result.settings);
+  if (result[MIGRATION_KEY] !== true || !validSettings(result.settings)) {
     await browser.storage.local.set({ settings: current, [MIGRATION_KEY]: true });
   }
   return current;
@@ -72,8 +71,15 @@ browser.runtime.onMessage.addListener((message: unknown, sender) => {
   const page = contentSender(sender), options = optionsSender(sender);
   if (!page && !options) return undefined;
   if (message.kind === 'settings:get') return settings();
-  if (message.kind === 'cache:get' && page && conversationContext(sender.url!) === message.context && sender.tab!.id !== undefined) {
-    return cache.load(message.context);
+  if (message.kind === 'cache:get' && page && sender.tab!.id !== undefined) {
+    return (async () => {
+      // Firefox can retain the original document URL in MessageSender after
+      // an SPA route change. Check the live top-level tab before reading.
+      let tab: browser.tabs.Tab;
+      try { tab = await browser.tabs.get(sender.tab!.id!); } catch { return undefined; }
+      if (tab.incognito || !supported(tab.url) || conversationContext(tab.url!) !== message.context) return undefined;
+      return cache.load(message.context);
+    })();
   }
   // A trusted isolated extension script may flush the previous SPA route after
   // the frame URL changed, even when Firefox just woke this event page. Reads
@@ -83,6 +89,7 @@ browser.runtime.onMessage.addListener((message: unknown, sender) => {
     new URL(sender.url!).origin === new URL(message.state.context).origin) return cache.save(message.state).then(() => true);
   if (message.kind === 'cache:clear' && options) return cache.clear().then(() => true);
   if (message.kind === 'settings:set' && page) return update({ expanded: message.expanded });
+  if (message.kind === 'collection:set' && options) return update({ collectionMinutes: message.minutes });
   if (message.kind === 'options:open' && page) return browser.runtime.openOptionsPage();
   if (message.kind === 'auto:set' && options) return (async () => {
     if (message.enabled && !await browser.permissions.contains({ origins: HOSTS })) return { auto: false, error: 'permission-required' };

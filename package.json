@@ -1,7 +1,7 @@
 {
   "name": "chatgpt-toc-firefox",
-  "version": "0.3.2",
-  "tocRevision": "2026-10-07-v032",
+  "version": "0.3.3",
+  "tocRevision": "2026-10-07-v033",
   "private": true,
   "type": "module",
   "scripts": {
@@ -25,7 +25,9 @@
     "test:firefox-anchor-walk": "node tests/firefox-anchor-walk.mjs",
     "test:firefox-compact-ui": "node tests/firefox-compact-ui.mjs",
     "test:firefox-collection-boundary": "node tests/firefox-collection-boundary.mjs",
-    "package:firefox": "node scripts/package.mjs"
+    "package:firefox": "node scripts/package.mjs",
+    "test:firefox-v033": "node tests/firefox-v033.mjs",
+    "test:settings": "node --test tests/settings.test.mjs"
   },
   "devDependencies": {
     "@types/firefox-webext-browser": "143.0.1",

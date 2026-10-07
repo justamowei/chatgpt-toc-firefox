@@ -19,7 +19,7 @@ function start(): Instance {
   let listBuilt = false, listFrame: number | undefined, currentFrame: number | undefined;
   let returnPosition: Position | null = null, returnEpoch = -1, refreshTimer: ReturnType<typeof setTimeout> | undefined;
   let navigationPending = false, operation: AbortController | null = null;
-  let collecting = false, collectionStart = 0;
+  let collecting = false, collectionStart = 0, collectionMinutes = DEFAULT_SETTINGS.collectionMinutes;
   const events = new AbortController();
   const store = new IndexStore();
   let restoredContext = '', restoreToken = 0;
@@ -124,7 +124,7 @@ function start(): Instance {
     back.disabled = !returnPosition || returnEpoch !== store.epoch;
     currentLocatable = adapter.locatableIds();
     const selectable = (id: string, stable: boolean) => stable &&
-      (store.mounted.has(id) ? currentLocatable.has(id) : store.ordered && !store.quarantine.length);
+      (store.mounted.has(id) ? currentLocatable.has(id) : store.canSeek(id));
     // Collapse is a visibility update. Retain list nodes and its scroll position;
     // refresh cached rows only when data/search/order actually changes.
     const segmentKey = store.ordered ? '' : store.segments.map(s => `${s.ordered}:${s.ids.join('|')}`).join(';');
@@ -196,6 +196,7 @@ function start(): Instance {
     if (!alive) return;
     if (!supported(location.href)) { dispose(); return; }
     const snapshot = adapter.read();
+    if (store.context && store.context !== snapshot.context) { query = ''; input.value = ''; }
     if (store.context && (store.context !== snapshot.context || store.branch !== snapshot.branch)) void persistence.flush().catch(() => {});
     let reset = false;
     // Capture short-lived, first-seen removed prompts as plain data before the
@@ -220,7 +221,7 @@ function start(): Instance {
     }
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
-      ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 5 分鐘，可按停止。`
+      ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可按停止。`
       : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
       : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
   }
@@ -240,18 +241,26 @@ function start(): Instance {
     if (!alive) return;
     refresh();
     if (id !== null && (!store.entries.some(entry => entry.id === id && entry.stable) ||
-      (!adapter.canLocate(id) && (!store.ordered || store.quarantine.length || store.mounted.has(id))))) {
+      (!adapter.canLocate(id) && (!store.canSeek(id) || store.mounted.has(id))))) {
       status.textContent = '此目標的順序、正文或目前分支尚未核對；請先手動捲動至該則提問。'; return;
     }
     cancel(); const token = ++navigationToken, epoch = store.epoch;
     collecting = id === null; collectionStart = store.entries.length;
     operation = new AbortController(); navigationPending = true;
+    if (collecting) {
+      try {
+        const value: unknown = await browser.runtime.sendMessage({ kind: 'settings:get' });
+        if (!alive || token !== navigationToken || epoch !== store.epoch) return;
+        collectionMinutes = validSettings(value) ? value.collectionMinutes : DEFAULT_SETTINGS.collectionMinutes;
+      } catch { collectionMinutes = DEFAULT_SETTINGS.collectionMinutes; }
+      if (!alive || token !== navigationToken || epoch !== store.epoch) return;
+    }
     const position = await adapter.capture(operation.signal);
     if (!alive || token !== navigationToken || epoch !== store.epoch) return;
     returnPosition = position; returnEpoch = epoch; render();
     delete host.dataset.restored;
     adapter.begin(id === null);
-    const result = await navigator.run(id);
+    const result = await navigator.run(id, id === null ? collectionMinutes * 60_000 : undefined);
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
     if (id === null && result === 'idle') status.textContent = adapter.collectionFinished
@@ -262,7 +271,7 @@ function start(): Instance {
   async function restore(): Promise<void> {
     const position = returnPosition, epoch = returnEpoch;
     if (!alive || !position || epoch !== store.epoch) { status.textContent = '原閱讀位置已失效，無法恢復。'; return; }
-    if (!adapter.mounted(position.id) && (!store.ordered || store.quarantine.length)) {
+    if (!adapter.mounted(position.id) && !store.canSeek(position.anchorId ?? position.id)) {
       status.textContent = '原閱讀位置的順序尚未核對，請先手動捲動至原提問附近。'; return;
     }
     if (!adapter.mounted(position.id) && position.role === 'assistant' && !position.anchorId) {
