@@ -1,0 +1,107 @@
+{
+  "source": "Native Firefox isolated addon localhost fixture; not ChatGPT LIVE",
+  "firefox": "157.0",
+  "build": {
+    "version": "0.3.3",
+    "revision": "2026-10-07-v033",
+    "fixture": true,
+    "hashes": {
+      "background.js": "9a3582389129abf19c2f7c918d6255172feed2883faa9db91b4363b6bdf29489",
+      "content.js": "ea1cee7629f6f25cd5ece3a023b4b2c7978505a89f34b206c95e05c9619724f9",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "7ac8efb322e3fb2206ec98dc15fe362c32439849d3371e0f869dc1e45ff3b5b6"
+    }
+  },
+  "results": [
+    {
+      "name": "V032-01 default automatic startup without toolbar action",
+      "status": "PASS",
+      "actual": {
+        "archived": 0,
+        "busy": null,
+        "expanded": "false",
+        "marks": 20,
+        "nav": null,
+        "rows": 0,
+        "scope": "本頁已看過 20 則 · 目前掛載 20 則。歷史尚未完整；搜尋涵蓋已觀察資料。 本機目錄儲存中。",
+        "status": "已切換對話，開始收集本頁提問。"
+      }
+    },
+    {
+      "name": "V032-02 cached list toggles retain nodes and list scroll",
+      "status": "PASS",
+      "actual": {
+        "mutations": 0,
+        "sameRow": true,
+        "scroll": true
+      }
+    },
+    {
+      "name": "V032-03 Alt and Shift+O preserve a running collection; Stop cancels",
+      "status": "PASS",
+      "actual": {
+        "altKeepsLoading": true,
+        "shiftOKeepsLoading": true,
+        "explicitStop": true
+      }
+    },
+    {
+      "name": "V032-04 F5 restores offscreen records from real extension storage",
+      "status": "PASS",
+      "actual": {
+        "archived": 0,
+        "busy": "false",
+        "expanded": "true",
+        "marks": 20,
+        "nav": null,
+        "rows": 600,
+        "scope": "本頁已看過 600 則 · 目前掛載 20 則。歷史尚未完整；搜尋涵蓋已觀察資料。 本機目錄儲存中。",
+        "status": "已切換對話，開始收集本頁提問。"
+      }
+    },
+    {
+      "name": "V032-05 unknown branch retains 600 searchable records and promotes later exact mounts without duplicates",
+      "status": "PASS",
+      "actual": {
+        "archived": 0,
+        "busy": "false",
+        "expanded": "true",
+        "marks": 6,
+        "nav": null,
+        "rows": 600,
+        "scope": "本頁已看過 600 則 · 目前掛載 6 則。歷史尚未完整；搜尋涵蓋已觀察資料。部分順序待核對，按觀察區段分組。 本機目錄儲存中。",
+        "status": "已切換對話，開始收集本頁提問。"
+      }
+    },
+    {
+      "name": "V032-06 different conversation does not inherit cached prompts",
+      "status": "PASS",
+      "actual": {
+        "archived": 0,
+        "busy": "false",
+        "expanded": "true",
+        "marks": 20,
+        "nav": null,
+        "rows": 20,
+        "scope": "本頁已看過 20 則 · 目前掛載 20 則。歷史尚未完整；搜尋涵蓋已觀察資料。 本機目錄儲存中。",
+        "status": "已切換對話，開始收集本頁提問。"
+      }
+    },
+    {
+      "name": "V032-07 second ChatGPT-matched page starts automatically",
+      "status": "PASS",
+      "actual": {
+        "archived": 0,
+        "busy": "false",
+        "expanded": "true",
+        "marks": 20,
+        "nav": null,
+        "rows": 20,
+        "scope": "本頁已看過 20 則 · 目前掛載 20 則。歷史尚未完整；搜尋涵蓋已觀察資料。 本機目錄儲存中。",
+        "status": "已切換對話，開始收集本頁提問。"
+      }
+    }
+  ]
+}
