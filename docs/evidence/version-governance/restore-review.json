@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-10-07",
+  "reviewer": "Independent read-only version_catalog_audit",
+  "overall": "PASS_WITH_SCOPE_LIMITS",
+  "testedScriptSha256": "ee695cc0ec2bd93d67c0dfcf8ebc8130dea6c3e657bc2caf40b3ced71b37da9e",
+  "mainBaseline": "b1d2ea056050762f3cbd9b33ed31defc038c9483",
+  "scope": [
+    "docs/version-policy.md",
+    "docs/version-catalog.json",
+    "scripts/restore-version-refs.py",
+    "docs/versions.md",
+    "docs/main-readme.md",
+    "docs/main-development-plan.md"
+  ],
+  "restrictionsRespected": {
+    "sourceOrDocsEdited": false,
+    "gitHistoryOrRefsChanged": false,
+    "entrypointCalled": false,
+    "networkOrGcmUsed": false,
+    "personalFirefoxAccessed": false,
+    "functionsOnly": true,
+    "writes": [
+      "artifacts/version-governance/restore-review.json",
+      "artifacts/version-governance/restore-review.md"
+    ]
+  },
+  "checks": [
+    {
+      "name": "Exact seven delivery/runtime selections, status, acceptance paths, legacy metadata and withdrawal match independent historical audit",
+      "status": "PASS"
+    },
+    {
+      "name": "Pure require_sha valid/invalid-input cases",
+      "status": "PASS"
+    },
+    {
+      "name": "Pure validate_ref_update create/equal/ancestor success and divergence refusal",
+      "status": "PASS"
+    },
+    {
+      "name": "Pure verify_catalog schema/current version/order/withdrawal tests",
+      "status": "PASS"
+    },
+    {
+      "name": "Static local entry guard requires GITHUB_ACTIONS=true, Linux, exact repository and operational ref before token/API/Git",
+      "status": "PASS_STATIC_ONLY"
+    },
+    {
+      "name": "Static atomic push explicit product/maintenance/main/seven-tag refspecs, no force/deletion; no tag replacements accepted",
+      "status": "PASS_STATIC_ONLY"
+    },
+    {
+      "name": "Static main five-path staging and final changed-path subset check",
+      "status": "PASS_STATIC_ONLY"
+    },
+    {
+      "name": "Static token supplied via process environment HTTP extraheader, never remote URL; helpers disabled; error token/base64 masking",
+      "status": "PASS_STATIC_ONLY"
+    },
+    {
+      "name": "Static post-push branch/tag-object/peeled-commit checks",
+      "status": "PASS_STATIC_ONLY"
+    },
+    {
+      "name": "Cloud entrypoint and actual Git/API restoration",
+      "status": "NOT_EXECUTED"
+    }
+  ],
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P2",
+      "title": "Check package runtime settings and ancestry, not only source paths",
+      "file": "scripts/restore-version-refs.py",
+      "line": 79,
+      "reproduced": true,
+      "description": "verify_source excludes package.json from protected runtime paths and only checks its version. scripts/build.mjs reads tocRevision and injects it into the bundle. A pure mock with changed tocRevision and build:firefox is accepted. verify_source also makes no ancestry check between runtimeCommit and deliveryCommit.",
+      "currentDataImpact": "The current catalog snapshots have already passed the independent byte/blob and package-equivalence audit, so no present runtime mismatch was found. The cloud tool does not enforce its stated test-only allowance.",
+      "requestedFix": "Compare runtime and delivery package JSON completely after stripping only scripts keys beginning test:. Reject all other differences and require merge-base --is-ancestor runtime delivery. Add pure drift and non-ancestor regression cases.",
+      "resolutionStatus": "RESOLVED",
+      "resolution": "Complete non-test package comparison and ancestry guard now reject pure counterexamples."
+    },
+    {
+      "id": "R2",
+      "priority": "P2",
+      "title": "Point main version-index report links at version snapshots",
+      "file": "docs/versions.md",
+      "line": 8,
+      "reproduced": true,
+      "description": "The main update intentionally copies only README/version-policy/version-catalog/versions/development-plan. Existing main b1d2ea0 has no acceptance-final/v0.1.1/v0.2.0/v0.3.x or live-history-failure docs. The relative report and withdrawal links in versions.md therefore resolve to absent files on main after publication.",
+      "requestedFix": "Use GitHub blob links pinned to each delivery tag or full commit for acceptance reports and pin the withdrawal report to its later evidence commit. Inspect the five published docs for other links to omitted product files.",
+      "resolutionStatus": "RESOLVED",
+      "resolution": "Evidence links pin original delivery/later failure commits; compact main development plan contains only available relative links."
+    }
+  ],
+  "conclusion": "Both identified defects resolved and independently rechecked. No remaining actionable defect found within reviewed code/catalog/doc-link scope. Cloud execution, bundle upload, workflow trigger and actual remote state still require the primary cloud result verification.",
+  "pureTestCases": [
+    {
+      "name": "SHA validation good/bad inputs",
+      "status": "PASS"
+    },
+    {
+      "name": "Ref create/equal/fast-forward and divergence refusal",
+      "status": "PASS"
+    },
+    {
+      "name": "Catalog fixed seven versions and malformed input refusals",
+      "status": "PASS"
+    },
+    {
+      "name": "Catalog exactly agrees with independent historical audit",
+      "status": "PASS"
+    },
+    {
+      "name": "Source validator accepts valid protected objects and test-only package change",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject changed compiled tocRevision",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject changed product build script",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject changed dependency setting",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject runtime that is not a delivery ancestor",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject changed protected runtime path",
+      "status": "PASS"
+    },
+    {
+      "name": "Reject missing WITHDRAWN annotation",
+      "status": "PASS"
+    },
+    {
+      "name": "All five main-doc markdown relative links resolve; eight evidence URLs pin intended commits",
+      "status": "PASS"
+    }
+  ],
+  "functionTestExecution": {
+    "entrypointCalled": false,
+    "subprocessCalled": false,
+    "networkCalled": false,
+    "gitMockOnly": true,
+    "passedCaseCount": 12
+  },
+  "reviewedFileSha256": {
+    "docs/version-policy.md": "7fe1aa5224c922b7ad5677255ee55373beeb2de1fa6f9e4e4d9f036de1c45d8c",
+    "docs/version-catalog.json": "835295372c0985303efb47cee3ea5526e6c0a61de83c7a82156b76f74c515884",
+    "scripts/restore-version-refs.py": "ee695cc0ec2bd93d67c0dfcf8ebc8130dea6c3e657bc2caf40b3ced71b37da9e",
+    "docs/versions.md": "ed79ed2f3c5c359a57e0fb33c98c3d3744a35be7949cc77809ebb194f82c8b07",
+    "docs/main-readme.md": "59c13ce01391cb651ba4cb86c6b10dde1a23d3da21cd883ac5b531430e357b70",
+    "docs/main-development-plan.md": "7b5aab78f9a01329a11f9a955396a705f22c2b77488d9a5f08bce0aa061e7123"
+  }
+}

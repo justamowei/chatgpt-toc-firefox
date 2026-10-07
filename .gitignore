@@ -21,3 +21,7 @@ tmp/
 .cache/
 *.xpi
 *.zip
+
+# Python recovery tooling bytecode
+__pycache__/
+*.py[cod]
