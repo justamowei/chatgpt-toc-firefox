@@ -17,6 +17,8 @@ export class DomAdapter implements NavigationAdapter {
   private returnWitness: Position | null = null;
   private loadDirection: Direction | null = null;
   private loadSignal: AbortSignal | null = null;
+  private unconfirmedDirection: Direction = 'older';
+  private reversedUnconfirmed = false;
   private hintEpoch = -1;
   private geometry = new HeightLedger();
   private adjacent = new Map<string, string>();
@@ -39,7 +41,13 @@ export class DomAdapter implements NavigationAdapter {
       // SPA URL changes can precede replacing the old conversation DOM.
       if (this.routeStale.get(node) === id) continue;
       this.routeStale.delete(node);
-      if (nodes.has(id)) continue;
+      if (nodes.has(id)) {
+        // Expose contradictory copies to IndexStore instead of silently choosing
+        // one same-ID body during a renderer transition.
+        if (role === 'user' && entries.some(entry => entry.id === id && entry.text !== text))
+          entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}) });
+        continue;
+      }
       nodes.set(id, node);
       if (role === 'user') {
         entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}) });
@@ -126,6 +134,7 @@ export class DomAdapter implements NavigationAdapter {
       : measured.filter(t => t.role === 'user').map(t => t.id), scroller.clientWidth);
   }
   begin(collect = false): void {
+    this.unconfirmedDirection = 'older'; this.reversedUnconfirmed = false;
     this.lastAttempt = null; this.lastLoadReport = { phase: collect ? 'head' : 'scan', added: 0, steps: 0 };
     this.collection = collect ? { stage: 'head', boundary: new CollectionBoundaryWitness(), lastRenderActivity: -Infinity } : null;
   }
@@ -258,8 +267,14 @@ export class DomAdapter implements NavigationAdapter {
     return false;
   }
   direction(id: string): Direction {
+    return this.directionHint(id) ?? this.unconfirmedDirection;
+  }
+  reverseUnconfirmed(id: string): boolean {
+    if (this.reversedUnconfirmed || this.directionHint(id) !== null) return false;
+    this.reversedUnconfirmed = true; this.unconfirmedDirection = 'newer'; return true;
+  }
+  private directionHint(id: string): Direction | null {
     const targetId = this.returnWitness?.id === id ? this.returnWitness.anchorId ?? id : id;
-    const target = this.store.entries.findIndex(e => e.id === targetId);
     const scroller = this.scroller(this.nodes.values().next().value);
     const viewport = this.viewport(scroller);
     const visible = this.store.entries.filter(e => {
@@ -268,8 +283,7 @@ export class DomAdapter implements NavigationAdapter {
     });
     // ChatGPT can keep the last two turns mounted while reading far earlier.
     const anchor = visible[0] ?? this.store.entries.find(e => this.mounted(e.id));
-    const firstVisible = anchor ? this.store.entries.findIndex(e => e.id === anchor.id) : -1;
-    return target >= 0 && firstVisible >= 0 && target < firstVisible ? 'older' : 'newer';
+    return this.store.seekDirection(targetId, anchor ? [anchor.id] : this.store.mounted);
   }
   private shell(node: HTMLElement): HTMLElement {
     return node.closest<HTMLElement>('[data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]') ?? node;

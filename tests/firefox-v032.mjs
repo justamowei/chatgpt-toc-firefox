@@ -47,10 +47,10 @@ try{
   await test('V032-05 unknown branch retains 600 searchable records and promotes later exact mounts without duplicates',async()=>{
     await evaluate(`document.querySelector('main').removeAttribute('data-fixture-branch');`);
     await wait(async()=> (await state()).scope.includes('未完整核對') && (await state()).scope.includes('已儲存'));
-    await driver.navigate().refresh();await wait(async()=> (await state())?.scope.includes('580'));
-    if((await state()).expanded!=='true')await click('.toggle');await wait(async()=> (await state()).rows===20 && (await state()).archived===580);
+    await driver.navigate().refresh();await wait(async()=> (await state())?.scope.includes('600 則'));
+    if((await state()).expanded!=='true')await click('.toggle');await wait(async()=> (await state()).rows===600 && (await state()).archived===0);
     await evaluate(`window.fixturePrompts=[...document.querySelectorAll('[data-message-author-role=user]')].map(n=>n.textContent);`);
-    await mount([111,112,113,114,115,116]);await wait(async()=> (await state()).rows===26 && (await state()).archived===574);
+    await mount([111,112,113,114,115,116]);await wait(async()=> (await state()).rows===600 && (await state()).archived===0 && (await state()).marks===6);
     const s=await state();assert.equal(s.rows+s.archived,600);assert.equal(s.marks,6);await session.screenshot('restored-unverified-600.png');return s;
   });
   await test('V032-06 different conversation does not inherit cached prompts',async()=>{

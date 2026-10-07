@@ -34,14 +34,20 @@ function validProfile(value: unknown): value is ProfileCache {
 }
 const fingerprint = (state: StoredIndex): string => JSON.stringify(state);
 
-// Preserve other tabs' stable witnesses. Different or unknown branches become
-// search-only generations; an observed text/order conflict isolates the old one.
+// Preserve other tabs' stable witnesses and cached seek hints. Unknown branches
+// remain candidates; contradictory bodies, order or known branches are isolated.
 export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex): StoredIndex {
   if (!validStoredIndex(previous) || !validStoredIndex(incoming) || previous.context !== incoming.context) return structuredClone(incoming);
   let active = structuredClone(incoming);
-  const generations: StoredGeneration[] = [...incoming.quarantine, ...previous.quarantine];
-  if (previous.branch !== null && previous.branch === incoming.branch) {
+  const knownBranchChanged = previous.branch !== null && incoming.branch !== null && previous.branch !== incoming.branch;
+  const generations: StoredGeneration[] = [...incoming.quarantine, ...previous.quarantine.map(generation =>
+    knownBranchChanged && generation.reason === 'restored-unverified' ? { ...generation, reason: 'branch-change' as const } : generation)];
+  if (previous.branch === null || incoming.branch === null || previous.branch === incoming.branch) {
     const store = new IndexStore();
+    store.restoreState(previous, { context: incoming.context, branch: incoming.branch, entries: [] });
+    const normalized = new IndexStore();
+    normalized.restoreState(incoming, { context: incoming.context, branch: incoming.branch, entries: [] });
+    const next = normalized.exportState();
     const observe = (state: StoredIndex) => {
       const entries = new Map(state.entries.map(entry => [entry.id, entry]));
       for (const segment of state.segments) {
@@ -50,10 +56,14 @@ export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex)
         else for (const entry of items) store.merge({ context: state.context, branch: state.branch, entries: [entry] });
       }
     };
-    observe(previous); observe(incoming); active = store.exportState();
+    observe(next);
+    const incomingIds = new Set(incoming.entries.map(entry => entry.id));
+    for (const id of next.recovery?.candidateIds ?? [])
+      if ((!incomingIds.has(id) || incoming.recovery?.candidateIds.includes(id)) && store.canSeek(id)) store.recoveredIds.add(id);
+    active = store.exportState();
     active.context = incoming.context; active.branch = incoming.branch;
     generations.unshift(...active.quarantine); active.quarantine = [];
-  } else if (previous.entries.length) generations.push({ reason: 'restored-unverified', entries: previous.entries,
+  } else if (previous.entries.length) generations.push({ reason: 'branch-change', entries: previous.entries,
     segments: previous.segments, ordered: previous.segments.length <= 1 && previous.segments.every(segment => segment.ordered) });
   // Allocate retention to already stored witnesses first. Hitting a bound must
   // stop new collection, rather than silently replace another tab's history.
@@ -70,6 +80,10 @@ export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex)
     ...active.entries, ...generations.flatMap(generation => generation.entries)]) consider(entry);
   active.entries = active.entries.filter(entry => allowed.get(entry.id)?.has(entry.text));
   const activeIds = new Set(active.entries.map(entry => entry.id));
+  if (active.recovery) {
+    active.recovery.candidateIds = active.recovery.candidateIds.filter(id => activeIds.has(id));
+    if (!active.recovery.candidateIds.length) delete active.recovery;
+  }
   active.segments = active.segments.map(segment => ({ ids: segment.ids.filter(id => activeIds.has(id)), ordered: segment.ordered })).filter(segment => segment.ids.length);
   let count = active.entries.length, characters = active.entries.reduce((total, entry) => total + entry.text.length, 0);
   const seen = new Map<string, Set<string>>();

@@ -175,14 +175,14 @@ test('CORE-03: cancellation and supersession settle even when adapter ignores Ab
   assert.deepEqual(located, ['new']); assert.equal(nav.state, 'located');
   assert.equal(nav.lastStopReason, 'located');
 });
-test('collection allows 2400 steps while target seeking allows 60, and each load receives its exact target', async () => {
+test('collection allows 4800 steps while target seeking allows 60, and each load receives its exact target', async () => {
   for (const targetId of [null, 'offscreen-target']) {
     const loads = [], callbacks = [];
     const nav = new Navigator({ mounted: () => false, locate: () => false, direction: () => 'newer',
       load: async (direction, signal, timeout, target) => { loads.push({ direction, signal, timeout, target }); return true; },
     }, state => callbacks.push({ state, reason: nav.lastStopReason }));
     assert.equal(await nav.run(targetId), 'timed-out'); assert.equal(nav.lastStopReason, 'batch-limit');
-    assert.equal(loads.length, targetId === null ? 2400 : 60);
+    assert.equal(loads.length, targetId === null ? 4800 : 60);
     assert.ok(loads.every(load => load.target === targetId && load.direction === (targetId === null ? 'older' : 'newer') &&
       load.timeout > 0 && load.timeout <= NAV_LIMITS.batchMs && load.signal.aborted));
     assert.deepEqual(callbacks.at(-1), { state: 'timed-out', reason: 'batch-limit' });
@@ -336,6 +336,18 @@ test('runtime schemas reject extra keys, fake commands and malformed settings', 
   assert.equal(validMessage({ kind: 'settings:get', url: 'https://evil.test' }), false);
   assert.equal(validMessage({ kind: 'settings:set', expanded: 'true' }), false);
   assert.equal(validMessage({ kind: 'eval', code: 'alert(1)' }), false);
-  assert.equal(validSettings({ auto: false, expanded: true }), true);
+  assert.equal(validSettings({ auto: false, expanded: true }), false);
+  assert.equal(validSettings({ auto: false, expanded: true, collectionMinutes: 10 }), true);
   assert.equal(validSettings({ auto: false, expanded: true, token: 'no' }), false);
+});
+
+test('collection deadline override bounds a run without changing target navigation', async () => {
+ assert.equal(NAV_LIMITS.collectionTotalMs,600000);
+ let signal; const adapter={mounted:()=>false,locate:()=>false,direction:()=> 'older',load:(_d,s)=>{signal=s;return new Promise(()=>{});}};
+ const nav=new Navigator(adapter,()=>{},{totalMs:18,collectionTotalMs:150,batches:10,batchMs:180,noProgress:3});
+ for(const target of [null,'target']){const begin=performance.now();assert.equal(await nav.run(target,35),'timed-out');assert.equal(nav.lastStopReason,'time-limit');assert.equal(signal.aborted,true);assert.ok(performance.now()-begin<140);}
+});
+
+test('unconfirmed seeking can reverse once after stalls, with the same deadline and no infinite retry',async()=>{
+ for(const found of [true,false]){let reversed=false,loads=[],mounted=false;const nav=new Navigator({mounted:()=>mounted,locate:()=>mounted,direction:()=>reversed?'newer':'older',reverseUnconfirmed:()=>{if(reversed)return false;reversed=true;return true;},load:async d=>{loads.push(d);if(reversed&&found)mounted=true;return false;}},()=>{},{totalMs:200,batches:12,batchMs:100,noProgress:3});assert.equal(await nav.run('target'),found?'located':'not-found');assert.deepEqual(loads,found?['older','older','older','newer']:['older','older','older','newer','newer','newer']);}
 });

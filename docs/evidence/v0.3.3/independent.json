@@ -1,0 +1,254 @@
+{
+  "date": "2026-10-07T06:08:05.346Z",
+  "commit": "567dfda645d113449eece4932519da98e59e7118",
+  "snapshot": "C:/Users/Andy/Documents/Codex/2026-10-02/new-chat-2/work/acceptance/567dfda",
+  "archive": "git -c core.autocrlf=false archive; exact blob bytes",
+  "dependencies": "Existing node_modules junction; no dependency installation",
+  "commands": [
+    {
+      "name": "pure",
+      "args": [
+        "--test",
+        "tests/background.test.mjs",
+        "tests/collection-policy.test.mjs",
+        "tests/core.test.mjs",
+        "tests/geometry.test.mjs",
+        "tests/interaction.test.mjs",
+        "tests/persistence.test.mjs",
+        "tests/settings.test.mjs"
+      ],
+      "status": "PASS",
+      "elapsedMs": 1069.5017
+    },
+    {
+      "name": "typecheck",
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit"
+      ],
+      "status": "PASS",
+      "elapsedMs": 305.03060000000005
+    },
+    {
+      "name": "build-production",
+      "args": [
+        "scripts/build.mjs"
+      ],
+      "status": "PASS",
+      "elapsedMs": 200.6219000000001
+    },
+    {
+      "name": "build-fixture",
+      "args": [
+        "scripts/build.mjs",
+        "--fixture"
+      ],
+      "status": "PASS",
+      "elapsedMs": 196.36120000000005
+    },
+    {
+      "name": "lint",
+      "args": [
+        "node_modules/web-ext/bin/web-ext.js",
+        "lint",
+        "--source-dir",
+        "dist/firefox",
+        "--warnings-as-errors"
+      ],
+      "status": "PASS",
+      "elapsedMs": 2889.0305
+    },
+    {
+      "name": "dom-repro",
+      "args": [
+        "C:\\Users\\Andy\\Documents\\Codex\\2026-10-02\\new-chat-2\\outputs\\chatgpt-toc\\artifacts\\review-v033\\repro-fixed-dom.mjs"
+      ],
+      "status": "PASS",
+      "elapsedMs": 278.1151
+    }
+  ],
+  "scope": "Independent git archive snapshot. Local Git only; no native browser, personal Firefox profile, Git network, or GCM.",
+  "extraExploration": {
+    "status": "ENVIRONMENT-LIMITED",
+    "files": [
+      "tests/dom-history.test.mjs",
+      "tests/full-index.test.mjs",
+      "tests/history.test.mjs"
+    ],
+    "note": "These legacy suites are not in current package.json test scripts. Attempting all discovered files produced 88 passing assertions plus three suite initialization failures: esbuild attempted to read a denied ancestor directory. No runtime code or test code was changed.",
+    "log": "fixed-all-discovered-pure.log"
+  },
+  "trackedBefore": {
+    "count": 147,
+    "mismatches": [],
+    "status": "PASS"
+  },
+  "pure": {
+    "count": 88,
+    "pass": 88,
+    "fail": 0
+  },
+  "buildHashes": [
+    {
+      "flavor": "firefox",
+      "file": "background.js",
+      "sha256": "b2181e7ea680775528eadd4cfa2af6e1ed178798735d9652aae7348ff1d4789f",
+      "mainDistSha256": "b2181e7ea680775528eadd4cfa2af6e1ed178798735d9652aae7348ff1d4789f",
+      "status": "PASS"
+    },
+    {
+      "flavor": "firefox",
+      "file": "content.js",
+      "sha256": "03e4409516645975c8fb0718f21a87c3658b8cbcbef86277837b1105dbffed30",
+      "mainDistSha256": "03e4409516645975c8fb0718f21a87c3658b8cbcbef86277837b1105dbffed30",
+      "status": "PASS"
+    },
+    {
+      "flavor": "firefox",
+      "file": "options.js",
+      "sha256": "ad5578f7c20fc63367d132b3c7bebd7755c8a46213a5d28291393d953e3e737f",
+      "mainDistSha256": "ad5578f7c20fc63367d132b3c7bebd7755c8a46213a5d28291393d953e3e737f",
+      "status": "PASS"
+    },
+    {
+      "flavor": "firefox",
+      "file": "options.html",
+      "sha256": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "mainDistSha256": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "status": "PASS"
+    },
+    {
+      "flavor": "firefox",
+      "file": "host.css",
+      "sha256": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "mainDistSha256": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "status": "PASS"
+    },
+    {
+      "flavor": "firefox",
+      "file": "manifest.json",
+      "sha256": "8afd5ae29dc9f5e63ce854dd422931eb3277ee843d45ffd8608fc8b0bbcfff09",
+      "mainDistSha256": "8afd5ae29dc9f5e63ce854dd422931eb3277ee843d45ffd8608fc8b0bbcfff09",
+      "status": "PASS"
+    },
+    {
+      "flavor": "fixture",
+      "file": "background.js",
+      "sha256": "9a3582389129abf19c2f7c918d6255172feed2883faa9db91b4363b6bdf29489",
+      "mainDistSha256": "9a3582389129abf19c2f7c918d6255172feed2883faa9db91b4363b6bdf29489",
+      "status": "PASS"
+    },
+    {
+      "flavor": "fixture",
+      "file": "content.js",
+      "sha256": "ea1cee7629f6f25cd5ece3a023b4b2c7978505a89f34b206c95e05c9619724f9",
+      "mainDistSha256": "ea1cee7629f6f25cd5ece3a023b4b2c7978505a89f34b206c95e05c9619724f9",
+      "status": "PASS"
+    },
+    {
+      "flavor": "fixture",
+      "file": "options.js",
+      "sha256": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "mainDistSha256": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "status": "PASS"
+    },
+    {
+      "flavor": "fixture",
+      "file": "options.html",
+      "sha256": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "mainDistSha256": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "status": "PASS"
+    },
+    {
+      "flavor": "fixture",
+      "file": "host.css",
+      "sha256": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "mainDistSha256": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "status": "PASS"
+    },
+    {
+      "flavor": "fixture",
+      "file": "manifest.json",
+      "sha256": "7ac8efb322e3fb2206ec98dc15fe362c32439849d3371e0f869dc1e45ff3b5b6",
+      "mainDistSha256": "7ac8efb322e3fb2206ec98dc15fe362c32439849d3371e0f869dc1e45ff3b5b6",
+      "status": "PASS"
+    }
+  ],
+  "domRepro": {
+    "status": "PASS",
+    "source": "actual compiled DomAdapter direction/reversal and Navigator, stubbed mounted geometry/load/locate; no native browser claim",
+    "cases": [
+      {
+        "name": "unconfirmed direction reverses after three stalls and locates",
+        "result": "located",
+        "loads": [
+          "older",
+          "older",
+          "older",
+          "newer"
+        ]
+      },
+      {
+        "name": "absent unconfirmed target reverses only once",
+        "result": "not-found",
+        "loads": [
+          "older",
+          "older",
+          "older",
+          "newer",
+          "newer",
+          "newer"
+        ]
+      },
+      {
+        "name": "new operation resets reversal state",
+        "result": "PASS"
+      },
+      {
+        "name": "confirmed direction never reverses",
+        "result": "not-found",
+        "loads": [
+          "newer",
+          "newer",
+          "newer"
+        ]
+      },
+      {
+        "name": "reversal shares original total deadline",
+        "result": "timed-out",
+        "stopReason": "time-limit",
+        "loads": [
+          "older",
+          "older",
+          "older",
+          "newer",
+          "newer"
+        ],
+        "elapsedMs": 70.6397,
+        "timestamps": [
+          0.10640000000000782,
+          17.034099999999995,
+          32.98000000000002,
+          48.839500000000015,
+          64.06380000000001
+        ]
+      },
+      {
+        "name": "reversed search still cancels promptly",
+        "result": "cancelled",
+        "loads": [
+          "older",
+          "older",
+          "older",
+          "newer"
+        ]
+      }
+    ]
+  },
+  "trackedAfter": {
+    "count": 147,
+    "mismatches": [],
+    "status": "PASS"
+  },
+  "status": "PASS"
+}

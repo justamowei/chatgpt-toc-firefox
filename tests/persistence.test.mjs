@@ -33,13 +33,16 @@ test('stable plain data round-trips after F5, mounts only current DOM and cannot
   assert.equal(after.completeness, 'partial'); assert.equal(after.retainedCount, 3);
 });
 
-test('unknown branch retains searchable history without duplicate current rows or growing on repeated F5', () => {
+test('null branch F5 restores exact seek candidates and original order without growing or claiming verification', () => {
   let saved = state([entry('a'), entry('b'), entry('c')], null);
   for (let i = 0; i < 5; i++) {
     const store = new IndexStore(); assert.equal(store.restoreState(saved, snapshot([entry('c')], null)), true);
-    assert.deepEqual(ids(store), ['c']); assert.equal(store.retainedCount, 3);
+    assert.deepEqual(ids(store), ['a', 'b', 'c']); assert.equal(store.retainedCount, 3);
     assert.deepEqual(store.searchObserved('').map(entry => entry.id).sort(), ['a', 'b', 'c']);
-    assert.equal(store.quarantine[0].reason, 'restored-unverified');
+    assert.equal(store.quarantine.length, 0); assert.equal(store.canSeek('a'), true);
+    assert.equal(store.seekDirection('a'), 'older'); assert.equal(store.seekDirection('c', ['a']), 'newer');
+    assert.equal(store.ordered, false); assert.equal(store.branchConfidence, 'unverified'); assert.equal(store.completeness, 'partial');
+    assert.deepEqual([...store.recoveredIds], ['a', 'b']);
     saved = store.exportState(); assert.equal(validStoredIndex(saved), true);
   }
 });
@@ -52,13 +55,15 @@ test('different conversation is rejected; different branch or changed body canno
   const conflict = new IndexStore(); conflict.restoreState(saved, snapshot([entry('b', 'edited')]));
   assert.deepEqual(ids(conflict), ['b']); assert.equal(conflict.searchObserved('a').length, 1);
   const noOverlap = new IndexStore(); noOverlap.restoreState(saved, snapshot([entry('new')]));
-  assert.deepEqual(ids(noOverlap), ['new']); assert.equal(noOverlap.quarantine.length, 1);
+  assert.deepEqual(ids(noOverlap), ['a', 'b', 'new']); assert.equal(noOverlap.quarantine.length, 0);
+  assert.equal(noOverlap.canSeek('a'), true); assert.equal(noOverlap.seekDirection('a'), null); assert.equal(noOverlap.ordered, false);
 });
 
 test('later DOM observations promote identical restored witnesses, but retain conflicting versions', () => {
   const store = new IndexStore(); store.restoreState(state([entry('a'), entry('b'), entry('c')], null), snapshot([entry('c')], null));
   store.merge(snapshot([entry('a'), entry('b'), entry('c')], null));
   assert.deepEqual(ids(store), ['a', 'b', 'c']); assert.equal(store.quarantine.length, 0); assert.equal(store.retainedCount, 3);
+  assert.equal(store.recoveredIds.size, 0); assert.equal(store.branchConfidence, 'unverified');
   const changed = new IndexStore(); changed.restoreState(state([entry('a', 'old'), entry('b')], null), snapshot([entry('b')], null));
   changed.merge(snapshot([entry('a', 'new'), entry('b')], null));
   assert.equal(changed.quarantine[0].entries[0].text, 'old'); assert.equal(changed.retainedCount, 3);
@@ -72,12 +77,85 @@ test('restoring disconnected windows preserves uncertain order and conflicting m
   assert.deepEqual(ids(reversed), ['b', 'a']); assert.equal(reversed.quarantine[0].reason, 'order-conflict');
 });
 
+test('v032 search-only prefix migrates before the live tail, with no invented bridge direction', () => {
+  const saved = state([entry('c'), entry('d')], null);
+  saved.quarantine.push({ reason: 'restored-unverified', entries: [entry('a'), entry('b')],
+    segments: [{ ids: ['a', 'b'], ordered: true }], ordered: true });
+  for (let i = 0; i < 3; i++) {
+    const store = new IndexStore(); store.restoreState(saved, snapshot([entry('d')], null));
+    assert.deepEqual(ids(store), ['a', 'b', 'c', 'd']); assert.equal(store.quarantine.length, 0);
+    assert.equal(store.canSeek('a'), true); assert.equal(store.seekDirection('a'), null);
+    assert.equal(store.seekDirection('c'), 'older'); assert.equal(store.seekDirection('a', ['b']), 'older');
+    assert.equal(store.ordered, false); assert.equal(store.completeness, 'partial');
+    Object.assign(saved, store.exportState()); assert.equal(validStoredIndex(saved), true);
+  }
+});
+
+test('legacy duplicate versions or body contradictions remain quarantined and never supply seek identities', () => {
+  const saved = state([entry('tail')], null);
+  saved.quarantine = ['old', 'other'].map(text => ({ reason: 'restored-unverified', entries: [entry('a', text)],
+    segments: [{ ids: ['a'], ordered: true }], ordered: true }));
+  const store = new IndexStore(); store.restoreState(saved, snapshot([entry('tail')], null));
+  assert.deepEqual(ids(store), ['tail']); assert.equal(store.canSeek('a'), false);
+  assert.deepEqual(store.searchObserved('').filter(entry => entry.id === 'a').map(entry => entry.text), ['old', 'other']);
+  const duplicateDOM = new IndexStore(); duplicateDOM.restoreState(state([entry('a', 'old')], null), snapshot([entry('a', 'old'), entry('a', 'new')], null));
+  assert.equal(duplicateDOM.canSeek('a'), false); assert.equal(duplicateDOM.mounted.has('a'), false);
+  assert.equal(duplicateDOM.quarantine[0].reason, 'text-change');
+  assert.equal(validStoredIndex(duplicateDOM.exportState()), true);
+  const reversed = state([entry('b'), entry('a')], null);
+  reversed.quarantine.push({ reason: 'restored-unverified', entries: [entry('a'), entry('b')],
+    segments: [{ ids: ['a', 'b'], ordered: true }], ordered: true });
+  const order = new IndexStore(); order.restoreState(reversed, snapshot([entry('tail')], null));
+  assert.deepEqual(ids(order), ['tail']); assert.equal(order.canSeek('a'), false);
+  assert.equal(order.quarantine[0].reason, 'order-conflict'); assert.equal(validStoredIndex(order.exportState()), true);
+});
+
+test('cached candidate body/order contradictions invalidate the navigation epoch, and known branch archives never migrate', () => {
+  for (const changed of [[entry('b', 'edited')], [entry('b'), entry('a')]]) {
+    const store = new IndexStore(); store.restoreState(state([entry('a'), entry('b')], null), snapshot([entry('b')], null));
+    const epoch = store.epoch; assert.equal(store.merge(snapshot(changed, null)), true); assert.ok(store.epoch > epoch);
+    assert.deepEqual(ids(store), changed.map(entry => entry.id)); assert.equal(store.recoveredIds.size, 0);
+    assert.equal(store.quarantine[0].reason, changed.length === 1 ? 'text-change' : 'order-conflict');
+  }
+  const changed = new IndexStore(); changed.restoreState(state([entry('a'), entry('b')]), snapshot([entry('b')], 'branch-b'));
+  assert.equal(changed.quarantine[0].reason, 'branch-change');
+  const later = new IndexStore(); later.restoreState(changed.exportState(), snapshot([entry('b')], null));
+  assert.equal(later.canSeek('a'), false); assert.equal(later.searchObserved('a').length, 1);
+});
+
+test('null branch broker writes preserve seek hints through legacy migration, disjoint tabs and exact conflicts', async () => {
+  const storage = memory(), broker = new CacheBroker(storage);
+  const legacy = state([entry('c')], null);
+  legacy.quarantine.push({ reason: 'restored-unverified', entries: [entry('a'), entry('b')],
+    segments: [{ ids: ['a', 'b'], ordered: true }], ordered: true });
+  await broker.save(legacy); await broker.save(state([entry('c'), entry('d')], null));
+  let saved = await broker.load(context), store = new IndexStore(); store.restoreState(saved, snapshot([entry('d')], null));
+  assert.deepEqual(ids(store), ['a', 'b', 'c', 'd']); assert.equal(store.seekDirection('a'), null); assert.equal(store.canSeek('a'), true);
+  await broker.save(state([entry('a', 'edited')], null)); saved = await broker.load(context);
+  store = new IndexStore(); store.restoreState(saved, snapshot([entry('a', 'edited')], null));
+  assert.equal(store.entries.find(entry => entry.id === 'a').text, 'edited');
+  assert.equal(store.quarantine.some(group => group.entries.some(entry => entry.id === 'a' && entry.text === 'a')), true);
+  assert.equal(validStoredIndex(saved), true);
+});
+
+test('broker known branch changes also isolate a legacy restored-unverified prefix', async () => {
+  const storage = memory(), broker = new CacheBroker(storage), old = state([entry('tail')]);
+  old.quarantine.push({ reason: 'restored-unverified', entries: [entry('prefix')],
+    segments: [{ ids: ['prefix'], ordered: true }], ordered: true });
+  await broker.save(old); await broker.save(state([entry('new')], 'branch-b'));
+  const store = new IndexStore(); store.restoreState(await broker.load(context), snapshot([entry('new')], null));
+  assert.deepEqual(ids(store), ['new']); assert.equal(store.canSeek('prefix'), false); assert.equal(store.canSeek('tail'), false);
+  assert.equal(store.searchObserved('prefix').length, 1);
+});
+
 test('strict cache validation bounds stable entries, total archived characters, segments and schema', () => {
   const original = state([entry('a')]);
   for (const changed of [
     { ...original, unexpected: 1 }, { ...original, version: 2 }, { ...original, branch: '' },
     { ...original, entries: [{ ...entry('a'), stable: false }] }, { ...original, entries: [{ ...entry('a'), node: {} }] },
     { ...original, entries: [entry('a'), entry('a')] }, { ...original, segments: [{ ids: ['absent'], ordered: true }] },
+    { ...original, recovery: { candidateIds: ['absent'] } }, { ...original, recovery: { candidateIds: ['a', 'a'] } },
+    { ...original, recovery: { candidateIds: ['a'], unexpected: true } },
     { ...original, segments: [{ ids: ['a', 'a'], ordered: true }] },
     { ...original, entries: [entry('a', 'x'.repeat(5_000_001))] },
   ]) assert.equal(validStoredIndex(changed), false);
@@ -104,8 +182,8 @@ test('broker unknown-branch writes deduplicate witnesses and do not mix active b
   await broker.save(state([entry('a'), entry('b')], null));
   for (let i = 0; i < 4; i++) await broker.save(state([entry('b'), entry('c')], null));
   const saved = await broker.load(context);
-  assert.deepEqual(saved.entries.map(entry => entry.id), ['b', 'c']);
-  assert.deepEqual(saved.quarantine.flatMap(group => group.entries).map(entry => entry.id), ['a']);
+  assert.deepEqual(saved.entries.map(entry => entry.id), ['a', 'b', 'c']);
+  assert.deepEqual(saved.quarantine.flatMap(group => group.entries), []);
   await broker.clear(); assert.equal(storage.values[CACHE_KEY], undefined);
 });
 
@@ -212,6 +290,21 @@ test('in-flight hydration preserves observations made while storage was loading'
   const loading = coordinator.restore(context, () => snapshot([entry('c')]));
   store.merge(snapshot([entry('b'), entry('c')])); gate.resolve(state([entry('a'), entry('b')]));
   assert.equal(await loading, true); assert.deepEqual(ids(store), ['a', 'b', 'c']); coordinator.dispose();
+});
+
+test('SPA empty mounts hydrate null-branch candidates before later DOM windows arrive', async () => {
+  const gate = deferred(), store = new IndexStore(), writes = [];
+  store.merge(snapshot([], null));
+  const coordinator = new PersistentIndex({ load: () => gate.promise, save: async state => { writes.push(state); } }, store);
+  const loading = coordinator.restore(context, () => snapshot([], null));
+  store.merge(snapshot([], null)); coordinator.schedule();
+  gate.resolve(state([entry('a'), entry('b'), entry('c')], null));
+  assert.equal(await loading, true); assert.deepEqual(ids(store), ['a', 'b', 'c']); assert.equal(store.mounted.size, 0);
+  assert.equal(store.canSeek('a'), true); assert.equal(store.seekDirection('a'), null); assert.equal(store.ordered, false);
+  store.merge(snapshot([entry('c')], null)); coordinator.schedule(); await coordinator.flush();
+  assert.deepEqual(ids(store), ['a', 'b', 'c']); assert.equal(store.seekDirection('a'), 'older');
+  assert.deepEqual(writes[0].recovery.candidateIds, ['a', 'b']); assert.equal(validStoredIndex(writes[0]), true);
+  coordinator.dispose();
 });
 
 test('incognito does not read or write conversation storage', async () => {

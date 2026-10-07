@@ -1,0 +1,29 @@
+{
+  "runtime": "567dfda645d113449eece4932519da98e59e7118",
+  "production": {
+    "version": "0.3.3",
+    "revision": "2026-10-07-v033",
+    "fixture": false,
+    "hashes": {
+      "background.js": "b2181e7ea680775528eadd4cfa2af6e1ed178798735d9652aae7348ff1d4789f",
+      "content.js": "03e4409516645975c8fb0718f21a87c3658b8cbcbef86277837b1105dbffed30",
+      "options.js": "ad5578f7c20fc63367d132b3c7bebd7755c8a46213a5d28291393d953e3e737f",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "8afd5ae29dc9f5e63ce854dd422931eb3277ee843d45ffd8608fc8b0bbcfff09"
+    }
+  },
+  "fixture": {
+    "version": "0.3.3",
+    "revision": "2026-10-07-v033",
+    "fixture": true,
+    "hashes": {
+      "background.js": "9a3582389129abf19c2f7c918d6255172feed2883faa9db91b4363b6bdf29489",
+      "content.js": "ea1cee7629f6f25cd5ece3a023b4b2c7978505a89f34b206c95e05c9619724f9",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "7ac8efb322e3fb2206ec98dc15fe362c32439849d3371e0f869dc1e45ff3b5b6"
+    }
+  }
+}

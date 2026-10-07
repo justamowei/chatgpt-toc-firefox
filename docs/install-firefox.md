@@ -1,16 +1,11 @@
-# Firefox v0.3.2 安裝與使用
+# Firefox v0.3.3 更新與使用
 
-使用 sibling outputs/Firefox-測試版-v0.3.2/manifest.json，或 dist/firefox/manifest.json。version 0.3.2，頁面診斷 revision 2026-10-07-v032。舊 v0.3.1 資料夾是歷史副本。
+正式 manifest：outputs/Firefox-測試版-v0.3.3/manifest.json 或 dist/firefox/manifest.json；version 0.3.3，revision 2026-10-07-v033。
 
-1. Firefox about:debugging →「這個 Firefox」→「載入暫時附加元件」，選上述新版 manifest；同一 ID 只保留一份。已指向新版資料夾時可用「重新載入」。
-2. 安裝／更新時允許 chatgpt.com 網站權限；若 Firefox 仍設定逐站允許，從附加元件權限頁允許 ChatGPT。
-3. 重新整理已開啟 ChatGPT。新開啟且載入完成的 ChatGPT 頁面預設顯示入口，不需每頁點工具列。
-4. 點「目錄」或輸入框外 Shift + O 開啟；Esc 收合。縮小格子只代表當前掛載可定位提問，完整列表保留已收錄提問。
-5. 收集先向上，確認穩定物理邊界後才向下，最多 5 分鐘／2400 輪。Alt 不停止；可按「停止」。
-6. scope 顯示「已儲存於本機」後，F5 可恢復已保存資料。未核對分支的上次提問僅供搜尋，重新觀察相同 ID／正文後去重與恢復。
+1. 保留既有索引：把新版資料夾內檔案覆蓋到目前載入插件的資料夾，保持同一 addon ID，在 Firefox about:debugging →「這個 Firefox」按「重新載入」。不要先卸載或清除索引。
+2. 首次安裝：從上述頁面「載入暫時附加元件」選新版 manifest，允許 chatgpt.com 網站權限。重整已開啟 ChatGPT 分頁；之後新頁面預設自動啟用。
+3. 點目錄或輸入框外 Shift+O 開啟，Esc 收合。縮小格子只有目前掛載可定位提問，展開保留已收錄提問。
+4. 等 scope 顯示「已儲存於本機」，切換對話或 F5 可恢復已保存提問。保存項目可點選尋找，重新掛載時核對 ID 與正文；舊分支矛盾資料只供搜尋。
+5. 「收集整段對話」預設最多 10 分鐘。面板「設定」→收集時間選 1–10 分鐘→「儲存收集時間」，下一次執行生效。到達穩定兩端可提早停止，也可按「停止」；Alt 不停止。
 
-本機保存每對話 5000 筆／500 萬正文，總共最近使用 12 個對話／600 萬 JSON 字元。設定可停用自動啟用或清除本機索引，清除儲存不清除已開分頁記憶體。無痕頁面不啟用／保存。
-
-本版是未簽章開發測試版；暫時附加元件在重啟 Firefox 後移除，不能當作已正式日常安裝。卸載可能清除附加元件儲存。F5 保存已實測，不承諾卸載後仍保有索引。
-
-Firefox 157.0 原生合成驗收 18 項 PASS；真實 ChatGPT LIVE／ESR／Android 未完成。見 [本版報告](release-v0.3.2.md)。
+每對話 5000 筆／500 萬正文，profile 最近使用 12 個對話／600 萬 JSON 字元；無痕不保存。暫時 addon 未簽章，Firefox 重啟可能移除，不承諾卸載後快取。Firefox 157.0 原生合成驗收 13 項通過，ChatGPT LIVE 未完成；見 [完整報告](release-v0.3.3.md)。

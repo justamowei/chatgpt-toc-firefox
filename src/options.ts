@@ -1,14 +1,31 @@
-import { validSettings } from './core';
+import { validCollectionMinutes, validSettings } from './core';
 import { HOSTS } from './config';
 const enable = document.querySelector<HTMLButtonElement>('#enable')!;
 const disable = document.querySelector<HTMLButtonElement>('#disable')!;
 const clear = document.querySelector<HTMLButtonElement>('#clear')!;
 const status = document.querySelector<HTMLElement>('#status')!;
+const collectionForm = document.querySelector<HTMLFormElement>('#collection-form')!;
+const collectionMinutes = document.querySelector<HTMLSelectElement>('#collection-minutes')!;
+const collectionSave = document.querySelector<HTMLButtonElement>('#collection-save')!;
+const collectionStatus = document.querySelector<HTMLElement>('#collection-status')!;
 async function refresh(): Promise<void> {
   const settings: unknown = await browser.runtime.sendMessage({ kind: 'settings:get' });
   const granted = await browser.permissions.contains({ origins: HOSTS });
+  if (validSettings(settings)) collectionMinutes.value = String(settings.collectionMinutes);
   status.textContent = validSettings(settings) && settings.auto ? granted ? '已啟用：重新載入 ChatGPT 分頁後自動顯示目錄。' : '已設定自動啟用，但 Firefox 尚未允許 ChatGPT 網站權限；請按下啟用或在附加元件設定允許。' : '目前為手動啟用：在 ChatGPT 分頁點擴充功能按鈕。';
 }
+
+collectionForm.addEventListener('submit', event => {
+  event.preventDefault();
+  const minutes = Number(collectionMinutes.value);
+  if (!validCollectionMinutes(minutes)) { collectionStatus.textContent = '請選擇 1 至 10 分鐘的整數。'; return; }
+  collectionSave.disabled = true;
+  void browser.runtime.sendMessage({ kind: 'collection:set', minutes }).then((result: unknown) => {
+    if (!validSettings(result) || result.collectionMinutes !== minutes) { collectionStatus.textContent = '收集時間未儲存，請重新嘗試。'; return; }
+    collectionMinutes.value = String(result.collectionMinutes);
+    collectionStatus.textContent = `已儲存：下次收集最多 ${result.collectionMinutes} 分鐘。正在進行的收集維持原期限。`;
+  }).catch(() => { collectionStatus.textContent = '收集時間未儲存，請重新嘗試。'; }).finally(() => { collectionSave.disabled = false; });
+});
 enable.addEventListener('click', () => {
   // Request synchronously in the extension page's user gesture, never in a content script.
   const request = browser.permissions.request({ origins: HOSTS });

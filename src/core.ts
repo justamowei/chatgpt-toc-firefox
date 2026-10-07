@@ -2,17 +2,28 @@ export type Completeness = 'unknown' | 'partial' | 'verified-complete';
 export interface Entry { id: string; text: string; stable: boolean; slot?: string; }
 export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
 export interface CompleteProof { source: 'conversation-structure'; branch: string; exhausted: boolean; orderedIds: string[]; }
-export interface Settings { auto: boolean; expanded: boolean; }
-export const DEFAULT_SETTINGS: Settings = { auto: true, expanded: false };
+export interface Settings { auto: boolean; expanded: boolean; collectionMinutes: number; }
+export const DEFAULT_SETTINGS: Settings = { auto: true, expanded: false, collectionMinutes: 10 };
+
+export function validCollectionMinutes(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 10;
+}
 
 export function validSettings(value: unknown): value is Settings {
-  return !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 2 &&
-    typeof (value as Settings).auto === 'boolean' && typeof (value as Settings).expanded === 'boolean';
+  return exactKeys(value, ['auto', 'expanded', 'collectionMinutes']) &&
+    typeof value.auto === 'boolean' && typeof value.expanded === 'boolean' && validCollectionMinutes(value.collectionMinutes);
+}
+export function normalizeSettings(value: unknown): Settings {
+  if (validSettings(value)) return { ...value };
+  if (exactKeys(value, ['auto', 'expanded']) && typeof value.auto === 'boolean' && typeof value.expanded === 'boolean') {
+    return { auto: value.auto, expanded: value.expanded, collectionMinutes: DEFAULT_SETTINGS.collectionMinutes };
+  }
+  return { ...DEFAULT_SETTINGS };
 }
 export function normalize(value: string): string { return value.normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, ' ').trim(); }
 export type BranchConfidence = 'verified' | 'unverified';
 export interface ObservedSegment { ids: string[]; ordered: boolean; }
-export type QuarantineReason = 'text-change' | 'order-conflict' | 'invalidated' | 'restored-unverified';
+export type QuarantineReason = 'text-change' | 'order-conflict' | 'invalidated' | 'restored-unverified' | 'branch-change';
 export interface QuarantinedGeneration { epoch: number; reason: QuarantineReason; entries: Entry[]; segments: ObservedSegment[]; ordered: boolean; }
 export interface CacheLimits { entries: number; characters: number; }
 export const CACHE_LIMITS: CacheLimits = { entries: 5_000, characters: 5_000_000 };
@@ -20,13 +31,14 @@ export interface StoredGeneration { reason: QuarantineReason; entries: Entry[]; 
 export interface StoredIndex {
   version: 1; context: string; branch: string | null; entries: Entry[]; segments: ObservedSegment[];
   quarantine: StoredGeneration[]; limitReason: 'entries' | 'characters' | null;
+  recovery?: { candidateIds: string[] };
 }
 function exactKeys(value: unknown, keys: string[]): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value) &&
     Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 }
 export function validStoredIndex(value: unknown): value is StoredIndex {
-  if (!exactKeys(value, ['version', 'context', 'branch', 'entries', 'segments', 'quarantine', 'limitReason']) || value.version !== 1 ||
+  if (!exactKeys(value, ['version', 'context', 'branch', 'entries', 'segments', 'quarantine', 'limitReason', ...(Object.hasOwn(value ?? {}, 'recovery') ? ['recovery'] : [])]) || value.version !== 1 ||
     typeof value.context !== 'string' || !value.context || value.context.length > 2048 ||
     !(value.branch === null || typeof value.branch === 'string' && !!value.branch && value.branch.length <= 4096) ||
     ![null, 'entries', 'characters'].includes(value.limitReason as null) || !Array.isArray(value.quarantine) || value.quarantine.length > CACHE_LIMITS.entries) return false;
@@ -50,8 +62,13 @@ export function validStoredIndex(value: unknown): value is StoredIndex {
     return seen.size === ids.size;
   };
   if (!group(value.entries, value.segments)) return false;
+  if (Object.hasOwn(value, 'recovery')) {
+    if (!exactKeys(value.recovery, ['candidateIds']) || !Array.isArray(value.recovery.candidateIds)) return false;
+    const ids = new Set((value.entries as Entry[]).map(entry => entry.id)), candidates = value.recovery.candidateIds;
+    if (candidates.length > ids.size || new Set(candidates).size !== candidates.length || candidates.some(id => typeof id !== 'string' || !ids.has(id))) return false;
+  }
   for (const generation of value.quarantine) if (!exactKeys(generation, ['reason', 'entries', 'segments', 'ordered']) ||
-    !['text-change', 'order-conflict', 'invalidated', 'restored-unverified'].includes(generation.reason as string) ||
+    !['text-change', 'order-conflict', 'invalidated', 'restored-unverified', 'branch-change'].includes(generation.reason as string) ||
     typeof generation.ordered !== 'boolean' || !group(generation.entries, generation.segments) ||
     generation.ordered && (generation.segments as ObservedSegment[]).length > 1 ||
     generation.ordered && (generation.segments as ObservedSegment[]).some(segment => !segment.ordered)) return false;
@@ -92,6 +109,9 @@ export class IndexStore {
   segments: ObservedSegment[] = [];
   quarantine: QuarantinedGeneration[] = [];
   limitReason: 'entries' | 'characters' | null = null;
+  // Candidates retain exact identity and order hints, never a completeness proof.
+  readonly recoveredIds = new Set<string>();
+  private seekableIds = new Set<string>();
   private graph: OrderGraph = new Map();
   private count = 0;
   private characters = 0;
@@ -103,6 +123,17 @@ export class IndexStore {
   get branchConfidence(): BranchConfidence { return this.branch === null ? 'unverified' : 'verified'; }
   get retainedCount(): number { return this.count; }
   get retainedCharacters(): number { return this.characters; }
+  canSeek(id: string): boolean { return this.seekableIds.has(id); }
+  seekDirection(id: string, anchorIds: Iterable<string> = this.mounted): 'older' | 'newer' | null {
+    const target = this.entries.findIndex(entry => entry.id === id);
+    if (target < 0 || !this.canSeek(id)) return null;
+    for (const anchorId of anchorIds) {
+      const anchor = this.entries.findIndex(entry => entry.id === anchorId);
+      const segment = this.graphSegments().find(segment => segment.ids.includes(id) && segment.ids.includes(anchorId));
+      if (anchor >= 0 && anchor !== target && segment?.ordered) return segment.ids.indexOf(id) < segment.ids.indexOf(anchorId) ? 'older' : 'newer';
+    }
+    return null;
+  }
   exportState(): StoredIndex {
     const copy = (entries: Entry[]) => entries.filter(entry => entry.stable).map(({ id, text, slot }) => ({ id, text, stable: true, ...(slot ? { slot } : {}) }));
     const segments = (source: ObservedSegment[], entries: Entry[]) => {
@@ -110,28 +141,62 @@ export class IndexStore {
       return source.map(segment => ({ ids: segment.ids.filter(id => ids.has(id)), ordered: segment.ordered })).filter(segment => segment.ids.length);
     };
     const entries = copy(this.entries);
-    return { version: 1, context: this.context, branch: this.branch, entries, segments: segments(this.segments, entries),
+    return { version: 1, context: this.context, branch: this.branch, entries, segments: segments(this.graphSegments(), entries),
       quarantine: this.quarantine.map(generation => { const entries = copy(generation.entries); return {
         reason: generation.reason, entries, segments: segments(generation.segments, entries), ordered: generation.ordered,
-      }; }).filter(generation => generation.entries.length), limitReason: this.limitReason };
+      }; }).filter(generation => generation.entries.length), limitReason: this.limitReason,
+      ...(this.recoveredIds.size ? { recovery: { candidateIds: entries.filter(entry => this.recoveredIds.has(entry.id)).map(entry => entry.id) } } : {}) };
   }
   restoreState(value: unknown, snapshot: Snapshot): boolean {
     if (!validStoredIndex(value) || value.context !== snapshot.context) return false;
     const state = structuredClone(value), current = new Map(snapshot.entries.filter(entry => entry.stable).map(entry => [entry.id, entry.text]));
+    const ambiguous = new Set<string>();
+    for (const entry of snapshot.entries) if (entry.stable && current.get(entry.id) !== entry.text) ambiguous.add(entry.id);
     const overlap = state.entries.filter(entry => current.has(entry.id));
     const trusted = !snapshot.invalidated && snapshot.branch !== null && snapshot.branch === state.branch && overlap.length > 0 &&
       overlap.every(entry => current.get(entry.id) === entry.text);
     this.reset(snapshot.context, snapshot.branch);
-    const generations = [...state.quarantine];
-    if (trusted) this.entries = state.entries;
-    else if (state.entries.length) generations.push({ reason: 'restored-unverified', entries: state.entries, segments: state.segments,
-      ordered: state.segments.length <= 1 && state.segments.every(segment => segment.ordered) });
+    const branchChanged = snapshot.branch !== null && state.branch !== null && snapshot.branch !== state.branch;
+    const blocked = snapshot.invalidated || branchChanged;
+    const generations: StoredGeneration[] = [];
+    const active = new Map(state.entries.map(entry => [entry.id, entry]));
+    const legacyTexts = new Map<string, Set<string>>();
+    for (const generation of state.quarantine) if (generation.reason === 'restored-unverified') for (const entry of generation.entries) {
+      const texts = legacyTexts.get(entry.id) ?? new Set<string>(); texts.add(entry.text); legacyTexts.set(entry.id, texts);
+    }
+    const ingest = (generation: StoredGeneration, legacy: boolean): void => {
+      const conflict = generation.entries.some(entry => ambiguous.has(entry.id) || current.has(entry.id) && current.get(entry.id) !== entry.text ||
+        legacy && (legacyTexts.get(entry.id)!.size > 1 || active.has(entry.id) && active.get(entry.id)!.text !== entry.text));
+      if (blocked || conflict) {
+        generations.push({ ...generation, reason: snapshot.invalidated ? 'invalidated' : branchChanged ? 'branch-change' : 'text-change' }); return;
+      }
+      const existing = new Map(this.entries.map(entry => [entry.id, entry]));
+      for (const entry of generation.entries) if (!existing.has(entry.id)) {
+        this.entries.push(entry); existing.set(entry.id, entry); this.graph.set(entry.id, new Set());
+        if (legacy || !trusted || state.recovery?.candidateIds.includes(entry.id)) this.recoveredIds.add(entry.id);
+      }
+      for (const segment of generation.segments) if (segment.ordered) for (let i = 1; i < segment.ids.length; i++) this.graph.get(segment.ids[i - 1])!.add(segment.ids[i]);
+    };
+    // v032 put the unmounted prefix in restored-unverified quarantine. Recover
+    // those exact IDs before the current tail, keeping each segment's hint.
+    for (const generation of state.quarantine) {
+      if (generation.reason === 'restored-unverified') ingest(generation, true); else generations.push(generation);
+    }
+    if (state.entries.length) ingest({ reason: 'restored-unverified', entries: state.entries, segments: state.segments,
+      ordered: state.segments.length <= 1 && state.segments.every(segment => segment.ordered) }, false);
+    if (orderedGraph(this.graph).cycle) {
+      generations.push({ reason: 'order-conflict', entries: this.entries, segments: [...state.segments], ordered: false });
+      this.entries = []; this.graph.clear(); this.recoveredIds.clear();
+      // Conflicting legacy and active segments can overlap. Every archived ID
+      // still needs one schema-valid segment after the cached graph is rejected.
+      generations[generations.length - 1].segments = generations[generations.length - 1].entries.map(entry => ({ ids: [entry.id], ordered: true }));
+    }
     // Exact current DOM observations replace identical search-only witnesses.
     // This keeps repeated F5 restores from duplicating the same prompt.
     const seen = new Map<string, Set<string>>();
     for (const generation of generations) {
       const entries = generation.entries.filter(entry => {
-        if (current.get(entry.id) === entry.text || this.entries.some(active => active.id === entry.id && active.text === entry.text)) return false;
+        if (!ambiguous.has(entry.id) && current.get(entry.id) === entry.text || this.entries.some(active => active.id === entry.id && active.text === entry.text)) return false;
         const texts = seen.get(entry.id) ?? new Set<string>(); seen.set(entry.id, texts);
         if (texts.has(entry.text)) return false; texts.add(entry.text); return true;
       });
@@ -139,8 +204,6 @@ export class IndexStore {
       if (entries.length) this.quarantine.push({ epoch: this.epoch++, reason: generation.reason, entries,
         segments: generation.segments.map(segment => ({ ids: segment.ids.filter(id => ids.has(id)), ordered: segment.ordered })).filter(segment => segment.ids.length), ordered: generation.ordered });
     }
-    for (const entry of this.entries) this.graph.set(entry.id, new Set());
-    if (trusted) for (const segment of state.segments) if (segment.ordered) for (let i = 1; i < segment.ids.length; i++) this.graph.get(segment.ids[i - 1])!.add(segment.ids[i]);
     this.count = this.entries.length + this.quarantine.reduce((count, generation) => count + generation.entries.length, 0);
     this.characters = [...this.entries, ...this.quarantine.flatMap(generation => generation.entries)].reduce((count, entry) => count + entry.text.length, 0);
     this.limitReason = this.count >= this.limits.entries ? 'entries' : this.characters >= this.limits.characters ? 'characters' : null;
@@ -149,21 +212,29 @@ export class IndexStore {
   }
   reset(context = this.context, branch: string | null = this.branch): void {
     this.epoch++; this.entries = []; this.mounted.clear(); this.completeness = 'unknown'; this.context = context; this.branch = branch;
-    this.graph.clear(); this.segments = []; this.ordered = true; this.quarantine = [];
+    this.graph.clear(); this.segments = []; this.ordered = true; this.quarantine = []; this.recoveredIds.clear(); this.seekableIds.clear();
     this.count = 0; this.characters = 0; this.limitReason = null; this.cacheRevision++;
   }
   merge(snapshot: Snapshot, _direction: 'older' | 'newer' | 'observe' = 'observe'): boolean {
     let reset = this.context !== snapshot.context || this.branch !== snapshot.branch;
     if (reset) this.reset(snapshot.context, snapshot.branch);
     const unique = new Map<string, Entry>();
+    const ambiguous = new Set<string>();
     for (const e of snapshot.entries) {
       if (!e || typeof e.id !== 'string' || !e.id || typeof e.text !== 'string') continue;
+      if (unique.has(e.id) && unique.get(e.id)!.text !== e.text) ambiguous.add(e.id);
       // Copy only plain prompt fields, never adapter-owned nodes or other properties.
       unique.set(e.id, { id: e.id, text: e.text, stable: e.stable === true, ...(typeof e.slot === 'string' && e.slot ? { slot: e.slot } : {}) });
     }
+    for (const id of ambiguous) unique.delete(id);
     const items = [...unique.values()];
     let changed = this.mounted.size !== unique.size || items.some(e => !this.mounted.has(e.id));
     this.mounted = new Set(items.map(e => e.id));
+    const hadRecoveredCandidates = this.recoveredIds.size > 0;
+    if (hadRecoveredCandidates) {
+      const retained = new Map(this.entries.map(entry => [entry.id, entry]));
+      for (const item of items) if (item.stable && retained.get(item.id)?.text === item.text && this.recoveredIds.delete(item.id)) changed = true;
+    }
     // A later exact DOM witness promotes matching restored search-only data,
     // without removing a conflicting body version from another generation.
     const currentTexts = new Map(items.filter(entry => entry.stable).map(entry => [entry.id, entry.text]));
@@ -183,7 +254,7 @@ export class IndexStore {
     if (promoted && this.limitReason && this.count < this.limits.entries && this.characters < this.limits.characters) this.limitReason = null;
     const byId = new Map(this.entries.map(e => [e.id, e]));
     // Keep version witnesses for every retained stable ID, including long-unmounted prompts.
-    const textChanged = items.some(e => e.stable && byId.get(e.id)?.stable && byId.get(e.id)!.text !== e.text);
+    const textChanged = [...ambiguous].some(id => byId.get(id)?.stable) || items.some(e => e.stable && byId.get(e.id)?.stable && byId.get(e.id)!.text !== e.text);
     const candidate = new Map([...this.graph].map(([id, edges]) => [id, new Set(edges)]));
     for (const e of this.entries) if (!e.stable) removeGraphVertex(candidate, e.id);
     for (const e of items) if (!candidate.has(e.id)) candidate.set(e.id, new Set());
@@ -191,6 +262,18 @@ export class IndexStore {
     const orderChanged = orderedGraph(candidate).cycle;
     if (!reset && (snapshot.invalidated || textChanged || orderChanged)) {
       this.isolate(snapshot.invalidated ? 'invalidated' : textChanged ? 'text-change' : 'order-conflict');
+      if (hadRecoveredCandidates && textChanged && !snapshot.invalidated) {
+        const generation = this.quarantine.at(-1);
+        if (generation) {
+          generation.entries = generation.entries.filter(entry => {
+            if (currentTexts.get(entry.id) !== entry.text) return true;
+            this.count--; this.characters -= entry.text.length; return false;
+          });
+          const ids = new Set(generation.entries.map(entry => entry.id));
+          generation.segments = generation.segments.map(segment => ({ ...segment, ids: segment.ids.filter(id => ids.has(id)) })).filter(segment => segment.ids.length);
+          if (!generation.entries.length) this.quarantine.pop();
+        }
+      }
       byId.clear(); reset = true; changed = true;
     }
     // Unstable IDs are useful for current mounts only; they never become historical identity.
@@ -239,10 +322,10 @@ export class IndexStore {
     if (stable.length) this.quarantine.push({ epoch: this.epoch, reason, entries: stable,
       segments: this.segments.map(s => ({ ids: s.ids.filter(id => ids.has(id)), ordered: s.ordered })).filter(s => s.ids.length), ordered: this.ordered });
     for (const e of this.entries) if (!e.stable) { this.count--; this.characters -= e.text.length; }
-    this.epoch++; this.entries = []; this.graph.clear(); this.segments = []; this.ordered = true;
+    this.epoch++; this.entries = []; this.graph.clear(); this.segments = []; this.ordered = true; this.recoveredIds.clear();
   }
-  private reorder(): void {
-    const global = orderedGraph(this.graph), neighbors = new Map([...this.graph.keys()].map(id => [id, new Set<string>()]));
+  private graphSegments(): ObservedSegment[] {
+    const neighbors = new Map([...this.graph.keys()].map(id => [id, new Set<string>()]));
     for (const [id, edges] of this.graph) for (const next of edges) { neighbors.get(id)!.add(next); neighbors.get(next)!.add(id); }
     const visited = new Set<string>(), components: string[][] = [];
     for (const id of this.graph.keys()) {
@@ -251,11 +334,15 @@ export class IndexStore {
       for (let i = 0; i < component.length; i++) for (const next of neighbors.get(component[i])!) if (!visited.has(next)) { visited.add(next); component.push(next); }
       components.push(component);
     }
-    this.segments = components.map(component => {
+    return components.map(component => {
       const local = orderedGraph(new Map(component.map(id => [id, this.graph.get(id)!])));
       return { ids: local.ids, ordered: local.ordered };
     });
-    this.ordered = global.ordered;
+  }
+  private reorder(): void {
+    this.seekableIds = new Set(this.entries.filter(entry => entry.stable).map(entry => entry.id));
+    this.segments = this.graphSegments().map(segment => ({ ...segment, ordered: segment.ordered && !segment.ids.some(id => this.recoveredIds.has(id)) }));
+    this.ordered = orderedGraph(this.graph).ordered && this.recoveredIds.size === 0;
     const byId = new Map(this.entries.map(e => [e.id, e]));
     // Grouped presentation order is deliberately not asserted as conversation order.
     this.entries = this.segments.flatMap(segment => segment.ids.map(id => byId.get(id)!));
@@ -288,9 +375,10 @@ export interface NavigationAdapter {
   locate(id: string, signal: AbortSignal): boolean | Promise<boolean>;
   load(direction: 'older' | 'newer', signal: AbortSignal, timeout: number, targetId?: string | null): Promise<boolean>;
   direction(id: string): 'older' | 'newer';
+  reverseUnconfirmed?(id: string): boolean;
 }
 export interface Limits { totalMs: number; collectionTotalMs?: number; batches: number; collectionBatches?: number; batchMs: number; noProgress: number; }
-export const NAV_LIMITS: Limits = { totalMs: 60_000, collectionTotalMs: 300_000, batches: 60, collectionBatches: 2400, batchMs: 8_000, noProgress: 3 };
+export const NAV_LIMITS: Limits = { totalMs: 60_000, collectionTotalMs: 600_000, batches: 60, collectionBatches: 4800, batchMs: 8_000, noProgress: 3 };
 export type NavStopReason = 'none' | 'located' | 'not-found' | 'stalled' | 'boundary' | 'batch-limit' | 'time-limit' | 'batch-timeout' | 'cancelled' | 'unsupported';
 export class Navigator {
   state: NavState = 'idle';
@@ -303,12 +391,14 @@ export class Navigator {
     if (this.state === 'loading') { this.lastStopReason = 'cancelled'; this.setState('cancelled'); }
   }
   private setState(state: NavState): void { this.state = state; this.changed(state); }
-  async run(id: string | null): Promise<NavState> {
+  async run(id: string | null, collectionTotalMs?: number): Promise<NavState> {
     this.cancel();
     const generation = ++this.generation, controller = new AbortController(); this.controller = controller;
     const live = () => generation === this.generation && !controller.signal.aborted;
     const started = performance.now();
-    const totalMs = id === null ? this.limits.collectionTotalMs ?? this.limits.totalMs : this.limits.totalMs;
+    const override = typeof collectionTotalMs === 'number' && Number.isFinite(collectionTotalMs) && collectionTotalMs > 0
+      ? Math.min(600_000, collectionTotalMs) : undefined;
+    const totalMs = id === null ? override ?? this.limits.collectionTotalMs ?? this.limits.totalMs : this.limits.totalMs;
     this.lastStopReason = 'none'; this.setState('loading');
     let totalExpired = false;
     const totalTimer = setTimeout(() => { totalExpired = true; controller.abort(); }, totalMs);
@@ -338,7 +428,10 @@ export class Navigator {
         // An empty collection batch can be a slow mount, streamed answer or a
         // retryable middle stall. Only physical end proof finishes collection;
         // the total/batch bounds still stop unknown or broken renderers.
-        if (id !== null && stalls >= this.limits.noProgress) return this.finish('not-found', generation, 'stalled');
+        if (id !== null && stalls >= this.limits.noProgress) {
+          if (this.adapter.reverseUnconfirmed?.(id)) stalls = 0;
+          else return this.finish('not-found', generation, 'stalled');
+        }
         if (batch === batchLimit) return this.finish('timed-out', generation, 'batch-limit');
         const remaining = totalMs - (performance.now() - started);
         const timeout = Math.min(this.limits.batchMs, remaining);
@@ -380,7 +473,7 @@ async function boundedLoad(load: () => Promise<boolean>, controller: AbortContro
   } finally { clearTimeout(timer); if (aborted) signal.removeEventListener('abort', aborted); }
 }
 
-export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean } | { kind: 'options:open' } |
+export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean } | { kind: 'collection:set'; minutes: number } | { kind: 'options:open' } |
   { kind: 'cache:get'; context: string } | { kind: 'cache:set'; state: StoredIndex } | { kind: 'cache:clear' };
 export function validMessage(value: unknown): value is RuntimeMessage {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -390,5 +483,6 @@ export function validMessage(value: unknown): value is RuntimeMessage {
   if (v.kind === 'cache:set') return keys.length === 2 && validStoredIndex(v.state);
   if (v.kind === 'settings:set') return keys.length === 2 && typeof v.expanded === 'boolean';
   if (v.kind === 'auto:set') return keys.length === 2 && typeof v.enabled === 'boolean';
+  if (v.kind === 'collection:set') return exactKeys(v, ['kind', 'minutes']) && validCollectionMinutes(v.minutes);
   return false;
 }

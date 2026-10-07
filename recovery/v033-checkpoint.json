@@ -1,0 +1,9 @@
+{
+  "base": "16b2009b32c856426140cfaf53cd9b8c9e418da5",
+  "sourceCommit": "56951988cb7d258eafeadacfa02174226a824093",
+  "runtimeCommit": "567dfda645d113449eece4932519da98e59e7118",
+  "branch": "backup/v0.3.3",
+  "bundleSha256": "35887e211cf431ca3e9967fb1c2af7895e4f3baf40e259df50fcce5e7fb223e4",
+  "note": "Source snapshot and unchanged original local commits; normal feature push pending, credential-manager stopped.",
+  "restore": "In a clone containing base: git bundle verify recovery/v033-local.bundle; git fetch recovery/v033-local.bundle HEAD"
+}
