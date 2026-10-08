@@ -413,7 +413,7 @@ export class DomAdapter implements NavigationAdapter {
           // Only the visible outward edge matters; remote tail streaming must
           // not invalidate a stable head. Ignore composer/sidebar controls.
           const edgeLoading = !!rect && [...document.querySelectorAll<HTMLElement>('main [aria-busy="true"], main [data-loading="true"], main [role="progressbar"]')].some(node => {
-            if (!visibleLoading(node) ||
+            if (boundary.node.contains(node) || !visibleLoading(node) ||
               !(currentRoot === document.scrollingElement || currentRoot.contains(node))) return false;
             const area = node.getBoundingClientRect();
             return area.width > 0 && area.height > 0 && area.bottom >= viewport.top - 2 && area.top <= viewport.bottom + 2 &&
