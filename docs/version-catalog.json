@@ -263,5 +263,26 @@
     "preserveHistoricalPass": true,
     "restoreTagToOlderRuntime": false
   },
-  "updatedAt": "2026-10-08"
+  "updatedAt": "2026-10-08",
+  "currentRevision": "2026-10-08-v036-r2",
+  "sameVersionRevisions": [
+    {
+      "version": "0.3.6",
+      "revision": "2026-10-08-v036-r2",
+      "userRequestedSameVersion": true,
+      "request": "修改好的也是 v0.3.6 版",
+      "snapshotTag": "snapshot/v0.3.6/2026-10-08-r2",
+      "deliveryCommit": "77ca0d14d8963aadede76ed3b4f7235dd0c190cb",
+      "runtimeCommit": "5f1479c9133364a38fd7b2eb54ce129970610274",
+      "tagObject": "317711690321d5e6f1691099ef587727651cc87e",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/release-v0.3.6-r2.md",
+        "docs/acceptance-v0.3.6-r2.md"
+      ],
+      "selection": "User explicitly requested same product version. Correct padded tail positioning, persistent head retry progress and visible directional history loading; preserve canonical v0.3.6 tag and original artifacts. Main and independent111 pure/15 native Firefox localhost;12 hashes matched.",
+      "createdAt": "2026-10-08"
+    }
+  ]
 }
