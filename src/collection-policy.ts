@@ -13,7 +13,7 @@ export interface BoundaryStatus { physical: boolean; loading: boolean; rendering
 
 // This witness belongs to a collection direction, not to one bounded load.
 // Compare geometry against the original witness: subpixel jitter is harmless,
-// but accumulated drift, a remount, loading or streamed text needs new proof.
+// but accumulated drift, a semantic change or loading needs new proof.
 export class CollectionBoundaryWitness {
   private witness: BoundaryObservation | null = null;
   private probes = 0;
@@ -25,7 +25,7 @@ export class CollectionBoundaryWitness {
     const previous = this.witness;
     const eligible = !observation.aborted && observation.physical && !observation.loading && !observation.rendering &&
       !!observation.root && !!observation.node && !!observation.signature && observation.geometry.every(Number.isFinite);
-    const same = previous && previous.root === observation.root && previous.node === observation.node && previous.signature === observation.signature &&
+    const same = previous && previous.root === observation.root && previous.signature === observation.signature &&
       previous.geometry.length === observation.geometry.length && previous.geometry.every((value, index) => Math.abs(value - observation.geometry[index]) <= this.tolerance);
     if (!eligible || !same) {
       this.reset();

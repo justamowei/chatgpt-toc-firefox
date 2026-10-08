@@ -32,13 +32,15 @@ export interface StoredIndex {
   version: 1; context: string; branch: string | null; entries: Entry[]; segments: ObservedSegment[];
   quarantine: StoredGeneration[]; limitReason: 'entries' | 'characters' | null;
   recovery?: { candidateIds: string[] };
+  generation?: number;
+  numbering?: { ids: string[] };
 }
 function exactKeys(value: unknown, keys: string[]): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value) &&
     Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 }
 export function validStoredIndex(value: unknown): value is StoredIndex {
-  if (!exactKeys(value, ['version', 'context', 'branch', 'entries', 'segments', 'quarantine', 'limitReason', ...(Object.hasOwn(value ?? {}, 'recovery') ? ['recovery'] : [])]) || value.version !== 1 ||
+  if (!exactKeys(value, ['version', 'context', 'branch', 'entries', 'segments', 'quarantine', 'limitReason', ...['recovery', 'generation', 'numbering'].filter(key => Object.hasOwn(value ?? {}, key))]) || value.version !== 1 ||
     typeof value.context !== 'string' || !value.context || value.context.length > 2048 ||
     !(value.branch === null || typeof value.branch === 'string' && !!value.branch && value.branch.length <= 4096) ||
     ![null, 'entries', 'characters'].includes(value.limitReason as null) || !Array.isArray(value.quarantine) || value.quarantine.length > CACHE_LIMITS.entries) return false;
@@ -72,6 +74,13 @@ export function validStoredIndex(value: unknown): value is StoredIndex {
     typeof generation.ordered !== 'boolean' || !group(generation.entries, generation.segments) ||
     generation.ordered && (generation.segments as ObservedSegment[]).length > 1 ||
     generation.ordered && (generation.segments as ObservedSegment[]).some(segment => !segment.ordered)) return false;
+  if (Object.hasOwn(value, 'generation') && (!Number.isSafeInteger(value.generation) || (value.generation as number) < 1)) return false;
+  if (Object.hasOwn(value, 'numbering')) {
+    if (!exactKeys(value.numbering, ['ids']) || !Array.isArray(value.numbering.ids)) return false;
+    const entries = value.entries as Entry[], segments = value.segments as ObservedSegment[];
+    if (value.numbering.ids.length && (segments.length !== 1 || !segments[0].ordered || value.numbering.ids.length > entries.length ||
+      value.numbering.ids.some((id, i) => id !== entries[i].id || id !== segments[0].ids[i]))) return false;
+  }
   return true;
 }
 
@@ -105,6 +114,8 @@ export class IndexStore {
   context = '';
   branch: string | null = null;
   cacheRevision = 0;
+  cacheGeneration = 0;
+  numberedIds: string[] = [];
   ordered = true;
   segments: ObservedSegment[] = [];
   quarantine: QuarantinedGeneration[] = [];
@@ -146,6 +157,8 @@ export class IndexStore {
       quarantine: this.quarantine.map(generation => { const entries = copy(generation.entries); return {
         reason: generation.reason, entries, segments: segments(generation.segments, entries), ordered: generation.ordered,
       }; }).filter(generation => generation.entries.length), limitReason: this.limitReason,
+      ...(this.cacheGeneration ? { generation: this.cacheGeneration } : {}),
+      numbering: { ids: [...this.numberedIds] },
       ...(this.recoveredIds.size ? { recovery: { candidateIds: entries.filter(entry => this.recoveredIds.has(entry.id)).map(entry => entry.id) } } : {}) };
   }
   restoreState(value: unknown, snapshot: Snapshot): boolean {
@@ -157,6 +170,7 @@ export class IndexStore {
     const trusted = !snapshot.invalidated && snapshot.branch !== null && snapshot.branch === state.branch && overlap.length > 0 &&
       overlap.every(entry => current.get(entry.id) === entry.text);
     this.reset(snapshot.context, snapshot.branch);
+    this.cacheGeneration = state.generation ?? 0;
     const branchChanged = snapshot.branch !== null && state.branch !== null && snapshot.branch !== state.branch;
     const blocked = snapshot.invalidated || branchChanged;
     const generations: StoredGeneration[] = [];
@@ -209,9 +223,12 @@ export class IndexStore {
     this.characters = [...this.entries, ...this.quarantine.flatMap(generation => generation.entries)].reduce((count, entry) => count + entry.text.length, 0);
     this.limitReason = this.count >= this.limits.entries ? 'entries' : this.characters >= this.limits.characters ? 'characters' : null;
     this.reorder(); this.merge(snapshot); this.completeness = this.retainedCount ? 'partial' : 'unknown'; this.cacheRevision++;
+    if (!blocked && !this.quarantine.length && state.numbering && this.ordered && state.numbering.ids.every((id, i) => this.entries[i]?.id === id)) this.numberedIds = [...state.numbering.ids];
     return true;
   }
   reset(context = this.context, branch: string | null = this.branch): void {
+    if (context !== this.context) this.cacheGeneration = 0;
+    this.numberedIds = [];
     this.epoch++; this.entries = []; this.mounted.clear(); this.completeness = 'unknown'; this.context = context; this.branch = branch;
     this.graph.clear(); this.segments = []; this.ordered = true; this.quarantine = []; this.recoveredIds.clear(); this.seekableIds.clear();
     this.count = 0; this.characters = 0; this.limitReason = null; this.cacheRevision++;
@@ -323,6 +340,7 @@ export class IndexStore {
     if (stable.length) this.quarantine.push({ epoch: this.epoch, reason, entries: stable,
       segments: this.segments.map(s => ({ ids: s.ids.filter(id => ids.has(id)), ordered: s.ordered })).filter(s => s.ids.length), ordered: this.ordered });
     for (const e of this.entries) if (!e.stable) { this.count--; this.characters -= e.text.length; }
+    this.numberedIds = [];
     this.epoch++; this.entries = []; this.graph.clear(); this.segments = []; this.ordered = true; this.recoveredIds.clear();
   }
   private graphSegments(): ObservedSegment[] {
@@ -349,6 +367,24 @@ export class IndexStore {
     const byId = new Map(this.entries.map(e => [e.id, e]));
     // Grouped presentation order is deliberately not asserted as conversation order.
     this.entries = this.segments.flatMap(segment => segment.ids.map(id => byId.get(id)!));
+    if (!this.ordered || !this.numberedIds.every((id, i) => this.entries[i]?.id === id)) this.numberedIds = [];
+  }
+  assignSessionNumbers(covered: Set<string>): boolean {
+    if (!this.entries.length || !this.ordered || this.quarantine.length || this.limitReason || this.recoveredIds.size ||
+      this.entries.some(entry => !entry.stable || !covered.has(entry.id))) return false;
+    this.numberedIds = this.entries.map(entry => entry.id); this.cacheRevision++; return true;
+  }
+  extendSessionNumbers(windowIds: string[]): void {
+    if (!this.numberedIds.length || !this.ordered || this.quarantine.length || this.limitReason) return;
+    const tail = this.numberedIds.at(-1)!, at = windowIds.indexOf(tail);
+    if (at < 0) return;
+    const extra = windowIds.slice(at + 1), start = this.numberedIds.length;
+    if (!extra.length || extra.some((id, i) => this.entries[start + i]?.id !== id || !this.entries[start + i]?.stable)) return;
+    this.numberedIds.push(...extra); this.cacheRevision++;
+  }
+  ordinal(id: string): { number: number; confirmed: boolean } | null {
+    const at = this.entries.findIndex(entry => entry.id === id);
+    return at < 0 ? null : { number: at + 1, confirmed: this.numberedIds[at] === id };
   }
   verifyComplete(proof: CompleteProof): boolean {
     const ids = this.entries.map(e => e.id);
@@ -477,12 +513,12 @@ async function boundedLoad(load: () => Promise<boolean>, controller: AbortContro
 }
 
 export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean } | { kind: 'collection:set'; minutes: number } | { kind: 'options:open' } |
-  { kind: 'cache:get'; context: string } | { kind: 'cache:set'; state: StoredIndex } | { kind: 'cache:clear' };
+  { kind: 'cache:get' | 'cache:reset'; context: string } | { kind: 'cache:set'; state: StoredIndex } | { kind: 'cache:clear' };
 export function validMessage(value: unknown): value is RuntimeMessage {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const v = value as Record<string, unknown>, keys = Object.keys(v);
   if (v.kind === 'settings:get' || v.kind === 'options:open' || v.kind === 'cache:clear') return keys.length === 1;
-  if (v.kind === 'cache:get') return keys.length === 2 && typeof v.context === 'string' && v.context.length <= 2048;
+  if (v.kind === 'cache:get' || v.kind === 'cache:reset') return keys.length === 2 && typeof v.context === 'string' && v.context.length <= 2048;
   if (v.kind === 'cache:set') return keys.length === 2 && validStoredIndex(v.state);
   if (v.kind === 'settings:set') return keys.length === 2 && typeof v.expanded === 'boolean';
   if (v.kind === 'auto:set') return keys.length === 2 && typeof v.enabled === 'boolean';

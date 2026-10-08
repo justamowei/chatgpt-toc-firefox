@@ -1,8 +1,9 @@
 import { CACHE_LIMITS, IndexStore, validStoredIndex, type Snapshot, type StoredGeneration, type StoredIndex } from './core';
 
 export const CACHE_KEY = 'toc-index-v1';
+export const GENERATIONS_KEY = 'toc-index-generations-v1';
 export const PROFILE_LIMITS = { conversations: 12, characters: 6_000_000 };
-export interface IndexBackend { load(context: string): Promise<unknown>; save(state: StoredIndex): Promise<void>; }
+export interface IndexBackend { load(context: string): Promise<unknown>; save(state: StoredIndex): Promise<void>; reset?(context: string): Promise<StoredIndex>; }
 export type PersistenceStatus = 'loading' | 'pending' | 'saved' | 'error' | 'off';
 interface LocalStorage {
   get(key: string): Promise<Record<string, unknown>>;
@@ -104,6 +105,10 @@ export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex)
     active.quarantine.push({ reason: generation.reason, entries: structuredClone(entries), ordered: generation.ordered,
       segments: generation.segments.map(segment => ({ ids: segment.ids.filter(id => ids.has(id)), ordered: segment.ordered })).filter(segment => segment.ids.length) });
   }
+  if (incoming.generation) active.generation = incoming.generation;
+  const numbering = incoming.numbering ?? previous.numbering;
+  if (numbering && !active.quarantine.length && active.segments.length === 1 && active.segments[0].ordered && numbering.ids.every((id, i) => active.entries[i]?.id === id)) active.numbering = structuredClone(numbering);
+  else delete active.numbering;
   return active;
 }
 
@@ -119,11 +124,34 @@ export class CacheBroker implements IndexBackend {
     const result = await this.storage.get(CACHE_KEY);
     return validProfile(result[CACHE_KEY]) ? structuredClone(result[CACHE_KEY]) : { version: 1, records: [] };
   }
+  private async generations(): Promise<Record<string, number>> {
+    const data = (await this.storage.get(GENERATIONS_KEY))[GENERATIONS_KEY];
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return {};
+    if (Object.entries(data).some(([context, stamp]) => conversationContext(context) !== context || !Number.isSafeInteger(stamp) || (stamp as number) < 1)) throw new Error('Invalid cache generations');
+    return { ...data } as Record<string, number>;
+  }
+  reset(context: string): Promise<StoredIndex> {
+    return this.serial(async () => {
+      if (conversationContext(context) !== context) throw new Error('Invalid reset context');
+      const profile = await this.profile(), stamps = await this.generations();
+      if (!Object.hasOwn(stamps, context) && Object.keys(stamps).length >= 5000) throw new Error('Reset generation capacity reached');
+      const generation = (stamps[context] ?? 0) + 1;
+      if (!Number.isSafeInteger(generation)) throw new Error('Reset generation exhausted');
+      const empty: StoredIndex = { version: 1, context, branch: null, entries: [], segments: [], quarantine: [], limitReason: null, generation };
+      stamps[context] = generation;
+      profile.records = profile.records.filter(record => record.state.context !== context);
+      await this.storage.set({ [CACHE_KEY]: profile, [GENERATIONS_KEY]: stamps });
+      return empty;
+    });
+  }
   load(context: string): Promise<unknown> {
     return this.serial(async () => {
       if (conversationContext(context) !== context) return undefined;
       const profile = await this.profile(), record = profile.records.find(record => record.state.context === context);
-      if (!record) return undefined;
+      if (!record) {
+        const generation = (await this.generations())[context];
+        return generation ? { version: 1, context, branch: null, entries: [], segments: [], quarantine: [], limitReason: null, generation } : undefined;
+      }
       record.touched = Math.max(0, Math.floor(this.now()));
       await this.storage.set({ [CACHE_KEY]: profile });
       return structuredClone(record.state);
@@ -135,6 +163,8 @@ export class CacheBroker implements IndexBackend {
     const next = structuredClone(state);
     return this.serial(async () => {
       const profile = await this.profile(), previous = profile.records.find(record => record.state.context === next.context);
+      const stamp = (await this.generations())[next.context] ?? 0;
+      if ((next.generation ?? 0) !== stamp) throw new Error('Stale cache generation');
       const merged = previous ? mergeStoredIndices(previous.state, next) : next;
       if (previous && fingerprint(previous.state) === fingerprint(merged)) return;
       if (JSON.stringify({ version: 1, records: [{ touched: 0, state: merged }] }).length > PROFILE_LIMITS.characters)
@@ -147,11 +177,15 @@ export class CacheBroker implements IndexBackend {
       await this.storage.set({ [CACHE_KEY]: bounded });
     });
   }
-  clear(): Promise<void> { return this.serial(() => this.storage.remove(CACHE_KEY)); }
+  clear(): Promise<void> { return this.serial(() => Promise.all([this.storage.remove(CACHE_KEY), this.storage.remove(GENERATIONS_KEY)]).then(() => {})); }
 }
 
 export function runtimeIndexBackend(send: (message: unknown) => Promise<unknown> = message => browser.runtime.sendMessage(message)): IndexBackend {
-  return { load: context => send({ kind: 'cache:get', context }), save: async state => {
+  return { load: context => send({ kind: 'cache:get', context }), reset: async context => {
+    const state = await send({ kind: 'cache:reset', context });
+    if (!validStoredIndex(state) || state.context !== context || !state.generation) throw new Error('Cache reset rejected');
+    return state;
+  }, save: async state => {
     const result = await send({ kind: 'cache:set', state });
     if (result !== true) throw new Error('Cache write rejected');
   } };
@@ -165,6 +199,7 @@ export class PersistentIndex {
   private savedState = '';
   private scheduledRevision = -1;
   private loading = false;
+  private rebuilding = false;
   private pendingSchedule = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private queue: Promise<void> = Promise.resolve();
@@ -177,6 +212,27 @@ export class PersistentIndex {
   }
   constructor(private backend: IndexBackend, private store: IndexStore,
     private options: { incognito?: boolean; debounceMs?: number; onStatus?: (status: PersistenceStatus) => void } = {}) {}
+  invalidate(): void {
+    this.generation++; this.writeGeneration++; clearTimeout(this.timer); this.timer = undefined;
+    this.lastState = ''; this.savedState = ''; this.scheduledRevision = -1; this.loading = false; this.pendingSchedule = false;
+  }
+  async rebuild(context: string, current: () => Snapshot, live: () => boolean): Promise<boolean> {
+    this.invalidate(); this.context = context;
+    const generation = this.generation;
+    this.rebuilding = true; this.setStatus('loading');
+    try {
+      await this.queue;
+      if (!live() || generation !== this.generation) return false;
+      if (!this.backend.reset || this.options.incognito) throw new Error('Cache reset unavailable');
+      const state = await this.backend.reset(context);
+      if (this.closed || generation !== this.generation || current().context !== context || this.store.context !== context) return false;
+      // A reset already committed by the broker remains authoritative even if
+      // the user cancelled scrolling while its acknowledgment was in flight.
+      const shouldContinue = live();
+      this.store.restoreState(state, current()); this.setStatus('pending'); return shouldContinue;
+    } catch (error) { if (generation === this.generation) this.setStatus('error'); throw error; }
+    finally { this.rebuilding = false; if (generation === this.generation) { this.loading = false; this.scheduledRevision = -1; this.schedule(); } }
+  }
   async restore(context: string, current: () => Snapshot): Promise<boolean> {
     const generation = ++this.generation, writeGeneration = this.writeGeneration, revision = this.store.cacheRevision;
     this.context = context; this.lastState = ''; this.savedState = ''; this.scheduledRevision = -1;
@@ -190,7 +246,9 @@ export class PersistentIndex {
       if (!validStoredIndex(loaded)) { this.setStatus('pending'); return false; }
       const snapshot = current();
       if (snapshot.context !== context || this.store.context !== context) return false;
-      const state = this.store.cacheRevision === revision ? loaded : mergeStoredIndices(loaded, this.store.exportState());
+      const observed = this.store.exportState();
+      if (loaded.generation) observed.generation = loaded.generation;
+      const state = this.store.cacheRevision === revision ? loaded : mergeStoredIndices(loaded, observed);
       const restored = this.store.restoreState(state, snapshot);
       this.lastState = restored ? fingerprint(loaded) : '';
       this.savedState = this.lastState;
@@ -213,7 +271,7 @@ export class PersistentIndex {
     if (this.context !== context) { this.generation++; this.context = context; this.lastState = ''; this.savedState = ''; this.loading = false; this.scheduledRevision = -1; }
     if (this.scheduledRevision === this.store.cacheRevision) return;
     this.scheduledRevision = this.store.cacheRevision;
-    if (this.loading) { this.pendingSchedule = true; return; }
+    if (this.loading || this.rebuilding) { this.pendingSchedule = true; return; }
     // Continuous scroll must still reach storage; export/stringify at most
     // once per interval, rather than once per DOM or scroll observation.
     if (this.timer !== undefined) return;
@@ -223,6 +281,7 @@ export class PersistentIndex {
   flush(): Promise<void> {
     clearTimeout(this.timer); this.timer = undefined; this.writeGeneration++;
     if (this.closed || this.options.incognito || conversationContext(this.store.context) !== this.store.context) { this.setStatus('off'); return this.queue; }
+    if (this.rebuilding) return this.queue;
     const state = this.store.exportState(), key = fingerprint(state);
     if (!validStoredIndex(state)) { this.setStatus('error'); return this.queue; }
     if (key === this.lastState) { if (key === this.savedState) this.setStatus('saved'); return this.queue; }

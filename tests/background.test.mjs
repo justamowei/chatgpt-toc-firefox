@@ -176,3 +176,12 @@ test('malformed cache messages and incognito options cannot write settings or cl
   assert.equal(app.send({ kind: 'cache:clear' }, privateOptions), undefined);
   assert.equal(app.values.settings.auto, true);
 });
+
+test('selected reset is restricted to the live conversation and rejects stale saves even on a new background instance', async () => {
+  const app=await setup(),original=state(app.page.url);await app.send({kind:'cache:set',state:original});
+  assert.equal(await app.send({kind:'cache:reset',context:app.page.url},app.options),undefined);
+  assert.equal(await app.send({kind:'cache:reset',context:'https://chatgpt.com/c/other'}),undefined);
+  const empty=await app.send({kind:'cache:reset',context:app.page.url});assert.equal(empty.generation,1);assert.deepEqual(empty.entries,[]);
+  await assert.rejects(app.send({kind:'cache:set',state:original}),/Stale/);
+  const restarted=await setup(app.values);await assert.rejects(restarted.send({kind:'cache:set',state:original}),/Stale/);
+});

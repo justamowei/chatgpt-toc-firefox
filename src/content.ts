@@ -12,7 +12,7 @@ if (window === window.top && !browser.extension.inIncognitoContext && supported(
 }
 function start(): Instance {
   let alive = true, expanded = false, query = '', railKey = '', navigationToken = 0, uiRevision = 0;
-  let currentPrompt: string | undefined, listGeneration = 0, listQuery = '', listOrdered = true, listSegments = '';
+  let currentPrompt: string | undefined, listGeneration = 0, listQuery = '', listOrdered = true, listSegments = '', listNumbers = '';
   let renderedEntries: typeof store.entries = [], renderedQuarantine: typeof store.quarantine = [];
   const listButtons = new Map<string, HTMLButtonElement>(), railButtons = new Map<string, HTMLButtonElement>();
   let currentLocatable = new Set<string>();
@@ -52,7 +52,7 @@ function start(): Instance {
   const scope = make('div', 'scope'), list = make('ul', 'list'), status = make('p', 'status');
   scope.id = 'toc-scope'; list.id = 'toc-list'; status.id = 'toc-status'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
   const footer = make('footer');
-  const earlier = button('收集整段對話', () => { void navigate(null); }); earlier.id = 'toc-earlier';
+  const earlier = button('重建整段目錄', () => { void navigate(null); }); earlier.id = 'toc-earlier'; earlier.title = '清空本對話已保存的目錄，移到最底，再向上收集到頂端；不刪除聊天。';
   const back = button('回到剛才位置', () => { void restore(); }); back.id = 'toc-back';
   const stop = button('停止', cancel); stop.id = 'toc-stop';
   const settings = button('設定', () => { void browser.runtime.sendMessage({ kind: 'options:open' }).catch(() => { if (alive) status.textContent = '無法開啟設定，請從 Firefox 附加元件頁開啟。'; }); });
@@ -68,7 +68,7 @@ function start(): Instance {
       navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
   footer.append(earlier, back, stop, settings, disable, diagnose);
-  const hint = make('div', 'hint', 'Shift＋O 開啟 · Esc 收合');
+  const hint = make('div', 'hint', 'Shift＋O 開啟 · Esc 收合。重建會清空本對話目錄，由底往上收集。');
   panel.append(header, searchWrap, scope, list, status, footer, diagnosis, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
   const adapter = new DomAdapter(store, refresh);
   const labels: Record<NavState, string> = { idle: '請選取已收錄的提問。', loading: '正在尋找訊息…', located: '已定位並高亮正確訊息。', cancelled: '已停止導航。', 'timed-out': '已達載入上限；可稍後重試。', unsupported: '目前頁面無法完成導航，請更新導航器。', 'not-found': '尚未找到這則訊息，可繼續載入。' };
@@ -87,10 +87,19 @@ function start(): Instance {
   port.onDisconnect.addListener(() => { port = null; });
   function isDispose(message: unknown): boolean { return !!message && typeof message === 'object' && Object.keys(message).length === 1 && (message as { kind?: string }).kind === 'dispose'; }
   const runtimeListener = (message: unknown, sender: browser.runtime.MessageSender) => {
-    if (sender.id === browser.runtime.id && isDispose(message)) dispose();
+    if (sender.id !== browser.runtime.id) return;
+    if (isDispose(message)) dispose();
+    const notice = message as { kind?: string; context?: string; generation?: number };
+    if (notice?.kind === 'cache:invalidated' && notice.context === store.context && Number.isSafeInteger(notice.generation) && notice.generation! > store.cacheGeneration) {
+      cancel(); persistence.invalidate(); restoreToken++; store.reset(); store.cacheGeneration = notice.generation!;
+      restoredContext = ''; refresh();
+    }
   };
   browser.runtime.onMessage.addListener(runtimeListener);
-  function cancel(): void { navigationToken++; navigationPending = false; operation?.abort(); operation = null; navigator.cancel(); }
+  function cancel(): void {
+    const pending = navigationPending; navigationToken++; navigationPending = false; operation?.abort(); operation = null; navigator.cancel();
+    if (pending) { host.dataset.navigation = 'cancelled'; earlier.disabled = false; stop.hidden = true; status.textContent = labels.cancelled; }
+  }
   function setExpanded(value: boolean, focus = true, persist = true): void {
     if (!alive) return;
     expanded = value; panel.hidden = !expanded; toggle.setAttribute('aria-expanded', String(expanded));
@@ -128,11 +137,12 @@ function start(): Instance {
     // Collapse is a visibility update. Retain list nodes and its scroll position;
     // refresh cached rows only when data/search/order actually changes.
     const segmentKey = store.ordered ? '' : store.segments.map(s => `${s.ordered}:${s.ids.join('|')}`).join(';');
-    const changed = !listBuilt || listQuery !== query || listOrdered !== store.ordered || listSegments !== segmentKey ||
+    const numberKey = store.numberedIds.join('|');
+    const changed = listNumbers !== numberKey || !listBuilt || listQuery !== query || listOrdered !== store.ordered || listSegments !== segmentKey ||
       renderedEntries.length !== store.entries.length || store.entries.some((e, i) => e !== renderedEntries[i]) ||
       renderedQuarantine.length !== store.quarantine.length || store.quarantine.some((g, i) => g !== renderedQuarantine[i]);
     if (expanded && changed) {
-      listBuilt = true; listQuery = query; listOrdered = store.ordered; listSegments = segmentKey;
+      listBuilt = true; listQuery = query; listOrdered = store.ordered; listSegments = segmentKey; listNumbers = numberKey;
       renderedEntries = [...store.entries]; renderedQuarantine = [...store.quarantine];
       const entries = store.search(query), matches = new Map(entries.map(e => [e.id, e]));
       const generation = ++listGeneration;
@@ -146,8 +156,9 @@ function start(): Instance {
         if (!store.ordered) rows.push(() => make('li', 'empty', `已收錄群組 ${index + 1} · ${segment.ordered ? '已保存區段排序' : '先後順序尚未確認'}`));
         for (const entry of visible) {
         rows.push(() => {
-        const row = make('li'); const choice = button(entry.text.slice(0, 180), () => { void navigate(entry.id); }, 'entry', false);
-        choice.dataset.entryId = entry.id; choice.title = entry.text; choice.disabled = !selectable(entry.id, entry.stable);
+        const row = make('li'); const ordinal = store.ordinal(entry.id)!; const prefix = ordinal.confirmed ? `${ordinal.number}. ` : `暫${ordinal.number}. `;
+        const choice = button(prefix + entry.text.slice(0, 180), () => { void navigate(entry.id); }, 'entry', false);
+        choice.dataset.entryId = entry.id; choice.dataset.ordinal = String(ordinal.number); choice.dataset.numberConfirmed = String(ordinal.confirmed); choice.title = (ordinal.confirmed ? `本對話第 ${ordinal.number} 筆提問：` : '尚未從對話起點核對，暫編：') + entry.text; choice.disabled = !selectable(entry.id, entry.stable);
         choice.setAttribute('aria-current', String(entry.id === currentPrompt)); listButtons.set(entry.id, choice); row.append(choice); return row;
         });
         }
@@ -186,7 +197,7 @@ function start(): Instance {
       });
       for (const entry of railEntries) {
         const mark = button('', () => { void navigate(entry.id); }, 'mark', false); mark.dataset.entryId = entry.id;
-        mark.title = entry.text.slice(0, 180); mark.setAttribute('aria-label', `定位：${entry.text.slice(0, 180)}`); mark.disabled = !selectable(entry.id, entry.stable);
+        const ordinal = store.ordinal(entry.id)!; mark.title = `${ordinal.confirmed ? '' : '暫'}${ordinal.number}. ${entry.text.slice(0, 180)}`; mark.setAttribute('aria-label', `定位：${entry.text.slice(0, 180)}`); mark.disabled = !selectable(entry.id, entry.stable);
         mark.setAttribute('aria-current', String(entry.id === currentPrompt)); railButtons.set(entry.id, mark); markers.append(mark);
       }
     }
@@ -205,7 +216,7 @@ function start(): Instance {
       reset = store.merge({ ...snapshot, entries }) || reset;
     }
     reset = store.merge(snapshot, direction ?? adapter.currentDirection() ?? 'observe') || reset;
-    adapter.remember();
+    adapter.remember(); adapter.observeNumbering();
     if (reset) { cancel(); adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
       status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
     if (restoredContext !== snapshot.context) {
@@ -244,9 +255,11 @@ function start(): Instance {
       (!adapter.canLocate(id) && (!store.canSeek(id) || store.mounted.has(id))))) {
       status.textContent = '此目標的順序、正文或目前分支尚未核對；請先手動捲動至該則提問。'; return;
     }
-    cancel(); const token = ++navigationToken, epoch = store.epoch;
+    cancel(); const token = ++navigationToken; let epoch = store.epoch;
     collecting = id === null; collectionStart = store.entries.length;
     operation = new AbortController(); navigationPending = true;
+    host.dataset.navigation = 'loading'; earlier.disabled = true; stop.hidden = false;
+    status.textContent = collecting ? '正在準備重建本對話目錄…' : '正在準備導航…';
     if (collecting) {
       try {
         const value: unknown = await browser.runtime.sendMessage({ kind: 'settings:get' });
@@ -257,6 +270,18 @@ function start(): Instance {
     }
     const position = await adapter.capture(operation.signal);
     if (!alive || token !== navigationToken || epoch !== store.epoch) return;
+    if (collecting) {
+      restoreToken++; restoredContext = store.context;
+      const context = store.context;
+      try {
+        const rebuilt = await persistence.rebuild(context, () => adapter.read(), () => alive && token === navigationToken && epoch === store.epoch);
+        if (!rebuilt || !alive || token !== navigationToken) { if (alive) { adapter.remember(); render(); } return; }
+      } catch {
+        if (alive && token === navigationToken) { cancel(); status.textContent = '本機目錄重建失敗；請稍後重試。'; }
+        return;
+      }
+      epoch = store.epoch; adapter.remember(); collectionStart = 0;
+    }
     returnPosition = position; returnEpoch = epoch; render();
     delete host.dataset.restored;
     adapter.begin(id === null);
@@ -264,9 +289,9 @@ function start(): Instance {
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
     if (id === null && result === 'idle') status.textContent = adapter.collectionFinished
-      ? `本次已向前、向後巡覽，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；兩端已確認穩定捲動邊界。完整歷史尚未核對；可返回剛才位置。`
+      ? `已由底往上收集 ${store.entries.length} 則提問，到達頂端並自動停止。${store.numberedIds.length ? '已保存對話提問編號。' : '有區段未連續核對，仍使用暫編號。'}網站未顯示的歷史尚無法核對；可返回剛才位置。`
       : `本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集。`;
-    updateCurrent();
+    persistence.schedule(); render(); updateCurrent();
   }
   async function restore(): Promise<void> {
     const position = returnPosition, epoch = returnEpoch;
