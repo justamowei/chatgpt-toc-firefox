@@ -255,15 +255,16 @@ function start(): Instance {
   }
   function maybeAutomatic(): void {
     const context = store.context, visit = automaticVisit;
-    if (!alive || !conversationContext(context) || !automatic.eligible(visit, store.mounted.size > 0, navigationPending || navigator.state === 'loading')) return;
-    const signature = [...store.mounted].join('|');
+    const mountedUser = () => store.entries.some(entry => entry.stable && store.mounted.has(entry.id));
+    if (!alive || !conversationContext(context) || !automatic.eligible(visit, mountedUser(), navigationPending || navigator.state === 'loading')) return;
+    const signature = store.entries.filter(entry => entry.stable && store.mounted.has(entry.id)).map(entry => entry.id).join('|');
     if (signature !== autoSignature) { autoSignature = signature; autoStableSince = performance.now(); }
     if (autoTimer !== undefined) return;
     autoTimer = setTimeout(() => {
       autoTimer = undefined;
       if (!alive || context !== store.context || visit !== automaticVisit) return;
       if (performance.now() - autoStableSince < 500) { maybeAutomatic(); return; }
-      if (automatic.claim(visit, store.mounted.size > 0, navigationPending || navigator.state === 'loading')) void navigate(null, true, true);
+      if (automatic.claim(visit, mountedUser(), navigationPending || navigator.state === 'loading')) void navigate(null, true, true);
     }, 520);
   }
   async function navigate(id: string | null, rebuild = false, auto = false): Promise<void> {
