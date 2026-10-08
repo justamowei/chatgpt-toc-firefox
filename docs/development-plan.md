@@ -1,3 +1,7 @@
+# 2026-10-08 v0.3.4 補充
+
+保存且已觀察到有序的目錄在 F5／SPA 返回直接恢復，不因 branch 未知或快取身份待重見撤銷排序。落點核對與完整性判定獨立保留。v1 儲存格式不變；詳見 [交付報告](release-v0.3.4.md)。未接通群組仍分開，容量／LRU 與未知分支限制不變。版本及 Git 規則以 [version-policy.md](version-policy.md) 為準。
+
 # 2026-10-07 Git與版本規範更新（優先適用）
 
 [完整規範](version-policy.md)、[版本目錄](versions.md)。每交付新版本與immutable annotatedtag，維護分支release/v0.3；v0.2.0已撤回。下方舊版本紀錄保留，不覆蓋現行Git規範。

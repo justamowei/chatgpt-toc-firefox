@@ -1,0 +1,49 @@
+{
+  "status": "PASS_GUARDS_WITH_PIN_PENDING",
+  "scriptSha256": "dddeaf9e1f3d36ffbfaaea76e9b03f5d12ca57a2d69f5ec1d08f9cda9df67668",
+  "cases": [
+    {
+      "case": "windows_platform",
+      "status": "PASS",
+      "refusal": "Cloud-only sync; local execution refused",
+      "networkCalls": 0,
+      "subprocessCalls": 0
+    },
+    {
+      "case": "linux_no_actions",
+      "status": "PASS",
+      "refusal": "Cloud-only sync; local execution refused",
+      "networkCalls": 0,
+      "subprocessCalls": 0
+    },
+    {
+      "case": "linux_wrong_repository",
+      "status": "PASS",
+      "refusal": "Wrong repository/ref",
+      "networkCalls": 0,
+      "subprocessCalls": 0
+    },
+    {
+      "case": "linux_wrong_ref",
+      "status": "PASS",
+      "refusal": "Wrong repository/ref",
+      "networkCalls": 0,
+      "subprocessCalls": 0
+    }
+  ],
+  "readOnlyFindings": [
+    "Linux/GITHUB_ACTIONS/fixed repository/operation ref guarded before API",
+    "Bundle SHA256 and original HEAD verified",
+    "Checkpoint only fix/saved-directory-order and no tag",
+    "Delivery only fix/saved-directory-order + release/v0.3 + fixed annotated v0.3.4 object/commit",
+    "Non-fast-forward branch updates and existing tag replacement refused",
+    "Push atomic, no force or ref deletion; post REST verifies each ref and tag target"
+  ],
+  "preDispatchRequirements": [
+    "Replace __SCRIPT_SHA256__ workflow placeholder with final script hash"
+  ],
+  "optionalHardening": [
+    "Clear inherited GIT_ASKPASS and SSH_ASKPASS because core.askpass configuration does not override GIT_ASKPASS"
+  ],
+  "executed": "Local refusal and mocked guard-only cases; no cloudmain, network, Git or GCM executed"
+}

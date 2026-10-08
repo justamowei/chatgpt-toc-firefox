@@ -22,8 +22,9 @@ async function click(selector) {
   const button = await shadow.findElement(By.css(selector));
   await evaluate('arguments[0].click();', button);
 }
+let setupSerial = 0;
 async function setup(start = 23) {
-  await driver.get(session.url);
+  await driver.get(session.url.replace('/c/synthetic', '/c/anchor-case-' + ++setupSerial));
   await evaluate(`
     const m=document.querySelector('main');m.removeAttribute('data-fixture-branch');
     m.style.cssText='margin:0;padding:0;position:relative;overflow:visible;height:auto';m.replaceChildren();
@@ -68,7 +69,12 @@ async function setup(start = 23) {
   if (!(await state()).expanded) await click('.toggle');
   await driver.wait(async () => (await state())?.ids.length === 7, 10000);
 }
-async function waitFinished(ms = 65000) { await driver.wait(async () => (await state()).nav !== 'loading', ms); }
+async function waitFinished(ms = 65000) {
+  // settings:get and capture are asynchronous before navigation enters loading.
+  // Waiting only for non-loading can return on the initial idle state.
+  await driver.wait(async () => (await state()).nav === 'loading', 6000);
+  await driver.wait(async () => (await state()).nav !== 'loading', ms);
+}
 function contiguousMounts(actual) {
   for(let i=1;i<actual.mounts.length;i++)assert.ok(Math.abs(actual.mounts[i].start-actual.mounts[i-1].start)<=4,'Adjacent windows must overlap; unknown middle cannot be skipped');
   assert.equal(actual.calls.filter(c=>c.pinned).length,0,'Disjoint pinned tail must never drive traversal');

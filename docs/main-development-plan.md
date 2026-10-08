@@ -1,6 +1,6 @@
 # 開發與版本管理計畫
 
-2026-10-07規範更新。main保留專案基線，本次更新僅為規範文件及版本索引；完整產品與歷史功能計畫見 [release/v0.3](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/development-plan.md)。
+2026-10-08 更新至 v0.3.4 版本入口。main保留專案基線，本次更新僅為規範文件及版本索引；完整產品與歷史功能計畫見 [release/v0.3](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/development-plan.md)。
 
 ## Git與版本規則
 

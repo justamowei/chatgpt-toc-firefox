@@ -33,7 +33,7 @@ try{
    await evaluate(`const i=document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-search');i.value='A 本機提問 3';i.dispatchEvent(new Event('input',{bubbles:true}));`);
    await wait(async()=> (await state()).ids.length===1);
    await switchRoute('B');await wait(async()=> (await state()).ids.length===7);assert.ok((await state()).ids.every(id=>id.startsWith('B:')));
-   await switchRoute('A');await wait(async()=> (await state()).ids.length===30);assert.equal((await state()).archived,0);
+   await switchRoute('A');await wait(async()=> (await state()).ids.length===30);assert.equal((await state()).archived,0);assert.deepEqual((await state()).ids,Array.from({length:30},(_,i)=>'A:u-'+i));assert.deepEqual((await state()).groups,[]);assert.match((await state()).scope,/已沿用保存的目錄排序/);
    const target=await exactTarget(3);await session.screenshot('spa-restored-navigation.png');return {restored:30,otherConversation:7,exactHighlight:target};
  });
  await test('V034-03 F5 retains clickable saved prompts and verifies both navigation directions',async()=>{

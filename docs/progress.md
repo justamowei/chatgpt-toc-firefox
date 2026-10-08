@@ -1,3 +1,7 @@
+# 2026-10-08 v0.3.4 保存排序修正（本節優先）
+
+runtime a1ff15a7535cb7bf08cff683ff69104be17f1efb，fix/saved-directory-order；已雲端 checkpoint SYNC_VERIFIED（run 37721041589）。已保存排序與恢復身份分開，F5／SPA 不再降級排序；v1 保持相容，實際矛盾隔離與 completeness 門檻仍保留。94 pure／13 native localhost／typecheck／build／lint 通過，獨立十二hash一致；LIVE PENDING。後續 delivery tag／release refs 同步證據另附。詳見 [報告](release-v0.3.4.md)。以下為歷史紀錄。
+
 # 2026-10-07 版本治理與歷史選定
 
 更新 [版本規範](version-policy.md)、[版本目錄](versions.md)；seven歷史交付以原始SHA建立annotatedtags，0.2.0 withdrawn，0.3.1 r2–r5另記metadata。產品runtime未改，版本維持0.3.3。私人GitHub refs將由一次性雲端Linux作業從原始bundle同步；本機GCM與網路Git禁用。同步完成以GitHub refs/tag object/peeled commits另外報告核對，不把備份當作正常同步。
