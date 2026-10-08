@@ -103,5 +103,23 @@ class Governance(unittest.TestCase):
                 restore.verify_source(changed_git, source, catalog, tags)
 
 
+    def test_explicit_same_version_revision_preserves_canonical_tag_and_snapshot_identity(self):
+        for revision in current_catalog.get("sameVersionRevisions", []):
+            canonical = next(v for v in current_catalog["versions"] if v["version"] == revision["version"])
+            self.assertTrue(revision["userRequestedSameVersion"])
+            self.assertNotEqual(revision["snapshotTag"], canonical["tag"])
+            self.assertEqual(local_git("rev-parse", canonical["tag"]).strip(), canonical["tagObject"])
+            self.assertEqual(local_git("cat-file", "-t", revision["snapshotTag"]).strip(), "tag")
+            self.assertEqual(local_git("rev-parse", revision["snapshotTag"]).strip(), revision["tagObject"])
+            self.assertEqual(local_git("rev-parse", revision["snapshotTag"] + "^{}").strip(), revision["deliveryCommit"])
+            self.assertEqual(local_git("merge-base", "--is-ancestor", revision["runtimeCommit"], revision["deliveryCommit"], check=False), 0)
+            package = json.loads(local_git("show", revision["deliveryCommit"] + ":package.json"))
+            self.assertEqual(package["version"], revision["version"])
+            self.assertEqual(package["tocRevision"], revision["revision"])
+            for path in ["manifests/firefox.json", "package-lock.json"]:
+                self.assertEqual(json.loads(local_git("show", revision["deliveryCommit"] + ":" + path))["version"], revision["version"])
+            for report in revision["acceptance"]:
+                self.assertEqual(local_git("cat-file", "-e", revision["deliveryCommit"] + ":" + report, check=False), 0)
+
 if __name__ == "__main__":
     unittest.main()

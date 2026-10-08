@@ -1,0 +1,253 @@
+{
+  "date": "2026-10-08T10:13:33.689Z",
+  "runtimeSha": "5f1479c9133364a38fd7b2eb54ce129970610274",
+  "testSourceSha": "5f1479c9133364a38fd7b2eb54ce129970610274",
+  "version": "0.3.6",
+  "revision": "2026-10-08-v036-r2",
+  "reviewer": "independent fixed Git archive checkout; source repository unchanged; no test overlay",
+  "checkout": "C:\\Users\\Andy\\Documents\\Codex\\2026-10-02\\new-chat-2\\work\\v036-r2-review-5f1479\\source",
+  "status": "PASS",
+  "pure": {
+    "passed": 111,
+    "total": 111
+  },
+  "typecheck": "PASS",
+  "lint": {
+    "production": {
+      "errors": 0,
+      "notices": 0,
+      "warnings": 0
+    },
+    "fixture": {
+      "errors": 0,
+      "notices": 0,
+      "warnings": 0
+    }
+  },
+  "hashComparison": {
+    "productionMatched": 6,
+    "fixtureMatched": 6,
+    "totalMatched": 12,
+    "comparedTo": "C:\\Users\\Andy\\Documents\\Codex\\2026-10-02\\new-chat-2\\outputs\\chatgpt-toc\\dist"
+  },
+  "hashes": {
+    "production": {
+      "background.js": "827d376e67662ac48b862b70aebdea27c248aa36d39b4c2f425ede7b61a5fbd3",
+      "content.js": "0a41196ca7218e1ee9dd0d2cbb34852b548311c8805575058569c729ec60d27d",
+      "options.js": "ad5578f7c20fc63367d132b3c7bebd7755c8a46213a5d28291393d953e3e737f",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "8cf40c3fb7be53e02a38e7ed22cba5b491aa5890bd41737a6bf5a05cb9c0e7e9"
+    },
+    "fixture": {
+      "background.js": "df48c02771c0123721c04ec910661c6dd80eba09cd94ce20698d84e19f6d941e",
+      "content.js": "3ffae4cbe8152ef8d0ba797c6ed6ef7ce0babe0d8b99c551e05c59dd993a9151",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "5aff47e6e9dd04c276071d0a386c4ba27be073265038891d6815dce3ec6205c5"
+    }
+  },
+  "native": {
+    "passed": 15,
+    "total": 15,
+    "firefox": "157.0.1",
+    "boundaries": {
+      "passed": 7,
+      "total": 7,
+      "artifact": "C:\\Users\\Andy\\Documents\\Codex\\2026-10-02\\new-chat-2\\work\\v036-r2-review-5f1479\\source\\artifacts\\firefox-v036-boundaries-independent\\results.json",
+      "results": [
+        {
+          "name": "PAD-01 manual rebuild with 450px tail and head padding reaches both actual edges without bouncing",
+          "status": "PASS",
+          "elapsedMs": 23108,
+          "actual": {
+            "collected": 30,
+            "headPad": 450,
+            "tailPad": 450
+          }
+        },
+        {
+          "name": "PAD-02 tail whitespace beyond one viewport still switches upwards and finishes",
+          "status": "PASS",
+          "elapsedMs": 16003,
+          "actual": {
+            "collected": 30,
+            "tailPad": 950,
+            "headAutoStop": true
+          }
+        },
+        {
+          "name": "PAD-03 tail stream and height reflow plus root replacement do not trap bottom positioning",
+          "status": "PASS",
+          "elapsedMs": 16524,
+          "actual": {
+            "collected": 30,
+            "noiseChanges": 80,
+            "rootReplaced": true
+          }
+        },
+        {
+          "name": "PAD-04a visible sibling history loader defers head completion until earlier prompt mounts",
+          "status": "PASS",
+          "elapsedMs": 23835,
+          "actual": {
+            "collected": 31,
+            "loaderDelay": 9000,
+            "overlap": false,
+            "falseHeadStop": false
+          }
+        },
+        {
+          "name": "PAD-04b visible sibling history loader defers head completion until earlier prompt mounts",
+          "status": "PASS",
+          "elapsedMs": 23958,
+          "actual": {
+            "collected": 31,
+            "loaderDelay": 9000,
+            "overlap": true,
+            "falseHeadStop": false
+          }
+        },
+        {
+          "name": "PAD-05 frozen middle never counts as head and Stop still cancels delayed retries",
+          "status": "PASS",
+          "elapsedMs": 11318,
+          "actual": {
+            "falseHeadStop": false,
+            "cancelled": true
+          }
+        },
+        {
+          "name": "PAD-06 hidden sibling loaders with positive geometry do not prevent head completion",
+          "status": "PASS",
+          "elapsedMs": 22481,
+          "actual": {
+            "collected": 30,
+            "ariaHiddenIgnored": true,
+            "cssHiddenIgnored": true
+          }
+        }
+      ]
+    },
+    "automatic": {
+      "passed": 8,
+      "total": 8,
+      "artifact": "C:\\Users\\Andy\\Documents\\Codex\\2026-10-02\\new-chat-2\\work\\v036-r2-review-5f1479\\source\\artifacts\\firefox-v036-automatic-independent\\results.json",
+      "results": [
+        {
+          "name": "V036-01 missing cache waits for DOM then automatically collects thirty prompts without a reset",
+          "status": "PASS",
+          "elapsedMs": 16594,
+          "actual": {
+            "automatic": true,
+            "collected": 30,
+            "manualClicks": 0
+          }
+        },
+        {
+          "name": "V036-02 continuing the current session automatically appends two distinct IDs with identical text and keeps old entries",
+          "status": "PASS",
+          "elapsedMs": 527,
+          "actual": {
+            "appended": 2,
+            "distinctSameTextIds": [
+              "A:u-30",
+              "A:u-31"
+            ],
+            "total": 32
+          }
+        },
+        {
+          "name": "V036-03 F5 and remount recover thirty-two saved prompts without automatic collection or renumbering",
+          "status": "PASS",
+          "elapsedMs": 1228,
+          "actual": {
+            "restored": 32,
+            "autoScrolled": false
+          }
+        },
+        {
+          "name": "V036-04 even one saved prompt or only archived history prevents automatic scanning",
+          "status": "PASS",
+          "elapsedMs": 2408,
+          "actual": [
+            {
+              "prefix": "C",
+              "autoScrolled": false
+            },
+            {
+              "prefix": "D",
+              "autoScrolled": false
+            }
+          ]
+        },
+        {
+          "name": "V036-05 switching to a second uncached session automatically collects it without manual action",
+          "status": "PASS",
+          "elapsedMs": 16437,
+          "actual": {
+            "secondSession": 30,
+            "automatic": true
+          }
+        },
+        {
+          "name": "V036-06 explicit stop retains seen prompts and SPA return never restarts collection",
+          "status": "PASS",
+          "elapsedMs": 2091,
+          "actual": {
+            "retained": 7,
+            "automaticRestart": false
+          }
+        },
+        {
+          "name": "V036-07 automatic collection never advances a reset generation or deletes another session",
+          "status": "PASS",
+          "elapsedMs": 82,
+          "actual": {
+            "resetInvocations": 0,
+            "sessionsPreserved": 5
+          }
+        },
+        {
+          "name": "V036-08 manual rebuild still resets only its session and automatically stops at the head",
+          "status": "PASS",
+          "elapsedMs": 15190,
+          "actual": {
+            "manualRebuild": true,
+            "collected": 30
+          }
+        }
+      ]
+    },
+    "scheduling": "Both suites ran sequentially after parent confirmed its Firefox test drivers had exited; separate archive artifacts and fresh test profiles."
+  },
+  "boundaryReview": {
+    "numericRootBottomPreparation": true,
+    "bottomGapWitnessIgnoresStreamingBodyAndAbsoluteHeight": true,
+    "crossBatchHeadAnchorAvoidsRepeatedShellRollback": true,
+    "outwardSiblingAndOverlappingHistoryLoaderDefersHeadConfirmation": true,
+    "answerDescendantBusyExcludedFromEdgeLoader": true,
+    "hiddenLoadersIgnored": true,
+    "frozenMiddleNeverCountedAsHead": true,
+    "cancellationStopsDelayedRetries": true,
+    "rootReplacementHandled": true
+  },
+  "historicalEvidence": {
+    "parentInitialD3Sha": "d3d0110db43ec153a36e37a1703897b8c3d2c9e1",
+    "parentFailureArtifact": "C:\\Users\\Andy\\Documents\\Codex\\2026-10-02\\new-chat-2\\outputs\\chatgpt-toc\\artifacts\\firefox-v036-r2-accepted\\results.json",
+    "parentOriginalPaddingFailure": "C:\\Users\\Andy\\Documents\\Codex\\2026-10-02\\new-chat-2\\outputs\\chatgpt-toc\\artifacts\\firefox-v036-padding-original-failure",
+    "timingAnomaly": "Parent reported initial d3 PAD-02 35-second wait returned after approximately 117 seconds, then head collection advanced. Original failure and later standalone passing rerun are preserved by parent. Cause remains unconfirmed; this report does not attribute it to environment or CPU contention.",
+    "independentFinalPad02ElapsedMs": 16003,
+    "independentFinalAnomalyReproduced": false,
+    "parentFinalResult": "Parent reported final seven boundary and eight automatic cases PASS before independent native run."
+  },
+  "findings": [],
+  "unresolvedBlockers": 0,
+  "live": "PENDING",
+  "limitations": [
+    "Authenticated ChatGPT LIVE validation remains pending. Parent reported sky/computer-use tool initialization crashes; this independent native run uses localhost renderers and does not verify authenticated ChatGPT DOM.",
+    "While waiting for the first mounted prompt, the explicit Stop button remains hidden; broader cancellation before start remains a future UX improvement.",
+    "Very large head padding that places the first prompt entirely outside the viewport can conservatively time out; the head visibility guard prevents a frozen middle virtualized window from falsely proving session origin."
+  ]
+}

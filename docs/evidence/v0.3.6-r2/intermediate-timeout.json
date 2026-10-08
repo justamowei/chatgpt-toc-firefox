@@ -1,0 +1,285 @@
+{
+  "date": "2026-10-08T09:57:26.392Z",
+  "source": "Native Firefox localhost padding renderer, actual scrolling; ChatGPT LIVE not performed",
+  "firefox": "157.0.1",
+  "build": {
+    "version": "0.3.6",
+    "revision": "2026-10-08-v036-r2",
+    "fixture": true,
+    "hashes": {
+      "background.js": "df48c02771c0123721c04ec910661c6dd80eba09cd94ce20698d84e19f6d941e",
+      "content.js": "c2c55072cafddbd2be838efdae9423aa68f61e121824f37f78d7f24d7488f524",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "5aff47e6e9dd04c276071d0a386c4ba27be073265038891d6815dce3ec6205c5"
+    }
+  },
+  "results": [
+    {
+      "name": "PAD-01 manual rebuild with 450px tail and head padding reaches both actual edges without bouncing",
+      "status": "PASS",
+      "elapsedMs": 23123,
+      "actual": {
+        "collected": 30,
+        "headPad": 450,
+        "tailPad": 450
+      }
+    },
+    {
+      "name": "PAD-02 tail whitespace beyond one viewport still switches upwards and finishes",
+      "status": "FAIL",
+      "error": "TimeoutError: Wait timed out after 117877ms",
+      "ui": {
+        "auto": "skipped-existing",
+        "diagnostic": "{\n  \"version\": \"0.3.6\",\n  \"revision\": \"2026-10-08-v036-r2\",\n  \"collected\": 7,\n  \"observed\": 7,\n  \"mounted\": 5,\n  \"quarantined\": 0,\n  \"navigation\": {\n    \"scroll\": {\n      \"tag\": \"DIV\",\n      \"marked\": true,\n      \"overflow\": \"hidden\",\n      \"client\": 650,\n      \"width\": 1200,\n      \"height\": 114950,\n      \"top\": 98550,\n      \"connected\": true\n    },\n    \"geometry\": {\n      \"measuredTurns\": 14,\n      \"measuredAnswers\": 7,\n      \"measuredSpans\": 6\n    },\n    \"adjacentWitnesses\": 6,\n    \"collection\": \"head\",\n    \"lastAttempt\": {\n      \"method\": \"mounted-edge-anchor\",\n      \"before\": 114300,\n      \"requested\": 98550,\n      \"after\": 98550,\n      \"heightBefore\": 114950,\n      \"heightAfter\": 114950,\n      \"scrollEvents\": 1,\n      \"replaced\": false,\n      \"boundary\": {\n        \"physical\": false,\n        \"loading\": false,\n        \"rendering\": false,\n        \"stableMs\": 0,\n        \"probes\": 0,\n        \"confirmed\": false\n      }\n    }\n  },\n  \"main\": 1,\n  \"legacyRole\": 14,\n  \"turnShell\": 14,\n  \"turnKey\": 0,\n  \"userBubble\": 0,\n  \"conversationRole\": 0,\n  \"agentStart\": 0\n}",
+        "expanded": "true",
+        "nav": "loading",
+        "rows": [
+          {
+            "id": "W:u-9",
+            "n": 1
+          },
+          {
+            "id": "W:u-10",
+            "n": 2
+          },
+          {
+            "id": "W:u-11",
+            "n": 3
+          },
+          {
+            "id": "W:u-12",
+            "n": 4
+          },
+          {
+            "id": "W:u-13",
+            "n": 5
+          },
+          {
+            "id": "W:u-14",
+            "n": 6
+          },
+          {
+            "id": "W:u-15",
+            "n": 7
+          },
+          {
+            "id": "W:u-16",
+            "n": 8
+          },
+          {
+            "id": "W:u-17",
+            "n": 9
+          },
+          {
+            "id": "W:u-18",
+            "n": 10
+          },
+          {
+            "id": "W:u-19",
+            "n": 11
+          },
+          {
+            "id": "W:u-20",
+            "n": 12
+          },
+          {
+            "id": "W:u-21",
+            "n": 13
+          },
+          {
+            "id": "W:u-22",
+            "n": 14
+          },
+          {
+            "id": "W:u-23",
+            "n": 15
+          },
+          {
+            "id": "W:u-24",
+            "n": 16
+          },
+          {
+            "id": "W:u-25",
+            "n": 17
+          },
+          {
+            "id": "W:u-26",
+            "n": 18
+          },
+          {
+            "id": "W:u-27",
+            "n": 19
+          },
+          {
+            "id": "W:u-28",
+            "n": 20
+          },
+          {
+            "id": "W:u-29",
+            "n": 21
+          }
+        ],
+        "scope": "本頁已看過 21 則 · 目前掛載 7 則。歷史尚未完整；當前分支未完整核對；搜尋涵蓋已觀察資料。 本機目錄儲存中。",
+        "status": "正在選取較早掛載訊息，逐段向前收集 · 本次新增 21 則 · 最多 10 分鐘，可按停止。"
+      },
+      "renderer": {
+        "calls": [
+          {
+            "at": 118087,
+            "direction": "older",
+            "edgeError": 0,
+            "end": 29,
+            "index": 25,
+            "outer": true,
+            "pinned": false,
+            "role": "user",
+            "start": 25,
+            "top": 98550
+          },
+          {
+            "at": 118612,
+            "direction": "older",
+            "edgeError": 0,
+            "end": 25,
+            "index": 21,
+            "outer": true,
+            "pinned": false,
+            "role": "user",
+            "start": 21,
+            "top": 86050
+          },
+          {
+            "at": 119006,
+            "direction": "older",
+            "edgeError": 0,
+            "end": 21,
+            "index": 17,
+            "outer": true,
+            "pinned": false,
+            "role": "user",
+            "start": 17,
+            "top": 73550
+          },
+          {
+            "at": 119368,
+            "direction": "older",
+            "edgeError": 0,
+            "end": 17,
+            "index": 13,
+            "outer": true,
+            "pinned": false,
+            "role": "user",
+            "start": 13,
+            "top": 61050
+          }
+        ],
+        "contentVisibility": "auto",
+        "events": [
+          {
+            "at": 86,
+            "top": 98570
+          },
+          {
+            "at": 168,
+            "top": 114300
+          },
+          {
+            "at": 118086,
+            "top": 98550
+          },
+          {
+            "at": 118612,
+            "top": 86050
+          },
+          {
+            "at": 119006,
+            "top": 73550
+          },
+          {
+            "at": 119368,
+            "top": 61050
+          }
+        ],
+        "extraOlder": false,
+        "headPad": 100,
+        "historyFinished": null,
+        "historyPending": false,
+        "historyStarted": null,
+        "lazyShells": 14,
+        "mounts": [
+          {
+            "at": 83,
+            "end": 27,
+            "start": 23
+          },
+          {
+            "at": 300,
+            "end": 29,
+            "start": 25
+          },
+          {
+            "at": 118237,
+            "end": 25,
+            "start": 21
+          },
+          {
+            "at": 118766,
+            "end": 21,
+            "start": 17
+          },
+          {
+            "at": 119138,
+            "end": 17,
+            "start": 13
+          },
+          {
+            "at": 119502,
+            "end": 13,
+            "start": 9
+          }
+        ],
+        "noiseChanges": 0,
+        "outerClient": 650,
+        "outerHeight": 650,
+        "rootHeight": 114950,
+        "start": 9,
+        "tailPad": 950,
+        "top": 61050,
+        "writes": [
+          {
+            "at": 86,
+            "kind": "native-scroll-event",
+            "top": 98570
+          },
+          {
+            "at": 168,
+            "kind": "native-scroll-event",
+            "top": 114300
+          },
+          {
+            "at": 118086,
+            "kind": "native-scroll-event",
+            "top": 98550
+          },
+          {
+            "at": 118612,
+            "kind": "native-scroll-event",
+            "top": 86050
+          },
+          {
+            "at": 119006,
+            "kind": "native-scroll-event",
+            "top": 73550
+          },
+          {
+            "at": 119368,
+            "kind": "native-scroll-event",
+            "top": 61050
+          }
+        ]
+      }
+    }
+  ]
+}

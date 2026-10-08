@@ -1,0 +1,103 @@
+{
+  "date": "2026-10-08T10:07:45.573Z",
+  "source": "Native Firefox isolated addon, localhost virtual renderer and actual extension storage, not ChatGPT LIVE",
+  "firefox": "157.0.1",
+  "build": {
+    "version": "0.3.6",
+    "revision": "2026-10-08-v036-r2",
+    "fixture": true,
+    "hashes": {
+      "background.js": "df48c02771c0123721c04ec910661c6dd80eba09cd94ce20698d84e19f6d941e",
+      "content.js": "3ffae4cbe8152ef8d0ba797c6ed6ef7ce0babe0d8b99c551e05c59dd993a9151",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "5aff47e6e9dd04c276071d0a386c4ba27be073265038891d6815dce3ec6205c5"
+    }
+  },
+  "results": [
+    {
+      "name": "V036-01 missing cache waits for DOM then automatically collects thirty prompts without a reset",
+      "status": "PASS",
+      "elapsedMs": 16444,
+      "actual": {
+        "automatic": true,
+        "collected": 30,
+        "manualClicks": 0
+      }
+    },
+    {
+      "name": "V036-02 continuing the current session automatically appends two distinct IDs with identical text and keeps old entries",
+      "status": "PASS",
+      "elapsedMs": 513,
+      "actual": {
+        "appended": 2,
+        "distinctSameTextIds": [
+          "A:u-30",
+          "A:u-31"
+        ],
+        "total": 32
+      }
+    },
+    {
+      "name": "V036-03 F5 and remount recover thirty-two saved prompts without automatic collection or renumbering",
+      "status": "PASS",
+      "elapsedMs": 1197,
+      "actual": {
+        "restored": 32,
+        "autoScrolled": false
+      }
+    },
+    {
+      "name": "V036-04 even one saved prompt or only archived history prevents automatic scanning",
+      "status": "PASS",
+      "elapsedMs": 2387,
+      "actual": [
+        {
+          "prefix": "C",
+          "autoScrolled": false
+        },
+        {
+          "prefix": "D",
+          "autoScrolled": false
+        }
+      ]
+    },
+    {
+      "name": "V036-05 switching to a second uncached session automatically collects it without manual action",
+      "status": "PASS",
+      "elapsedMs": 16457,
+      "actual": {
+        "secondSession": 30,
+        "automatic": true
+      }
+    },
+    {
+      "name": "V036-06 explicit stop retains seen prompts and SPA return never restarts collection",
+      "status": "PASS",
+      "elapsedMs": 2142,
+      "actual": {
+        "retained": 7,
+        "automaticRestart": false
+      }
+    },
+    {
+      "name": "V036-07 automatic collection never advances a reset generation or deletes another session",
+      "status": "PASS",
+      "elapsedMs": 105,
+      "actual": {
+        "resetInvocations": 0,
+        "sessionsPreserved": 5
+      }
+    },
+    {
+      "name": "V036-08 manual rebuild still resets only its session and automatically stops at the head",
+      "status": "PASS",
+      "elapsedMs": 14952,
+      "actual": {
+        "manualRebuild": true,
+        "collected": 30
+      }
+    }
+  ]
+}

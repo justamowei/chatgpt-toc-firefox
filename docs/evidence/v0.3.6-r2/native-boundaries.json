@@ -1,0 +1,91 @@
+{
+  "date": "2026-10-08T10:05:53.354Z",
+  "source": "Native Firefox localhost padding renderer, actual scrolling; ChatGPT LIVE not performed",
+  "firefox": "157.0.1",
+  "build": {
+    "version": "0.3.6",
+    "revision": "2026-10-08-v036-r2",
+    "fixture": true,
+    "hashes": {
+      "background.js": "df48c02771c0123721c04ec910661c6dd80eba09cd94ce20698d84e19f6d941e",
+      "content.js": "3ffae4cbe8152ef8d0ba797c6ed6ef7ce0babe0d8b99c551e05c59dd993a9151",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "5aff47e6e9dd04c276071d0a386c4ba27be073265038891d6815dce3ec6205c5"
+    }
+  },
+  "results": [
+    {
+      "name": "PAD-01 manual rebuild with 450px tail and head padding reaches both actual edges without bouncing",
+      "status": "PASS",
+      "elapsedMs": 22790,
+      "actual": {
+        "collected": 30,
+        "headPad": 450,
+        "tailPad": 450
+      }
+    },
+    {
+      "name": "PAD-02 tail whitespace beyond one viewport still switches upwards and finishes",
+      "status": "PASS",
+      "elapsedMs": 16179,
+      "actual": {
+        "collected": 30,
+        "tailPad": 950,
+        "headAutoStop": true
+      }
+    },
+    {
+      "name": "PAD-03 tail stream and height reflow plus root replacement do not trap bottom positioning",
+      "status": "PASS",
+      "elapsedMs": 16386,
+      "actual": {
+        "collected": 30,
+        "noiseChanges": 80,
+        "rootReplaced": true
+      }
+    },
+    {
+      "name": "PAD-04a visible sibling history loader defers head completion until earlier prompt mounts",
+      "status": "PASS",
+      "elapsedMs": 23919,
+      "actual": {
+        "collected": 31,
+        "loaderDelay": 9000,
+        "overlap": false,
+        "falseHeadStop": false
+      }
+    },
+    {
+      "name": "PAD-04b visible sibling history loader defers head completion until earlier prompt mounts",
+      "status": "PASS",
+      "elapsedMs": 24121,
+      "actual": {
+        "collected": 31,
+        "loaderDelay": 9000,
+        "overlap": true,
+        "falseHeadStop": false
+      }
+    },
+    {
+      "name": "PAD-05 frozen middle never counts as head and Stop still cancels delayed retries",
+      "status": "PASS",
+      "elapsedMs": 11456,
+      "actual": {
+        "falseHeadStop": false,
+        "cancelled": true
+      }
+    },
+    {
+      "name": "PAD-06 hidden sibling loaders with positive geometry do not prevent head completion",
+      "status": "PASS",
+      "elapsedMs": 22480,
+      "actual": {
+        "collected": 30,
+        "ariaHiddenIgnored": true,
+        "cssHiddenIgnored": true
+      }
+    }
+  ]
+}

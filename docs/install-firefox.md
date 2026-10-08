@@ -1,6 +1,6 @@
 # Firefox v0.3.6 更新與使用
 
-正式manifest：outputs/Firefox-測試版-v0.3.6/manifest.json或dist/firefox/manifest.json；version 0.3.6，revision 2026-10-08-v036。
+正式manifest：outputs/Firefox-測試版-v0.3.6-修正版/manifest.json或dist/firefox/manifest.json；version 0.3.6，revision 2026-10-08-v036-r2。
 
 1. 保留既有索引：把新版資料夾內檔案覆蓋到目前載入插件的資料夾，保持同一addon ID，在Firefox about:debugging →「這個Firefox」按「重新載入」。不要先卸載或清除索引。
 2. 首次安裝：從上述頁面「載入暫時附加元件」選新版manifest，允許chatgpt.com網站權限。重整已開啟ChatGPT分頁；之後新頁面預設自動啟用。
@@ -11,4 +11,6 @@
 
 編號顯示「1.」「2.」，不加「暫」。已核對起點時代表本對話提問序號；尚未核對時代表已收錄目錄的順序，tooltip明示「已收錄目錄第N項」。搜尋不重編號。
 
-每對話5000筆／500萬正文，profile最近使用12個對話／600萬JSON字元；無痕不保存。暫時addon未簽章，Firefox重啟可能移除，不承諾卸載後快取。原生Firefox157.0.1localhost合成8項與独立8項通過，ChatGPT LIVE未完成；見[完整報告](release-v0.3.6.md)。
+每對話5000筆／500萬正文，profile最近使用12個對話／600萬JSON字元；無痕不保存。暫時addon未簽章，Firefox重啟可能移除，不承諾卸載後快取。原生Firefox157.0.1localhost合成15項與獨立驗收通過，ChatGPT LIVE未完成；見[完整報告](release-v0.3.6-r2.md)。
+
+本次依使用者指定維持0.3.6；以build-info.json或頁面診斷的revision 2026-10-08-v036-r2確認修正版。原v0.3.6快照保留。

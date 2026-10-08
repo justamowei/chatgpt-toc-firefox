@@ -531,3 +531,7 @@ session提問序號只有連續重疊底→頂走訪、全穩定ID／已接通�
 移除編號「暫」，未知起點的tooltip仍明示已收錄目錄順序，保持持久化起點證據及矛盾撤銷。首次載入／SPA必須先成功讀取原始保存索引；只有active+quarantine合計0才自動由底往上收集。拒絕／失敗不算空，任何1筆／部分／隔離資料都不自動重跑。不執行reset、不清空觀察期間新增資料；停止／導航／切換取消，單content生命週期每context最多嘗試一次。新增穩定ID提問自动合併保存，不按文字去重；F5／SPA延續排序與編號。預設10分鐘、設定1–10分鐘不變。
 
 runtime c32e8e92ec98d0dc3969ab3e2e8170bdf726258e；測試 ff84d94ba7a8c14630c6bb46c649b2666a0dcba2。主端及GPT-6.1 Sol high獨立111純／8原生Firefox157.0.1 localhost、12buildhash一致。ChatGPT LIVE仍PENDING，首次掛載前停止按鈕未顯示為已記錄UX限制；詳見docs/release-v0.3.6.md。PATCH 0.3.6延續已觀察DOM能力和保存格式，feat/automatic-session-index、release/v0.3、不可移動annotated v0.3.6；每功能checkpoint與原始SHA雲端同步，本機GCM／網路Git禁用。
+
+## 2026-10-08：v0.3.6 指定同版本邊界修正
+
+保留產品版本0.3.6，revision 2026-10-08-v036-r2、固定snapshot/v0.3.6/2026-10-08-r2；原v0.3.6 tag／交付檔不移動或覆盖。tail準備依numeric rootmax，不對齊末答；head跨批次保留同root/frontier進度，clamp probe直接numeric邊界，避免首尾padding造成反向回拉。頂端6秒／兩次2.4秒探測与可見首訊息／ID正文／局部幾何證據保留；可見邊界外或重疊loader等待，隱藏／composer／遠端tail busy不阻止。中段／未掛載spacer不得宣稱到頂。主111純／15原生Firefoxlocalhost；真實LIVE尚未完成。詳見docs/release-v0.3.6-r2.md；fix/collection-boundary-v036與release/v0.3、每功能原始SHA雲端同步，本機GCM禁用。
