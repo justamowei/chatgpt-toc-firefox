@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.5",
+  "currentVersion": "0.3.6",
   "maintenanceBranch": "release/v0.3",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
@@ -130,6 +130,21 @@
       ],
       "selection": "New PATCH: atomically rebuild only the selected conversation bottom-up, stop at stable observed head and persist session prompt ordinals. Main and independent pure103/103, native Firefox localhost5/5; twelve build hashes match.",
       "tagObject": "c1d4f05c536eba5c7f802549c0e01ffc179b141d",
+      "createdAt": "2026-10-08"
+    },
+    {
+      "version": "0.3.6",
+      "tag": "v0.3.6",
+      "deliveryCommit": "5aa5b4e6ddae39cd8d33b8de8abd25c997ac9150",
+      "runtimeCommit": "c32e8e92ec98d0dc3969ab3e2e8170bdf726258e",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/acceptance-v0.3.6.md",
+        "docs/release-v0.3.6.md"
+      ],
+      "selection": "New PATCH: remove temporary number prefix, automatically scan only successfully loaded empty saved histories without resetting, and append new prompt IDs. Main and GPT-6.1 Sol high independent pure111/111, native Firefox localhost8/8; twelve build hashes matched.",
+      "tagObject": "dd8086509733fa44d3885eef4f82ea644f5d4167",
       "createdAt": "2026-10-08"
     }
   ],

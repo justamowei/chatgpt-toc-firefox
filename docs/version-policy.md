@@ -76,3 +76,5 @@
 main 的本次更新限定版本／Git 規範和索引；目前可測試的完整產品來源從 release/v0.3 或最新交付 tag 取得。GitHub Actions 的官方行為與 token 權限參考：[事件](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)、[GITHUB_TOKEN](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token)。
 
 本次 v0.3.5 為同一已觀察DOM能力的重建／編號改進，PATCH；新讀取器兼容既有保存資料，保留addon ID。明列fix/rebuild-collection-numbering工作分支與chore/rebuild-collection-sync一次性雲端作業，交付後fast-forward維護線並新增不可移動v0.3.5。main只更新規範目錄。
+
+本次v0.3.6為同一已觀察DOM能力的自動化／編號介面改進，PATCH；保存格式與addon ID延續。工作線feat/automatic-session-index與一次性作業chore/automatic-session-sync，交付新增不可移動annotated v0.3.6、fast-forward release/v0.3；main只更新5份規範／索引文件。自動收集不清空索引、不遞增重建generation，已有任何保存內容不重跑。
