@@ -1,9 +1,14 @@
 {
-  "mode": "checkpoint",
-  "source": "a1ff15a7535cb7bf08cff683ff69104be17f1efb",
-  "bundleSha256": "5e2a7496619367b5ca8c7f8045ea72e6074db0e41bbf0cfc086c1c9ba8244b74",
+  "mode": "delivery",
+  "source": "984083c6759e755d3026c189fdb5fdb2309a1670",
+  "bundleSha256": "2a30c97076872357b2a3128af27c01f766dee7ccb7eb4c1c31ffea36e12c1cdc",
   "expectedRefs": {
-    "refs/heads/fix/saved-directory-order": null
+    "refs/heads/fix/saved-directory-order": "a1ff15a7535cb7bf08cff683ff69104be17f1efb",
+    "refs/heads/release/v0.3": "73a2908390bae11e98af99fba407797466cb2550"
   },
-  "tag": null
+  "tag": {
+    "name": "v0.3.4",
+    "object": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c",
+    "commit": "25b46d412e6aa7af451eb7a507b47c291a9ade66"
+  }
 }
