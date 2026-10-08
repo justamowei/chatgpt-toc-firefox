@@ -223,7 +223,7 @@ function start(): Instance {
       restoredContext = snapshot.context; const token = ++restoreToken, context = snapshot.context;
       void persistence.restore(context, () => adapter.read()).then(restored => {
         if (!alive || token !== restoreToken || store.context !== context) return;
-        if (restored) { cancel(); adapter.remember(); render(); }
+        if (restored) { cancel(); adapter.remember(); adapter.observeNumbering(); render(); }
         persistence.schedule();
       }).catch(() => { if (alive && token === restoreToken) persistence.schedule(); });
     } else persistence.schedule();

@@ -15,6 +15,7 @@ document.body.replaceChildren(document.createElement('main'));const prefix=argum
         shell.style.cssText='position:absolute;left:20px;right:20px;top:'+(tops[i]+offset)+'px;height:'+height+'px;content-visibility:auto;contain-intrinsic-size:auto '+height+'px';
         const b=document.createElement('div');b.dataset.messageAuthorRole=role;b.dataset.messageId=prefix+':'+role[0]+'-'+i;b.textContent=role==='user'?(edits.get(i)??prefix+' 本機提問 '+i):'本機長回答 '+i;b.style.cssText='min-height:70px';shell.append(b);m.append(shell);
       }
+      if(start===0&&busyTail){const loading=document.createElement("div");loading.setAttribute("role","progressbar");loading.style.cssText="position:absolute;top:"+(total-20)+"px";m.append(loading);}
       mounts.push({start,end:Math.min(count-1,start+windowSize-1),at:performance.now()});
     }
     function observeEdge(){
@@ -39,7 +40,7 @@ document.body.replaceChildren(document.createElement('main'));const prefix=argum
       if (!frozen && root.scrollTop+root.clientHeight>=root.scrollHeight-2 && start!==count-windowSize) {clearTimeout(timer);timer=setTimeout(()=>{start=count-windowSize;render();},130);return;}
       oldObserve();
     };
-    let remountTimer=null,growTimer=null;
+    let remountTimer=null,growTimer=null,busyTail=false;
     root.addEventListener('scroll',()=>{events.push({top:root.scrollTop,at:performance.now()});writes.push({kind:'native-scroll-event',at:performance.now(),top:root.scrollTop});observeEdge();});
     render();root.scrollTop=tops[Math.min(29,start+2)]+20;
-    window.anchorFixture={remountHead(){remountTimer=setInterval(()=>{if(start===0)render();},80);},growTail(){growTimer=setInterval(()=>{if(start===0)m.style.height=(parseFloat(m.style.height)+3)+'px';},200);},stopNoise(){clearInterval(remountTimer);clearInterval(growTimer);},edit(i){edits.set(i,prefix+' changed prompt '+i);render();},freeze(v=true){frozen=v;},tail(){clearTimeout(timer);start=23;render();root.scrollTop=tops[25]+20;},stats(){return {start,top:root.scrollTop,mounts:mounts.slice(),calls:calls.slice(),writes:writes.slice(),events:events.slice(),lazyShells:m.querySelectorAll('section').length,contentVisibility:getComputedStyle(m.querySelector('section')).contentVisibility,rootHeight:root.scrollHeight,outerHeight:decoy.scrollHeight,outerClient:decoy.clientHeight};}};
+    window.anchorFixture={remountHead(){remountTimer=setInterval(()=>{if(start===0)render();},80);},growTail(){busyTail=true;growTimer=setInterval(()=>{if(start===0)m.style.height=(parseFloat(m.style.height)+3)+'px';},200);},stopNoise(){clearInterval(remountTimer);clearInterval(growTimer);},edit(i){edits.set(i,prefix+' changed prompt '+i);render();},freeze(v=true){frozen=v;},tail(){clearTimeout(timer);start=23;render();root.scrollTop=tops[25]+20;},stats(){return {start,top:root.scrollTop,mounts:mounts.slice(),calls:calls.slice(),writes:writes.slice(),events:events.slice(),lazyShells:m.querySelectorAll('section').length,contentVisibility:getComputedStyle(m.querySelector('section')).contentVisibility,rootHeight:root.scrollHeight,outerHeight:decoy.scrollHeight,outerClient:decoy.clientHeight};}};

@@ -422,3 +422,20 @@ test('cancelled or switched route reset acknowledgment cannot hydrate another co
   await new Promise(resolve=>setImmediate(resolve));store.merge(snapshot([entry('other')],null,'https://chatgpt.com/c/other'));
   pending.resolve({...state([],null),generation:1});assert.equal(await task,false);assert.deepEqual(ids(store),['other']);persistence.dispose();
 });
+
+test('reset acknowledgment applies its committed generation after scrolling cancellation and uses the pre-reset epoch for continuation', async () => {
+  for (const cancelled of [false,true]) {
+    const store=new IndexStore();store.merge(snapshot([entry('old')],null));const epoch=store.epoch,gate=deferred();let live=true;
+    const persist=new PersistentIndex({load:async()=>undefined,save:async()=>{},reset:()=>gate.promise},store);
+    const pending=persist.rebuild(context,()=>snapshot([entry('new')],null),()=>live&&store.epoch===epoch);
+    await new Promise(r=>setImmediate(r));if(cancelled)live=false;
+    gate.resolve({...state([],null),generation:1});assert.equal(await pending,!cancelled);assert.equal(store.cacheGeneration,1);assert.deepEqual(ids(store),['new']);persist.dispose();
+  }
+});
+test('a transient insertion revokes absolute numbering durably rather than resurrecting it from the broker', async () => {
+  const store=new IndexStore();store.merge(snapshot([entry('a'),entry('b'),entry('c')],null));store.assignSessionNumbers(new Set(['a','b','c']));
+  const storage=memory(),broker=new CacheBroker(storage);await broker.save(store.exportState());
+  store.merge(snapshot([entry('a'),entry('transient','pending',false),entry('b'),entry('c')],null));assert.deepEqual(store.numberedIds,[]);
+  await broker.save(store.exportState());const saved=await broker.load(context);assert.ok(!saved.numbering||!saved.numbering.ids.length);
+  const reload=new IndexStore();reload.restoreState(saved,snapshot([entry('b')],null));assert.equal(reload.ordinal('b').confirmed,false);
+});
