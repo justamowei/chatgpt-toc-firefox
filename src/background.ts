@@ -71,7 +71,7 @@ browser.runtime.onMessage.addListener((message: unknown, sender) => {
   const page = contentSender(sender), options = optionsSender(sender);
   if (!page && !options) return undefined;
   if (message.kind === 'settings:get') return settings();
-  if ((message.kind === 'cache:get' || message.kind === 'cache:reset') && page && sender.tab!.id !== undefined) {
+  if ((message.kind === 'cache:get' || message.kind === 'cache:read' || message.kind === 'cache:reset') && page && sender.tab!.id !== undefined) {
     return (async () => {
       // Firefox can retain the original document URL in MessageSender after
       // an SPA route change. Check the live top-level tab before reading.
@@ -79,6 +79,7 @@ browser.runtime.onMessage.addListener((message: unknown, sender) => {
       try { tab = await browser.tabs.get(sender.tab!.id!); } catch { return undefined; }
       if (tab.incognito || !supported(tab.url) || conversationContext(tab.url!) !== message.context) return undefined;
       if (message.kind === 'cache:get') return cache.load(message.context);
+      if (message.kind === 'cache:read') return { kind: 'cache:result', state: await cache.load(message.context) ?? null };
       const state = await cache.reset(message.context);
       const notice = { kind: 'cache:invalidated', context: message.context, generation: state.generation };
       const tabs = await browser.tabs.query({});

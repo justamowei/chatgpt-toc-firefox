@@ -8,7 +8,7 @@ for (const name of ['core', 'persistence']) {
   await writeFile(`artifacts/persistence/${name}.mjs`, result.code.replace("from \"./core\"", "from \"./core.mjs\""));
 }
 const { IndexStore, validStoredIndex } = await import('../artifacts/persistence/core.mjs');
-const { PersistentIndex, CacheBroker, CACHE_KEY, PROFILE_LIMITS, conversationContext } = await import('../artifacts/persistence/persistence.mjs');
+const { PersistentIndex, CacheBroker, CACHE_KEY, PROFILE_LIMITS, conversationContext, runtimeIndexBackend } = await import('../artifacts/persistence/persistence.mjs');
 const context = 'https://chatgpt.com/c/synthetic';
 const entry = (id, text = id, stable = true) => ({ id, text, stable });
 const snapshot = (entries, branch = 'branch-a', route = context) => ({ entries, branch, context: route });
@@ -456,4 +456,19 @@ test('a known stale tab cannot revive explicitly revoked ranks; only a new reset
   await broker.save(stale);assert.deepEqual((await broker.load(context)).numbering,{ids:[]});
   const rebuilt=await broker.reset(context),fresh=new IndexStore();fresh.restoreState(rebuilt,snapshot([entry('a'),entry('b'),entry('c')],null));fresh.assignSessionNumbers(new Set(['a','b','c']));await broker.save(fresh.exportState());
   assert.deepEqual((await broker.load(context)).numbering.ids,['a','b','c']);
+});
+
+test('hydration classifies raw saved history separately from observations acquired before the reply',async()=>{
+ for(const saved of [undefined,state([]),state([entry('old')]),{...state([]),quarantine:[{reason:'text-change',entries:[entry('archived')],segments:[{ids:['archived'],ordered:true}],ordered:true}]}]){
+  const store=new IndexStore();store.merge(snapshot([entry('new')],null));const persist=new PersistentIndex({load:async()=>saved,save:async()=>{}},store);
+  await persist.restore(context,()=>snapshot([entry('new')],null));assert.equal(persist.loadedHistory.cachedEntries,saved?.entries.length+(saved?.quarantine.reduce((n,g)=>n+g.entries.length,0)??0)||0);assert.ok(ids(store).includes('new'));persist.dispose();
+ }
+});
+test('failed, invalid and superseded hydration never masquerades as an empty cache decision',async()=>{
+ for(const mode of ['throw','invalid']){const store=new IndexStore();store.merge(snapshot([entry('new')],null));const persist=new PersistentIndex({load:async()=>{if(mode==='throw')throw Error('offline');return {bad:true};},save:async()=>{}},store);await persist.restore(context,()=>snapshot([entry('new')],null)).catch(()=>{});assert.equal(persist.loadedHistory,null);persist.dispose();}
+});
+test('runtime backend distinguishes an explicit missing index from denied or malformed replies',async()=>{
+ const seen=[];const backend=runtimeIndexBackend(async message=>{seen.push(message);return {kind:'cache:result',state:null};});assert.equal(await backend.load(context),undefined);assert.deepEqual(seen,[{kind:'cache:read',context}]);
+ for(const bad of [undefined,null,{}, {kind:'cache:result',state:{bad:true}}, {kind:'cache:result',state:null,extra:true}])await assert.rejects(runtimeIndexBackend(async()=>bad).load(context));
+ assert.equal((await runtimeIndexBackend(async()=>({kind:'cache:result',state:state([entry('a')])})).load(context)).entries.length,1);
 });

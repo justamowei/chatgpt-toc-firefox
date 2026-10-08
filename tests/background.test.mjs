@@ -185,3 +185,10 @@ test('selected reset is restricted to the live conversation and rejects stale sa
   await assert.rejects(app.send({kind:'cache:set',state:original}),/Stale/);
   const restarted=await setup(app.values);await assert.rejects(restarted.send({kind:'cache:set',state:original}),/Stale/);
 });
+
+test('cache read returns explicit success for missing history and preserves route access checks',async()=>{
+ const app=await setup();assert.deepEqual(await app.send({kind:'cache:read',context:app.page.url}),{kind:'cache:result',state:null});
+ assert.equal(await app.send({kind:'cache:read',context:'https://chatgpt.com/c/other'}),undefined);
+ assert.equal(await app.send({kind:'cache:read',context:app.page.url},app.options),undefined);
+ await app.send({kind:'cache:set',state:state(app.page.url)});assert.equal((await app.send({kind:'cache:read',context:app.page.url})).state.entries.length,1);
+});

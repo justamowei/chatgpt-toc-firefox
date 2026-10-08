@@ -185,7 +185,13 @@ export class CacheBroker implements IndexBackend {
 }
 
 export function runtimeIndexBackend(send: (message: unknown) => Promise<unknown> = message => browser.runtime.sendMessage(message)): IndexBackend {
-  return { load: context => send({ kind: 'cache:get', context }), reset: async context => {
+  return { load: async context => {
+    const result = await send({ kind: 'cache:read', context });
+    if (!result || typeof result !== 'object' || Array.isArray(result) || Object.keys(result).length !== 2) throw new Error('Cache read rejected');
+    const reply = result as { kind?: string; state?: unknown };
+    if (reply.kind !== 'cache:result' || !(reply.state === null || validStoredIndex(reply.state) && reply.state.context === context)) throw new Error('Invalid cache reply');
+    return reply.state ?? undefined;
+  }, reset: async context => {
     const state = await send({ kind: 'cache:reset', context });
     if (!validStoredIndex(state) || state.context !== context || !state.generation) throw new Error('Cache reset rejected');
     return state;
@@ -197,6 +203,8 @@ export function runtimeIndexBackend(send: (message: unknown) => Promise<unknown>
 
 export class PersistentIndex {
   private context = '';
+  private hydration: { context: string; cachedEntries: number } | null = null;
+  get loadedHistory(): { context: string; cachedEntries: number } | null { return this.hydration; }
   private generation = 0;
   private writeGeneration = 0;
   private lastState = '';
@@ -217,6 +225,7 @@ export class PersistentIndex {
   constructor(private backend: IndexBackend, private store: IndexStore,
     private options: { incognito?: boolean; debounceMs?: number; onStatus?: (status: PersistenceStatus) => void } = {}) {}
   invalidate(): void {
+    this.hydration = null;
     this.generation++; this.writeGeneration++; clearTimeout(this.timer); this.timer = undefined;
     this.lastState = ''; this.savedState = ''; this.scheduledRevision = -1; this.loading = false; this.pendingSchedule = false;
   }
@@ -239,6 +248,7 @@ export class PersistentIndex {
   }
   async restore(context: string, current: () => Snapshot): Promise<boolean> {
     const generation = ++this.generation, writeGeneration = this.writeGeneration, revision = this.store.cacheRevision;
+    this.hydration = null;
     this.context = context; this.lastState = ''; this.savedState = ''; this.scheduledRevision = -1;
     if (this.closed || this.options.incognito || conversationContext(context) !== context) { this.setStatus('off'); return false; }
     this.loading = true;
@@ -247,9 +257,11 @@ export class PersistentIndex {
     try {
       const loaded = await this.backend.load(context);
       if (this.closed || generation !== this.generation || writeGeneration !== this.writeGeneration) return false;
-      if (!validStoredIndex(loaded)) { this.setStatus('pending'); return false; }
       const snapshot = current();
       if (snapshot.context !== context || this.store.context !== context) return false;
+      if (loaded === undefined) { this.hydration = { context, cachedEntries: 0 }; this.setStatus('pending'); return false; }
+      if (!validStoredIndex(loaded)) { this.setStatus('error'); return false; }
+      this.hydration = { context, cachedEntries: loaded.entries.length + loaded.quarantine.reduce((n, group) => n + group.entries.length, 0) };
       const observed = this.store.exportState();
       if (loaded.generation) observed.generation = loaded.generation;
       const state = this.store.cacheRevision === revision ? loaded : mergeStoredIndices(loaded, observed);
