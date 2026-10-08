@@ -130,5 +130,17 @@ class Governance(unittest.TestCase):
             for report in revision["acceptance"]:
                 self.assertEqual(local_git("cat-file", "-e", revision["deliveryCommit"] + ":" + report, check=False), 0)
 
+    def test_redevelopment_selection_has_exact_v034_baseline_and_preserves_deprecated_tags(self):
+        rebuild = current_catalog["redevelopment"]
+        selected = next(r for r in current_catalog["sameVersionRevisions"] if r["revision"] == current_catalog["currentRevision"])
+        self.assertEqual(selected["version"], current_catalog["currentVersion"])
+        self.assertEqual(selected["snapshotTag"], rebuild["snapshotTag"])
+        self.assertEqual(selected["deliveryCommit"], rebuild["deliveryCommit"])
+        self.assertEqual(local_git("rev-parse", rebuild["baselineTag"] + "^{}").strip(), rebuild["baselineDelivery"])
+        self.assertEqual(local_git("diff", "--name-only", rebuild["baselineTag"], rebuild["baselineRestoreCommit"], "--", "src", "scripts", "tests", "manifests", "package.json", "package-lock.json", "tsconfig.json").strip(), "")
+        self.assertEqual(set(rebuild["deprecatedTags"]), {"v0.3.5", "v0.3.6", "snapshot/v0.3.6/2026-10-08-r2"})
+        self.assertEqual(rebuild["status"], "experimental")
+        self.assertEqual(rebuild["liveStatus"], "PENDING")
+
 if __name__ == "__main__":
     unittest.main()

@@ -34,3 +34,5 @@ v0.3.1固定首次交付；其後r2～r5是過去重用版本號的修訂，另�
 | 0.3.6／2026-10-08-v036-r2 | [snapshot/v0.3.6/2026-10-08-r2](https://github.com/justamowei/chatgpt-toc-firefox/tree/snapshot/v0.3.6/2026-10-08-r2) · [77ca0d1](https://github.com/justamowei/chatgpt-toc-firefox/commit/77ca0d14d8963aadede76ed3b4f7235dd0c190cb) | 5f1479c | 已棄用；歷史主端及獨立111純／15原生Firefoxlocalhost PASS，LIVE PENDING；[報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/77ca0d14d8963aadede76ed3b4f7235dd0c190cb/docs/acceptance-v0.3.6-r2.md) |
 
 重新開發版本0.3.5／2026-10-08-v035-rebuild：runtime95a7467，111純／独立原生11PASS、12hash匹配，LIVE PENDING；新snapshot交付識別與精確SHA以catalog的sameVersionRevisions核對。
+
+新固定交付 [7003c51](https://github.com/justamowei/chatgpt-toc-firefox/commit/7003c51c74add79754c22457913c403e8b6b776d)，snapshot tagObject776b509cbec05b389827019ff095c0f7e9d2aabb；旧canonical v0.3.5仍指原ba101b8，不作本次下载识别。
