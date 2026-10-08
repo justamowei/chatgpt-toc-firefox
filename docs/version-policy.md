@@ -78,3 +78,7 @@ main 的本次更新限定版本／Git 規範和索引；目前可測試的完�
 本次 v0.3.5 為同一已觀察DOM能力的重建／編號改進，PATCH；新讀取器兼容既有保存資料，保留addon ID。明列fix/rebuild-collection-numbering工作分支與chore/rebuild-collection-sync一次性雲端作業，交付後fast-forward維護線並新增不可移動v0.3.5。main只更新規範目錄。
 
 本次v0.3.6為同一已觀察DOM能力的自動化／編號介面改進，PATCH；保存格式與addon ID延續。工作線feat/automatic-session-index與一次性作業chore/automatic-session-sync，交付新增不可移動annotated v0.3.6、fast-forward release/v0.3；main只更新5份規範／索引文件。自動收集不清空索引、不遞增重建generation，已有任何保存內容不重跑。
+
+## 2026-10-08 使用者指定的同版本修正例外
+
+使用者明確要求「修改好的也是 v0.3.6 版」。本次邊界修正維持manifest/package/lock 0.3.6，以revision 2026-10-08-v036-r2及固定snapshot/v0.3.6/2026-10-08-r2區分，原v0.3.6 tag不移動、原報告／安裝包保留，另存修正版資料夾。機器目錄另列sameVersionRevisions，不覆盖canonical versions。此為本次明確指示的例外，後續交付仍適用前述遞增規則，除非使用者再次另有指示。工作分支fix/collection-boundary-v036；維護線release/v0.3向前更新，本機網路Git／GCM禁用。

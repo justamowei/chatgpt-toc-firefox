@@ -17,6 +17,14 @@
 
 v0.3.1固定首次交付；其後r2～r5是過去重用版本號的修訂，另保留各來源／報告，不移動v0.3.1。r5原生UI7項當時PENDING。此例外不再延續。v0.2.0於實際使用失敗後撤回，tag僅供追溯；撤回紀錄見[歷史失敗](https://github.com/justamowei/chatgpt-toc-firefox/blob/5c035c30b223886201adaa88433a7fbb8019b041/docs/live-history-failure.md)。
 
-目前適合繼續測試的版本是v0.3.6；同系列維護在release/v0.3。所有版本皆未完成正式簽章與整體Firefox ChatGPT LIVE驗收，不能將合成PASS當作完整session保證。
+目前適合繼續測試的是v0.3.6修正版（2026-10-08-v036-r2）；同系列維護在release/v0.3。所有版本皆未完成正式簽章與整體Firefox ChatGPT LIVE驗收，不能將合成PASS當作完整session保證。
 
 同步結果以GitHub refs及另外的交付同步報告核對；Git bundle雲端備份成功不等於正常refs已同步。
+
+## 使用者指定的同版本修正建置
+
+原v0.3.6 tag維持最初交付。本次依使用者「修改好的也是 v0.3.6 版」指示，manifest仍0.3.6，以建置revision與不可移動snapshot區分；完整來源可從release/v0.3取得。
+
+| 版本／建置 | 固定快照 | runtime | 狀態／驗收 |
+| --- | --- | --- | --- |
+| 0.3.6／2026-10-08-v036-r2 | [snapshot/v0.3.6/2026-10-08-r2](https://github.com/justamowei/chatgpt-toc-firefox/tree/snapshot/v0.3.6/2026-10-08-r2) · [77ca0d1](https://github.com/justamowei/chatgpt-toc-firefox/commit/77ca0d14d8963aadede76ed3b4f7235dd0c190cb) | 5f1479c | 實驗版；主端及獨立111純／15原生Firefoxlocalhost PASS，LIVE PENDING；[報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/77ca0d14d8963aadede76ed3b4f7235dd0c190cb/docs/acceptance-v0.3.6-r2.md) |
