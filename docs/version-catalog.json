@@ -290,7 +290,7 @@
     "request": "回到 v0.3.4 版本，0.3.5 和 0.3.6 就棄用；根據 v0.3.4 重新開發 v0.3.5",
     "baselineTag": "v0.3.4",
     "baselineDelivery": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
-    "baselineRestoreCommit": "b054f36",
+    "baselineRestoreCommit": "b054f36b07657d978576ca7934228d1d212cc1c2",
     "workBranch": "feat/v035-rebuild-from-v034",
     "currentRevision": "2026-10-08-v035-rebuild",
     "snapshotTag": "snapshot/v0.3.5/2026-10-08-rebuild",
@@ -301,7 +301,10 @@
     ],
     "preserveHistoricalObjects": true,
     "legacyCompatibility": false,
-    "status": "development",
-    "acceptance": "docs/redevelopment-v0.3.5.md"
+    "status": "experimental",
+    "acceptance": "docs/redevelopment-v0.3.5.md",
+    "runtimeCommit": "95a74670e26a930c6cadc3c4a29a9d40eb5a7d43",
+    "liveStatus": "PENDING",
+    "nativePassed": 11
   }
 }

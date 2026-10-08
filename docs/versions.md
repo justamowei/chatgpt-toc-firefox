@@ -16,8 +16,8 @@
 | v0.3.2 | [5fd1d4d](https://github.com/justamowei/chatgpt-toc-firefox/commit/5fd1d4dd8dfc1c12342e0a4ccbf01dc31365f748) | 2c9d0d2 | 實驗／測試版，LIVE PENDING | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/5fd1d4dd8dfc1c12342e0a4ccbf01dc31365f748/docs/acceptance-v0.3.2.md) |
 | v0.3.3 | [5695198](https://github.com/justamowei/chatgpt-toc-firefox/commit/56951988cb7d258eafeadacfa02174226a824093) | 567dfda | 實驗／測試版，LIVE PENDING | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/56951988cb7d258eafeadacfa02174226a824093/docs/acceptance-v0.3.3.md) |
 | v0.3.4 | [25b46d4](https://github.com/justamowei/chatgpt-toc-firefox/commit/25b46d412e6aa7af451eb7a507b47c291a9ade66) | a1ff15a | 實驗／測試版，LIVE PENDING；保存排序修正 | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/25b46d412e6aa7af451eb7a507b47c291a9ade66/docs/acceptance-v0.3.4.md) |
-| v0.3.5 | [ba101b8](https://github.com/justamowei/chatgpt-toc-firefox/commit/ba101b8b446f1be554c484027fce7acdcf8d029f) | 6497a1b | 實驗／測試版，LIVE PENDING；由底往上重建、頂端自停、保存編號 | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/ba101b8b446f1be554c484027fce7acdcf8d029f/docs/acceptance-v0.3.5.md) |
-| v0.3.6 | [5aa5b4e](https://github.com/justamowei/chatgpt-toc-firefox/commit/5aa5b4e6ddae39cd8d33b8de8abd25c997ac9150) | c32e8e9 | 實驗／測試版，LIVE PENDING；空目錄自動收集、移除暫字、新提問追加 | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/5aa5b4e6ddae39cd8d33b8de8abd25c997ac9150/docs/acceptance-v0.3.6.md) |
+| v0.3.5 | [ba101b8](https://github.com/justamowei/chatgpt-toc-firefox/commit/ba101b8b446f1be554c484027fce7acdcf8d029f) | 6497a1b | 已棄用；此列保留歷史交付／驗收 | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/ba101b8b446f1be554c484027fce7acdcf8d029f/docs/acceptance-v0.3.5.md) |
+| v0.3.6 | [5aa5b4e](https://github.com/justamowei/chatgpt-toc-firefox/commit/5aa5b4e6ddae39cd8d33b8de8abd25c997ac9150) | c32e8e9 | 已棄用；此列保留歷史交付／驗收 | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/5aa5b4e6ddae39cd8d33b8de8abd25c997ac9150/docs/acceptance-v0.3.6.md) |
 
 v0.3.1固定首次交付；其後r2～r5是過去重用版本號的修訂，另保留各來源／報告，不移動v0.3.1。r5原生UI7項當時PENDING。此例外不再延續。v0.2.0於實際使用失敗後撤回，tag僅供追溯；撤回紀錄見[歷史失敗](https://github.com/justamowei/chatgpt-toc-firefox/blob/5c035c30b223886201adaa88433a7fbb8019b041/docs/live-history-failure.md)。
 
@@ -31,4 +31,6 @@ v0.3.1固定首次交付；其後r2～r5是過去重用版本號的修訂，另�
 
 | 版本／建置 | 固定快照 | runtime | 狀態／驗收 |
 | --- | --- | --- | --- |
-| 0.3.6／2026-10-08-v036-r2 | [snapshot/v0.3.6/2026-10-08-r2](https://github.com/justamowei/chatgpt-toc-firefox/tree/snapshot/v0.3.6/2026-10-08-r2) · [77ca0d1](https://github.com/justamowei/chatgpt-toc-firefox/commit/77ca0d14d8963aadede76ed3b4f7235dd0c190cb) | 5f1479c | 實驗版；主端及獨立111純／15原生Firefoxlocalhost PASS，LIVE PENDING；[報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/77ca0d14d8963aadede76ed3b4f7235dd0c190cb/docs/acceptance-v0.3.6-r2.md) |
+| 0.3.6／2026-10-08-v036-r2 | [snapshot/v0.3.6/2026-10-08-r2](https://github.com/justamowei/chatgpt-toc-firefox/tree/snapshot/v0.3.6/2026-10-08-r2) · [77ca0d1](https://github.com/justamowei/chatgpt-toc-firefox/commit/77ca0d14d8963aadede76ed3b4f7235dd0c190cb) | 5f1479c | 已棄用；歷史主端及獨立111純／15原生Firefoxlocalhost PASS，LIVE PENDING；[報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/77ca0d14d8963aadede76ed3b4f7235dd0c190cb/docs/acceptance-v0.3.6-r2.md) |
+
+重新開發版本0.3.5／2026-10-08-v035-rebuild：runtime95a7467，111純／独立原生11PASS、12hash匹配，LIVE PENDING；新snapshot交付識別與精確SHA以catalog的sameVersionRevisions核對。

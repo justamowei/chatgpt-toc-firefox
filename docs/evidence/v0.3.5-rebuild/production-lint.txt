@@ -1,0 +1,10 @@
+
+> chatgpt-toc-firefox@0.3.5 lint:firefox
+> web-ext lint --source-dir dist/firefox --warnings-as-errors
+
+Validation Summary:
+
+errors          0              
+notices         0              
+warnings        0              
+

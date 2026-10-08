@@ -1,0 +1,12 @@
+{
+  "resetResult": false,
+  "context": "https://chatgpt.com/c/B",
+  "retained": [
+    "b",
+    "new-b"
+  ],
+  "savedWrites": 0,
+  "status": "pending",
+  "pendingSchedule": true,
+  "timerScheduled": false
+}

@@ -1,0 +1,80 @@
+{
+  "date": "2026-10-08T14:38:12.337Z",
+  "runtimeSha": "95a74670e26a930c6cadc3c4a29a9d40eb5a7d43",
+  "baselineSha": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
+  "version": "0.3.5",
+  "revision": "2026-10-08-v035-rebuild",
+  "reviewer": "independent fixed local Git archive; read-only runtime integration review",
+  "status": "PASS: independent static integration review and pure acceptance",
+  "pure": {
+    "passed": 111,
+    "total": 111
+  },
+  "typecheck": "PASS",
+  "build": "NOT RUN: native acceptance agent uses current dist",
+  "native": "PENDING separate independent native acceptance agent; this report does not claim native counts",
+  "findings": [],
+  "unresolvedBlockers": 0,
+  "recommendations": [],
+  "positiveChecks": {
+    "explicitEmptyReadEnvelope": true,
+    "invalidProfileNotReplaced": true,
+    "rawCachedActivePlusQuarantineCounts": true,
+    "automaticOneAttemptAndStopSuppression": true,
+    "backgroundReadAndResetBoundToLiveTabRoute": true,
+    "staleResetWritesRejectedByBrokerGeneration": true,
+    "successfulResetAckAppliedAfterStop": true,
+    "v034ActiveCacheRestoreAndAppendCoveredByPureTests": true,
+    "noNumberingOrOld035036CompatibilityAdded": true,
+    "lateFirstMountReevaluatesAutomatic": true,
+    "preHydrationRequestCancellable": true,
+    "resetOwnerDoesNotBlockNewSessionSave": true,
+    "automaticRequiresMountedStableUser": true
+  },
+  "scope": {
+    "changedRuntimeFiles": [
+      "src/auto-collection.ts",
+      "src/background.ts",
+      "src/collection-policy.ts",
+      "src/content.ts",
+      "src/core.ts",
+      "src/dom.ts",
+      "src/persistence.ts"
+    ],
+    "captureLocateDirectionPreserved": true
+  },
+  "live": "PENDING",
+  "limitations": [
+    "Authenticated ChatGPT LIVE validation has not been performed.",
+    "This reviewer did not build, lint compiled dist, or run native Firefox; separate native acceptance is in progress.",
+    "Very large head padding can conservatively time out when no first shell is visible; physical visibility guard prevents frozen virtual middle windows from falsely proving session origin."
+  ],
+  "originalReview": "C:\\Users\\Andy\\Documents\\Codex\\2026-10-02\\new-chat-2\\work\\v035-rebuild-static-b536\\review.json",
+  "resolvedFindings": [
+    {
+      "title": "Late first DOM mount never reevaluates automatic eligibility",
+      "resolution": "Mutation queue timer now invokes refresh, which collects, renders and reevaluates automatic eligibility after a late first mount.",
+      "evidence": "Fixed-SHA static inspection of src/content.ts queue/refresh/maybeAutomatic; live native content lifecycle acceptance is assigned separately."
+    },
+    {
+      "title": "Navigation waiting for initial hydration escapes cancellation",
+      "resolution": "Request token, abort controller, pending state and Stop UI are created before hydration await. Continuation checks token and current route; hydration completion no longer cancels the waiting request itself.",
+      "evidence": "Fixed-SHA static inspection of navigate, hydration callback and cancel; native delayed cache read/Stop acceptance is assigned separately."
+    },
+    {
+      "title": "Old reset acknowledgement leaves new-route cache scheduling stuck",
+      "resolution": "Rebuilding records its owner generation. Restore/invalidate release the obsolete owner; stale finally cannot clear a newer owner. New route scheduling proceeds independently.",
+      "evidence": "Independent original reproduction rerun PASS: retained b/new-b, savedWrites1, status saved, pendingSchedulefalse.",
+      "reproduction": "C:\\Users\\Andy\\Documents\\Codex\\2026-10-02\\new-chat-2\\work\\v035-rebuild-static-95a746\\spa-reset-save-repro.json"
+    },
+    {
+      "title": "Require a mounted stable user for automatic claim",
+      "resolution": "Both eligibility and claim now use mounted stable entries; timer signature includes only mounted stable user IDs.",
+      "evidence": "Fixed-SHA static inspection of maybeAutomatic."
+    }
+  ],
+  "additionalPureRegressionCoverage": [
+    "Late reset acknowledgement cannot suppress new SPA session saves",
+    "Cancellation during committed reset retains new generation and removes old prefix"
+  ]
+}

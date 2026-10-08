@@ -7,3 +7,5 @@
 完整來源在 [release/v0.3](https://github.com/justamowei/chatgpt-toc-firefox/tree/release/v0.3)，工作分支 [feat/v035-rebuild-from-v034](https://github.com/justamowei/chatgpt-toc-firefox/tree/feat/v035-rebuild-from-v034)。[重新開發規格](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/redevelopment-v0.3.5.md)、[版本規範](docs/version-policy.md)、[版本目錄](docs/versions.md)、[開發計畫](docs/development-plan.md)。main選取規範與索引文件，產品來源維持release分支。
 
 未簽章測試版。原生Firefox localhost虛擬掛載與真實ChatGPT LIVE分開驗收，LIVE PENDING；版本號不能代表完整歷史保證。
+
+本次验收111純／独立原生Firefox11通過、12建置hash相符；LIVE PENDING。[交付報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/release-v0.3.5-rebuild.md)。

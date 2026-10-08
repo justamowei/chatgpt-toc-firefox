@@ -1,0 +1,209 @@
+{
+  "date": "2026-10-08T14:32:17.336Z",
+  "executor": "v035_rebuild_acceptance",
+  "source": "Native Firefox isolated extension and real storage; localhost numeric virtualizer; NOT ChatGPT LIVE",
+  "revision": "b536aabc2c86e663357591de5102ffb5e45bfd83",
+  "firefox": "157.0.1",
+  "build": {
+    "version": "0.3.5",
+    "revision": "2026-10-08-v035-rebuild",
+    "fixture": true,
+    "hashes": {
+      "background.js": "bc75403789e149caecaafc870793cb4bb3e68d20f2b05fa0ccbf91a18f54a6d7",
+      "content.js": "aa1c7eac9b7e2dac3a3b2680581c64eb5e9496a129a89411c315664b7b698d84",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "0096779d8033a31a499f35b3b3eaa63e5e547a9181733ad057b8bb1c0d498dd6"
+    }
+  },
+  "results": [
+    {
+      "name": "V035-R01-empty-cache-middle-bottom-head-32",
+      "status": "PASS",
+      "elapsedMs": 17864,
+      "actual": {
+        "prompts": 32,
+        "virtualWindow": 5,
+        "pinnedTail": 2,
+        "spacer": 1600,
+        "bottomAt": 692,
+        "upwardWindows": 14,
+        "finalTop": 0
+      }
+    },
+    {
+      "name": "V035-R02-seven-window-hidden-busy-tail-stream",
+      "status": "PASS",
+      "elapsedMs": 17306,
+      "actual": {
+        "prompts": 32,
+        "virtualWindow": 7,
+        "hiddenBusy": true,
+        "tailStreamTicks": 170,
+        "bottomAt": 583,
+        "upwardWindows": 13,
+        "finalTop": 0
+      }
+    },
+    {
+      "name": "V035-R03-v034-cache-no-auto-SPA-F5-exact-navigation",
+      "status": "PASS",
+      "elapsedMs": 14122,
+      "actual": {
+        "restored": 32,
+        "routeSequence": [
+          "A",
+          "B",
+          "A"
+        ],
+        "f5": true,
+        "exactHighlights": [
+          "A:u-3",
+          "A:u-24",
+          "A:u-2"
+        ],
+        "autoRecollection": false
+      }
+    },
+    {
+      "name": "V035-R04-any-cache-including-quarantine-suppresses-auto",
+      "status": "PASS",
+      "elapsedMs": 5221,
+      "actual": {
+        "quarantineOnly": true,
+        "partialActive": true,
+        "autoRecollection": false
+      }
+    },
+    {
+      "name": "V035-R05-manual-build-resets-only-selected-before-bottom",
+      "status": "PASS",
+      "elapsedMs": 18322,
+      "actual": {
+        "oldRowRemovedBeforeTraversal": true,
+        "otherConversationUnchanged": true,
+        "prompts": 32,
+        "bottomAt": 103,
+        "upwardWindows": 14,
+        "finalTop": 0
+      }
+    },
+    {
+      "name": "V035-R06-earlier-no-reset-and-stop-at-head",
+      "status": "PASS",
+      "elapsedMs": 11333,
+      "actual": {
+        "retainedAtStart": 32,
+        "finalTop": 0,
+        "bottomVisited": false,
+        "reversed": false
+      }
+    },
+    {
+      "name": "V035-R07-new-prompt-persists-after-F5",
+      "status": "PASS",
+      "elapsedMs": 4671,
+      "actual": {
+        "newPrompt": "APPEND:u-32",
+        "persisted": 33,
+        "f5": true
+      }
+    },
+    {
+      "name": "V035-R08-stop-and-route-change-cancel-session",
+      "status": "FAIL",
+      "elapsedMs": 7945,
+      "error": "AssertionError [ERR_ASSERTION]: Expected \"actual\" to be strictly unequal to:\n\n'loading'",
+      "ui": {
+        "archived": 0,
+        "build": "建立完整目錄",
+        "disabled": [],
+        "expanded": "true",
+        "highlight": null,
+        "ids": [
+          "CANCEL-B:u-0",
+          "CANCEL-B:u-1",
+          "CANCEL-B:u-2",
+          "CANCEL-B:u-3",
+          "CANCEL-B:u-4",
+          "CANCEL-B:u-5",
+          "CANCEL-B:u-6",
+          "CANCEL-B:u-7",
+          "CANCEL-B:u-8",
+          "CANCEL-B:u-9",
+          "CANCEL-B:u-10",
+          "CANCEL-B:u-11",
+          "CANCEL-B:u-12",
+          "CANCEL-B:u-13",
+          "CANCEL-B:u-14",
+          "CANCEL-B:u-15",
+          "CANCEL-B:u-16",
+          "CANCEL-B:u-17",
+          "CANCEL-B:u-18",
+          "CANCEL-B:u-19",
+          "CANCEL-B:u-20",
+          "CANCEL-B:u-21",
+          "CANCEL-B:u-22",
+          "CANCEL-B:u-23",
+          "CANCEL-B:u-24",
+          "CANCEL-B:u-25",
+          "CANCEL-B:u-26",
+          "CANCEL-B:u-27",
+          "CANCEL-B:u-28",
+          "CANCEL-B:u-29",
+          "CANCEL-B:u-30",
+          "CANCEL-B:u-31"
+        ],
+        "nav": "loading",
+        "scope": "本頁已看過 32 則 · 目前掛載 7 則。歷史尚未完整；當前分支未完整核對；搜尋涵蓋已觀察資料。已沿用保存的目錄排序。 已儲存於本機。",
+        "status": "已切換對話，開始收集本頁提問。"
+      },
+      "fixture": {
+        "client": 620,
+        "count": 32,
+        "events": [
+          {
+            "at": 4863,
+            "bottom": false,
+            "loading": false,
+            "start": 15,
+            "top": 32640
+          }
+        ],
+        "frozen": false,
+        "height": 53420,
+        "loading": false,
+        "mountedUsers": 7,
+        "mounts": [
+          {
+            "at": 4856,
+            "end": 19,
+            "reason": "initial",
+            "start": 15,
+            "top": 0
+          }
+        ],
+        "prefix": "CANCEL-B",
+        "requests": [],
+        "start": 15,
+        "streamTick": 0,
+        "top": 32640,
+        "windowSize": 5
+      }
+    },
+    {
+      "name": "V035-R09-slow-visible-head-loader-no-premature-completion",
+      "status": "PASS",
+      "elapsedMs": 26536,
+      "actual": {
+        "slowHeadMs": 9000,
+        "stillLoadingAt7000": true,
+        "prompts": 32,
+        "bottomAt": 585,
+        "upwardWindows": 14,
+        "finalTop": 0
+      }
+    }
+  ]
+}
