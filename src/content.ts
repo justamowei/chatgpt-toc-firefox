@@ -101,7 +101,9 @@ function start(): Instance {
   };
   browser.runtime.onMessage.addListener(runtimeListener);
   function cancel(suppress = true): void { if (suppress) automatic.suppress(); clearTimeout(autoTimer); autoTimer = undefined;
-    build.disabled = earlier.disabled = false; stop.hidden = true; navigationToken++; navigationPending = false; operation?.abort(); operation = null; navigator.cancel(); }
+    const preparing = navigationPending && navigator.state !== 'loading';
+    build.disabled = earlier.disabled = false; stop.hidden = true; navigationToken++; navigationPending = false; operation?.abort(); operation = null; navigator.cancel();
+    if (preparing) { host.dataset.navigation = 'cancelled'; status.textContent = '已停止導航。'; } }
   function setExpanded(value: boolean, focus = true, persist = true): void {
     if (!alive) return;
     expanded = value; panel.hidden = !expanded; toggle.setAttribute('aria-expanded', String(expanded));
@@ -225,7 +227,7 @@ function start(): Instance {
       restoring = persistence.restore(context, () => adapter.read());
       void restoring.then(restored => {
         if (!alive || token !== restoreToken || store.context !== context) return;
-        if (restored) { cancel(false); adapter.remember(); render(); }
+        if (restored) { adapter.remember(); render(); }
         automatic.settle(automaticVisit, persistence.loadedHistory?.context === context ? persistence.loadedHistory.cachedEntries : null);
         restoring = null; persistence.schedule(); maybeAutomatic();
       }).catch(() => { if (alive && token === restoreToken) { restoring = null; automatic.settle(automaticVisit, null); } });
@@ -249,7 +251,7 @@ function start(): Instance {
     // Removed mounts must be captured immediately; ordinary streaming/scroll
     // events share one read so a token stream cannot rebuild the index per event.
     if (store.context === location.origin + location.pathname && adapter.readRemoved(records).length) collect(undefined, records);
-    if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; collect(); render(); }, 120);
+    if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; refresh(); }, 120);
   }
   function maybeAutomatic(): void {
     const context = store.context, visit = automaticVisit;
@@ -273,12 +275,19 @@ function start(): Instance {
     }
     if (!auto) automatic.suppress();
     const route = store.context;
-    if (restoring) { try { await restoring; } catch { status.textContent = '無法讀取本機目錄，請稍後重試。'; return; } }
-    if (!alive || route !== store.context) return;
-    cancel(false); const token = ++navigationToken; let epoch = store.epoch;
-    collecting = id === null; collectionStart = store.entries.length;
+    cancel(false); const token = ++navigationToken;
     operation = new AbortController(); navigationPending = true;
     host.dataset.navigation = 'loading'; earlier.disabled = build.disabled = true; stop.hidden = false;
+    if (restoring) {
+      status.textContent = '正在讀取本機目錄，可按停止。';
+      try { await restoring; } catch {
+        if (alive && token === navigationToken) { cancel(); host.dataset.navigation = 'unsupported'; status.textContent = '無法讀取本機目錄，請稍後重試。'; }
+        return;
+      }
+    }
+    if (!alive || token !== navigationToken || route !== store.context || route !== location.origin + location.pathname) return;
+    let epoch = store.epoch;
+    collecting = id === null; collectionStart = store.entries.length;
     if (collecting) {
       try {
         const value: unknown = await browser.runtime.sendMessage({ kind: 'settings:get' });
