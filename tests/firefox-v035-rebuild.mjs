@@ -181,7 +181,7 @@ try {
   });
   await test('V035-R10-late-first-mount-auto-without-user-input', async () => {
     await storage([]);
-    await evaluate(`return browser.runtime.sendMessage({kind:'settings:set',expanded:true});`);
+    await evaluate(`return browser.storage.local.set({settings:{auto:true,expanded:true,collectionMinutes:10}});`);
     configurations.set('/c/LATE', { prefix: 'LATE', start: 17, windowSize: 5, mountDelayMs: 1100 });
     await driver.get(url('LATE')); await wait(async () => !!await state());
     assert.equal(await stats(), null, 'extension initially sees an empty mount');
