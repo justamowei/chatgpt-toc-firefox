@@ -1,0 +1,9 @@
+{
+  "mode": "checkpoint",
+  "source": "a1ff15a7535cb7bf08cff683ff69104be17f1efb",
+  "bundleSha256": "5e2a7496619367b5ca8c7f8045ea72e6074db0e41bbf0cfc086c1c9ba8244b74",
+  "expectedRefs": {
+    "refs/heads/fix/saved-directory-order": null
+  },
+  "tag": null
+}

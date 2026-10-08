@@ -1,0 +1,33 @@
+name: Sync saved directory original commits
+on:
+  push:
+    branches: [chore/saved-order-sync]
+    paths: [recovery/saved-order.json]
+permissions:
+  contents: write
+concurrency:
+  group: saved-order-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    if: github.repository == 'justamowei/chatgpt-toc-firefox' && github.ref == 'refs/heads/chore/saved-order-sync'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Verify pinned program and synchronize original objects
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib,json,os,pathlib,subprocess,urllib.request
+          assert os.environ['GITHUB_REPOSITORY']=='justamowei/chatgpt-toc-firefox'
+          assert os.environ['GITHUB_REF']=='refs/heads/chore/saved-order-sync'
+          url='https://api.github.com/repos/justamowei/chatgpt-toc-firefox/contents/recovery/sync-saved-order.py?ref='+os.environ['GITHUB_SHA']
+          req=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GITHUB_TOKEN'],'Accept':'application/vnd.github+json','User-Agent':'toc-saved-order-sync'})
+          with urllib.request.urlopen(req,timeout=45) as r:doc=json.load(r)
+          program=base64.b64decode(doc['content'])
+          assert hashlib.sha256(program).hexdigest()=='b3ab94cb2abbf887fcdfc0f6fc9b1cfbd28c80109de0ba8a689793a74381191b'
+          target=pathlib.Path(os.environ['RUNNER_TEMP'])/'sync-saved-order.py';target.write_bytes(program)
+          subprocess.run(['python3',str(target)],check=True)
+          PY
