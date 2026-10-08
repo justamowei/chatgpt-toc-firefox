@@ -116,6 +116,7 @@ export class IndexStore {
   cacheRevision = 0;
   cacheGeneration = 0;
   numberedIds: string[] = [];
+  private numberingKnown = false;
   ordered = true;
   segments: ObservedSegment[] = [];
   quarantine: QuarantinedGeneration[] = [];
@@ -158,7 +159,7 @@ export class IndexStore {
         reason: generation.reason, entries, segments: segments(generation.segments, entries), ordered: generation.ordered,
       }; }).filter(generation => generation.entries.length), limitReason: this.limitReason,
       ...(this.cacheGeneration ? { generation: this.cacheGeneration } : {}),
-      numbering: { ids: [...this.numberedIds] },
+      ...(this.numberingKnown ? { numbering: { ids: [...this.numberedIds] } } : {}),
       ...(this.recoveredIds.size ? { recovery: { candidateIds: entries.filter(entry => this.recoveredIds.has(entry.id)).map(entry => entry.id) } } : {}) };
   }
   restoreState(value: unknown, snapshot: Snapshot): boolean {
@@ -223,12 +224,15 @@ export class IndexStore {
     this.characters = [...this.entries, ...this.quarantine.flatMap(generation => generation.entries)].reduce((count, entry) => count + entry.text.length, 0);
     this.limitReason = this.count >= this.limits.entries ? 'entries' : this.characters >= this.limits.characters ? 'characters' : null;
     this.reorder(); this.merge(snapshot); this.completeness = this.retainedCount ? 'partial' : 'unknown'; this.cacheRevision++;
-    if (!blocked && !this.quarantine.length && state.numbering && this.ordered && state.numbering.ids.every((id, i) => this.entries[i]?.id === id)) this.numberedIds = [...state.numbering.ids];
+    if (state.numbering) {
+      this.numberingKnown = true;
+      if (!blocked && !this.quarantine.length && this.ordered && state.numbering.ids.every((id, i) => this.entries[i]?.id === id)) this.numberedIds = [...state.numbering.ids];
+    }
     return true;
   }
   reset(context = this.context, branch: string | null = this.branch): void {
     if (context !== this.context) this.cacheGeneration = 0;
-    this.numberedIds = [];
+    this.numberedIds = []; this.numberingKnown = false;
     this.epoch++; this.entries = []; this.mounted.clear(); this.completeness = 'unknown'; this.context = context; this.branch = branch;
     this.graph.clear(); this.segments = []; this.ordered = true; this.quarantine = []; this.recoveredIds.clear(); this.seekableIds.clear();
     this.count = 0; this.characters = 0; this.limitReason = null; this.cacheRevision++;
@@ -340,6 +344,7 @@ export class IndexStore {
     if (stable.length) this.quarantine.push({ epoch: this.epoch, reason, entries: stable,
       segments: this.segments.map(s => ({ ids: s.ids.filter(id => ids.has(id)), ordered: s.ordered })).filter(s => s.ids.length), ordered: this.ordered });
     for (const e of this.entries) if (!e.stable) { this.count--; this.characters -= e.text.length; }
+    if (this.numberedIds.length) this.numberingKnown = true;
     this.numberedIds = [];
     this.epoch++; this.entries = []; this.graph.clear(); this.segments = []; this.ordered = true; this.recoveredIds.clear();
   }
@@ -372,7 +377,7 @@ export class IndexStore {
   assignSessionNumbers(covered: Set<string>): boolean {
     if (!this.entries.length || !this.ordered || this.quarantine.length || this.limitReason || this.recoveredIds.size ||
       this.entries.some(entry => !entry.stable || !covered.has(entry.id))) return false;
-    this.numberedIds = this.entries.map(entry => entry.id); this.cacheRevision++; return true;
+    this.numberingKnown = true; this.numberedIds = this.entries.map(entry => entry.id); this.cacheRevision++; return true;
   }
   extendSessionNumbers(windowIds: string[]): void {
     if (!this.numberedIds.length || !this.ordered || this.quarantine.length || this.limitReason) return;

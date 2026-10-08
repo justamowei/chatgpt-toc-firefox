@@ -439,3 +439,12 @@ test('a transient insertion revokes absolute numbering durably rather than resur
   await broker.save(store.exportState());const saved=await broker.load(context);assert.ok(!saved.numbering||!saved.numbering.ids.length);
   const reload=new IndexStore();reload.restoreState(saved,snapshot([entry('b')],null));assert.equal(reload.ordinal('b').confirmed,false);
 });
+
+test('an unaware passive tab cannot erase another tab session numbering within the same cache generation', async () => {
+  const storage=memory(),broker=new CacheBroker(storage);const reset=await broker.reset(context);
+  const a=new IndexStore();a.restoreState(reset,snapshot([entry('a'),entry('b'),entry('c')],null));
+  const b=new IndexStore();b.restoreState(reset,snapshot([entry('c')],null));
+  a.assignSessionNumbers(new Set(['a','b','c']));await broker.save(a.exportState());
+  b.merge(snapshot([entry('c'),entry('d')],null));assert.equal(b.exportState().numbering,undefined);await broker.save(b.exportState());
+  const merged=await broker.load(context);assert.deepEqual(merged.numbering.ids,['a','b','c']);
+});
