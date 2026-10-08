@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.3",
+  "currentVersion": "0.3.4",
   "maintenanceBranch": "release/v0.3",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
@@ -101,6 +101,21 @@
       ],
       "selection": "First documented delivery snapshot; product runtime unchanged from independently accepted source.",
       "tagObject": "5a63617377aa577b3ab736e19a908079a4c92809"
+    },
+    {
+      "version": "0.3.4",
+      "tag": "v0.3.4",
+      "deliveryCommit": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
+      "runtimeCommit": "a1ff15a7535cb7bf08cff683ff69104be17f1efb",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/acceptance-v0.3.4.md",
+        "docs/release-v0.3.4.md"
+      ],
+      "selection": "New PATCH delivery: preserve previously observed saved ordering across F5 and SPA returns; strict v1 cache format remains compatible. Pure 94/94; native Firefox localhost 13/13; independent fixed-source review PASS.",
+      "tagObject": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c",
+      "createdAt": "2026-10-08"
     }
   ],
   "legacyRevisions": [
@@ -217,5 +232,6 @@
     "tagAnnotationMustStateWithdrawal": true,
     "preserveHistoricalPass": true,
     "restoreTagToOlderRuntime": false
-  }
+  },
+  "updatedAt": "2026-10-08"
 }
