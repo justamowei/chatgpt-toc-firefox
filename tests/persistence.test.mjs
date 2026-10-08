@@ -434,3 +434,22 @@ test('v034 saved format stays navigable and append persists in original order',a
   await p.restore(context,()=>snapshot([entry('b')],null));assert.equal(p.loadedHistory.cachedEntries,2);assert.equal(store.canSeek('a'),true);
   store.merge(snapshot([entry('b'),entry('c')],null));await p.flush();assert.deepEqual((await broker.load(context)).entries.map(e=>e.id),['a','b','c']);p.dispose();
 });
+
+
+test('late reset acknowledgement cannot suppress saves of a newly active SPA session',async()=>{
+  const ack=deferred(),store=new IndexStore(),writes=[],other='https://chatgpt.com/c/other';
+  const backend={load:async route=>state([entry('b')],null,route),save:async value=>writes.push(structuredClone(value)),reset:async()=>ack.promise};
+  store.merge(snapshot([entry('a')],null));const p=new PersistentIndex(backend,store,{debounceMs:5});
+  const rebuilding=p.rebuild(context,()=>snapshot([],null,store.context),()=>store.context===context);await new Promise(resolve=>setImmediate(resolve));
+  store.merge(snapshot([entry('b')],null,other));await p.restore(other,()=>snapshot([entry('b')],null,other));
+  store.merge(snapshot([entry('b'),entry('new-b')],null,other));p.schedule();
+  ack.resolve({...state([],null),generation:1});assert.equal(await rebuilding,false);
+  await new Promise(resolve=>setTimeout(resolve,20));assert.equal(writes.length,1);assert.equal(writes[0].context,other);assert.deepEqual(writes[0].entries.map(e=>e.id),['b','new-b']);p.dispose();
+});
+
+test('cancellation during committed reset retains new generation and removes old cached prefix',async()=>{
+  const ack=deferred(),store=new IndexStore(),writes=[];let active=true;
+  store.merge(snapshot([entry('old'),entry('tail')],null));const p=new PersistentIndex({load:async()=>undefined,save:async value=>writes.push(value),reset:async()=>ack.promise},store);
+  const rebuilding=p.rebuild(context,()=>snapshot([entry('tail')],null),()=>active);await new Promise(resolve=>setImmediate(resolve));active=false;
+  ack.resolve({...state([],null),generation:1});assert.equal(await rebuilding,false);assert.deepEqual(ids(store),['tail']);await p.flush();assert.equal(writes[0].generation,1);assert.deepEqual(writes[0].entries.map(e=>e.id),['tail']);p.dispose();
+});

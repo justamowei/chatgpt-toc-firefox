@@ -206,7 +206,7 @@ export class PersistentIndex {
   private savedState = '';
   private scheduledRevision = -1;
   private loading = false;
-  private rebuilding = false;
+  private rebuilding: number | null = null;
   private pendingSchedule = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private queue: Promise<void> = Promise.resolve();
@@ -220,14 +220,14 @@ export class PersistentIndex {
   constructor(private backend: IndexBackend, private store: IndexStore,
     private options: { incognito?: boolean; debounceMs?: number; onStatus?: (status: PersistenceStatus) => void } = {}) {}
   invalidate(): void {
-    this.hydration = null;
+    this.hydration = null; this.rebuilding = null;
     this.generation++; this.writeGeneration++; clearTimeout(this.timer); this.timer = undefined;
     this.lastState = ''; this.savedState = ''; this.scheduledRevision = -1; this.loading = false; this.pendingSchedule = false;
   }
   async rebuild(context: string, current: () => Snapshot, live: () => boolean): Promise<boolean> {
     this.invalidate(); this.context = context;
     const generation = this.generation;
-    this.rebuilding = true; this.setStatus('loading');
+    this.rebuilding = generation; this.setStatus('loading');
     try {
       await this.queue;
       if (!live() || generation !== this.generation) return false;
@@ -239,11 +239,11 @@ export class PersistentIndex {
       const shouldContinue = live();
       this.store.restoreState(state, current()); this.setStatus('pending'); return shouldContinue;
     } catch (error) { if (generation === this.generation) this.setStatus('error'); throw error; }
-    finally { this.rebuilding = false; if (generation === this.generation) { this.loading = false; this.scheduledRevision = -1; this.schedule(); } }
+    finally { if (this.rebuilding === generation) { this.rebuilding = null; if (generation === this.generation) { this.loading = false; this.pendingSchedule = false; this.scheduledRevision = -1; this.schedule(); } } }
   }
   async restore(context: string, current: () => Snapshot): Promise<boolean> {
     const generation = ++this.generation, writeGeneration = this.writeGeneration, revision = this.store.cacheRevision;
-    this.hydration = null;
+    this.hydration = null; this.rebuilding = null;
     this.context = context; this.lastState = ''; this.savedState = ''; this.scheduledRevision = -1;
     if (this.closed || this.options.incognito || conversationContext(context) !== context) { this.setStatus('off'); return false; }
     this.loading = true;
