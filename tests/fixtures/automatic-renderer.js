@@ -1,4 +1,4 @@
-document.body.replaceChildren(document.createElement('main'));const prefix=arguments[1],edits=new Map();
+document.body.replaceChildren(document.createElement('main'));const prefix=arguments[1],edits=new Map(arguments[3]??[]);
 
     const m=document.querySelector('main');m.removeAttribute('data-fixture-branch');
     m.style.cssText='margin:0;padding:0;position:relative;overflow:visible;height:auto';m.replaceChildren();
