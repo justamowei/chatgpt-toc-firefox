@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.4",
+  "currentVersion": "0.3.5",
   "maintenanceBranch": "release/v0.3",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
@@ -115,6 +115,21 @@
       ],
       "selection": "New PATCH delivery: preserve previously observed saved ordering across F5 and SPA returns; strict v1 cache format remains compatible. Pure 94/94; native Firefox localhost 13/13; independent fixed-source review PASS.",
       "tagObject": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c",
+      "createdAt": "2026-10-08"
+    },
+    {
+      "version": "0.3.5",
+      "tag": "v0.3.5",
+      "deliveryCommit": "ba101b8b446f1be554c484027fce7acdcf8d029f",
+      "runtimeCommit": "6497a1b71bbbe48341022704b111ba611c16bad7",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/acceptance-v0.3.5.md",
+        "docs/release-v0.3.5.md"
+      ],
+      "selection": "New PATCH: atomically rebuild only the selected conversation bottom-up, stop at stable observed head and persist session prompt ordinals. Main and independent pure103/103, native Firefox localhost5/5; twelve build hashes match.",
+      "tagObject": "c1d4f05c536eba5c7f802549c0e01ffc179b141d",
       "createdAt": "2026-10-08"
     }
   ],

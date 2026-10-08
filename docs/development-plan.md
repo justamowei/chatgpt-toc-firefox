@@ -1,6 +1,6 @@
 # 開發與版本管理計畫
 
-2026-10-08 更新至 v0.3.4 版本入口。main保留專案基線，本次更新僅為規範文件及版本索引；完整產品與歷史功能計畫見 [release/v0.3](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/development-plan.md)。
+2026-10-08 更新至 v0.3.5 版本入口。main保留專案基線，本次更新僅為規範文件及版本索引；完整產品與歷史功能計畫見 [release/v0.3](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/development-plan.md)。
 
 ## Git與版本規則
 
@@ -11,3 +11,13 @@
 - 私人GitHub維持；原始commit/tag object与peeled commit核對一致才算SYNC_VERIFIED。只有鏡像/bundle核對則BACKUP_VERIFIED。
 - 本機GCM禁用；由一次性雲端Linux job驗證bundle並恢復原始refs。禁止force-push、重寫歷史、移動tag與刪分支。
 - 所有現有版本仍是未簽章實驗／測試版，Firefox ChatGPT LIVE待驗證；0.2.0已撤回，仅供追溯。tag与維護分支不表示公開Release或已正式簽章。
+
+## 2026-10-08：v0.3.5 單對話重建與提問編號
+
+使用者授權「清空該對話目錄→移到最底→一路往上收集→頂端自停」。clear不得影響其他對話或聊天本身；背景持久化generation阻止舊分頁／event page重啟回寫。預設10分鐘、設定1–10分鐘，停止／路由切换必须撤銷過期捲動，已提交reset ack的世代仍須在同context同步。
+
+收集只tail→head→done。頂端見證以穩定ID／正文與局部幾何、6秒＋兩次2.4秒clamp探測，忽略同語義重掛載及遠處尾端高度／progressbar；中段停滯、空掛載、載入或真正邊界變動不能標到頂。到頂不再往回收集。
+
+session提問序號只有連續重疊底→頂走訪、全穩定ID／已接通順序／無容量限制或矛盾才從1確認；否則顯示暫編。編號與撤銷持久化，F5／SPA／搜尋一致；新增須有已編號尾筆→新筆連續窗口，插入／暫時ID／正文順序分支矛盾撤銷。
+
+驗收主103 pure＋原生Firefox157.0.1 localhost5項、固定SHA獨立重建12hash；ChatGPT LIVE、簽章仍PENDING。明細見docs/release-v0.3.5.md。Git版本遞增0.3.5、工作分支fix/rebuild-collection-numbering、維護線release/v0.3、固定annotated v0.3.5；每功能或30有效分鐘commit且同步原始SHA，禁本機GCM／網路Git。
