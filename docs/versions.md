@@ -13,9 +13,10 @@
 | v0.3.3 | [5695198](https://github.com/justamowei/chatgpt-toc-firefox/commit/56951988cb7d258eafeadacfa02174226a824093) | 567dfda | 實驗／測試版，LIVE PENDING | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/56951988cb7d258eafeadacfa02174226a824093/docs/acceptance-v0.3.3.md) |
 | v0.3.4 | [25b46d4](https://github.com/justamowei/chatgpt-toc-firefox/commit/25b46d412e6aa7af451eb7a507b47c291a9ade66) | a1ff15a | 實驗／測試版，LIVE PENDING；保存排序修正 | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/25b46d412e6aa7af451eb7a507b47c291a9ade66/docs/acceptance-v0.3.4.md) |
 | v0.3.5 | [ba101b8](https://github.com/justamowei/chatgpt-toc-firefox/commit/ba101b8b446f1be554c484027fce7acdcf8d029f) | 6497a1b | 實驗／測試版，LIVE PENDING；由底往上重建、頂端自停、保存編號 | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/ba101b8b446f1be554c484027fce7acdcf8d029f/docs/acceptance-v0.3.5.md) |
+| v0.3.6 | [5aa5b4e](https://github.com/justamowei/chatgpt-toc-firefox/commit/5aa5b4e6ddae39cd8d33b8de8abd25c997ac9150) | c32e8e9 | 實驗／測試版，LIVE PENDING；空目錄自動收集、移除暫字、新提問追加 | [報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/5aa5b4e6ddae39cd8d33b8de8abd25c997ac9150/docs/acceptance-v0.3.6.md) |
 
 v0.3.1固定首次交付；其後r2～r5是過去重用版本號的修訂，另保留各來源／報告，不移動v0.3.1。r5原生UI7項當時PENDING。此例外不再延續。v0.2.0於實際使用失敗後撤回，tag僅供追溯；撤回紀錄見[歷史失敗](https://github.com/justamowei/chatgpt-toc-firefox/blob/5c035c30b223886201adaa88433a7fbb8019b041/docs/live-history-failure.md)。
 
-目前適合繼續測試的版本是v0.3.5；同系列維護在release/v0.3。所有版本皆未完成正式簽章與整體Firefox ChatGPT LIVE驗收，不能將合成PASS當作完整session保證。
+目前適合繼續測試的版本是v0.3.6；同系列維護在release/v0.3。所有版本皆未完成正式簽章與整體Firefox ChatGPT LIVE驗收，不能將合成PASS當作完整session保證。
 
 同步結果以GitHub refs及另外的交付同步報告核對；Git bundle雲端備份成功不等於正常refs已同步。
