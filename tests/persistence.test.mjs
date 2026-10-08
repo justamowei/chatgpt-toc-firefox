@@ -8,7 +8,7 @@ for (const name of ['core', 'persistence']) {
   await writeFile(`artifacts/persistence/${name}.mjs`, result.code.replace("from \"./core\"", "from \"./core.mjs\""));
 }
 const { IndexStore, validStoredIndex } = await import('../artifacts/persistence/core.mjs');
-const { PersistentIndex, CacheBroker, CACHE_KEY, PROFILE_LIMITS, conversationContext, runtimeIndexBackend } = await import('../artifacts/persistence/persistence.mjs');
+const { PersistentIndex, CacheBroker, CACHE_KEY, PROFILE_LIMITS, conversationContext } = await import('../artifacts/persistence/persistence.mjs');
 const context = 'https://chatgpt.com/c/synthetic';
 const entry = (id, text = id, stable = true) => ({ id, text, stable });
 const snapshot = (entries, branch = 'branch-a', route = context) => ({ entries, branch, context: route });
@@ -388,87 +388,4 @@ test('SPA A to B to A restores saved order immediately while empty, without F5 o
   store.merge(snapshot([entry('c')], null)); await coordinator.flush();
   assert.deepEqual((await broker.load(context)).segments, [{ ids: ['a', 'b', 'c'], ordered: true }]);
   assert.deepEqual((await broker.load(other)).entries.map(e => e.id), ['other']); coordinator.dispose();
-});
-
-test('selected rebuild deletes active and quarantined witnesses, preserves other sessions and rejects stale writes after background restart', async () => {
-  const storage = memory(), broker = new CacheBroker(storage), other = 'https://chatgpt.com/c/other';
-  const stale = state([entry('old')]); stale.quarantine = [{ reason:'text-change', entries:[entry('bad')], segments:[{ids:['bad'],ordered:true}],ordered:true }];
-  await broker.save(stale); await broker.save(state([entry('other')], null, other));
-  const empty = await broker.reset(context); assert.equal(empty.generation,1); assert.deepEqual(empty.entries,[]);
-  assert.deepEqual((await broker.load(context)).entries,[]); assert.equal((await broker.load(other)).entries[0].id,'other');
-  await assert.rejects(broker.save(stale),/Stale/);
-  const restarted = new CacheBroker(storage); await assert.rejects(restarted.save(stale),/Stale/);
-  const fresh = state([entry('fresh')]); fresh.generation=empty.generation; await restarted.save(fresh);
-  assert.deepEqual((await restarted.load(context)).entries.map(e=>e.id),['fresh']);
-  const again = await restarted.reset(context); assert.equal(again.generation,2); await assert.rejects(restarted.save(fresh),/Stale/);
-});
-test('numbering persists the observed origin, survives unknown-branch reload, append bridging and search, but revokes on insertion or contradiction', async () => {
-  const store = new IndexStore(); store.merge(snapshot([entry('a'),entry('b'),entry('c')],null));
-  assert.equal(store.assignSessionNumbers(new Set(['a','c'])),false);
-  assert.equal(store.assignSessionNumbers(new Set(['a','b','c'])),true);
-  const saved=store.exportState(); assert.equal(validStoredIndex(saved),true);
-  const reload=new IndexStore();reload.restoreState(saved,snapshot([entry('c')],null));
-  assert.deepEqual(reload.ordinal('b'),{number:2,confirmed:true});assert.equal(reload.search('b')[0].id,'b');
-  reload.merge(snapshot([entry('c'),entry('d')],null));reload.extendSessionNumbers(['c','d']);
-  assert.deepEqual(reload.ordinal('d'),{number:4,confirmed:true});
-  reload.merge(snapshot([entry('earlier'),entry('a')],null));assert.equal(reload.ordinal('a').confirmed,false);
-  const broker=new CacheBroker(memory());await broker.save(saved);await broker.save(store.exportState());assert.deepEqual((await broker.load(context)).numbering.ids,['a','b','c']);
-  store.merge(snapshot([entry('b','changed')],null));assert.equal(store.numberedIds.length,0);
-});
-test('cancelled or switched route reset acknowledgment cannot hydrate another conversation', async () => {
-  const pending=deferred(),store=new IndexStore();store.merge(snapshot([entry('old')],null));
-  const persistence=new PersistentIndex({load:async()=>undefined,save:async()=>{},reset:()=>pending.promise},store);
-  const task=persistence.rebuild(context,()=>snapshot(store.entries,null,store.context),()=>true);
-  await new Promise(resolve=>setImmediate(resolve));store.merge(snapshot([entry('other')],null,'https://chatgpt.com/c/other'));
-  pending.resolve({...state([],null),generation:1});assert.equal(await task,false);assert.deepEqual(ids(store),['other']);persistence.dispose();
-});
-
-test('reset acknowledgment applies its committed generation after scrolling cancellation and uses the pre-reset epoch for continuation', async () => {
-  for (const cancelled of [false,true]) {
-    const store=new IndexStore();store.merge(snapshot([entry('old')],null));const epoch=store.epoch,gate=deferred();let live=true;
-    const persist=new PersistentIndex({load:async()=>undefined,save:async()=>{},reset:()=>gate.promise},store);
-    const pending=persist.rebuild(context,()=>snapshot([entry('new')],null),()=>live&&store.epoch===epoch);
-    await new Promise(r=>setImmediate(r));if(cancelled)live=false;
-    gate.resolve({...state([],null),generation:1});assert.equal(await pending,!cancelled);assert.equal(store.cacheGeneration,1);assert.deepEqual(ids(store),['new']);persist.dispose();
-  }
-});
-test('a transient insertion revokes absolute numbering durably rather than resurrecting it from the broker', async () => {
-  const store=new IndexStore();store.merge(snapshot([entry('a'),entry('b'),entry('c')],null));store.assignSessionNumbers(new Set(['a','b','c']));
-  const storage=memory(),broker=new CacheBroker(storage);await broker.save(store.exportState());
-  store.merge(snapshot([entry('a'),entry('transient','pending',false),entry('b'),entry('c')],null));assert.deepEqual(store.numberedIds,[]);
-  await broker.save(store.exportState());const saved=await broker.load(context);assert.ok(!saved.numbering||!saved.numbering.ids.length);
-  const reload=new IndexStore();reload.restoreState(saved,snapshot([entry('b')],null));assert.equal(reload.ordinal('b').confirmed,false);
-});
-
-test('an unaware passive tab cannot erase another tab session numbering within the same cache generation', async () => {
-  const storage=memory(),broker=new CacheBroker(storage);const reset=await broker.reset(context);
-  const a=new IndexStore();a.restoreState(reset,snapshot([entry('a'),entry('b'),entry('c')],null));
-  const b=new IndexStore();b.restoreState(reset,snapshot([entry('c')],null));
-  a.assignSessionNumbers(new Set(['a','b','c']));await broker.save(a.exportState());
-  b.merge(snapshot([entry('c'),entry('d')],null));assert.equal(b.exportState().numbering,undefined);await broker.save(b.exportState());
-  const merged=await broker.load(context);assert.deepEqual(merged.numbering.ids,['a','b','c']);
-});
-
-test('a known stale tab cannot revive explicitly revoked ranks; only a new reset generation can renumber', async () => {
-  const broker=new CacheBroker(memory());const reset=await broker.reset(context);const a=new IndexStore();a.restoreState(reset,snapshot([entry('a'),entry('b'),entry('c')],null));
-  a.assignSessionNumbers(new Set(['a','b','c']));await broker.save(a.exportState());const stale=a.exportState();
-  a.merge(snapshot([entry('a'),entry('transient','pending',false),entry('b'),entry('c')],null));await broker.save(a.exportState());
-  await broker.save(stale);assert.deepEqual((await broker.load(context)).numbering,{ids:[]});
-  const rebuilt=await broker.reset(context),fresh=new IndexStore();fresh.restoreState(rebuilt,snapshot([entry('a'),entry('b'),entry('c')],null));fresh.assignSessionNumbers(new Set(['a','b','c']));await broker.save(fresh.exportState());
-  assert.deepEqual((await broker.load(context)).numbering.ids,['a','b','c']);
-});
-
-test('hydration classifies raw saved history separately from observations acquired before the reply',async()=>{
- for(const saved of [undefined,state([]),state([entry('old')]),{...state([]),quarantine:[{reason:'text-change',entries:[entry('archived')],segments:[{ids:['archived'],ordered:true}],ordered:true}]}]){
-  const store=new IndexStore();store.merge(snapshot([entry('new')],null));const persist=new PersistentIndex({load:async()=>saved,save:async()=>{}},store);
-  await persist.restore(context,()=>snapshot([entry('new')],null));assert.equal(persist.loadedHistory.cachedEntries,saved?.entries.length+(saved?.quarantine.reduce((n,g)=>n+g.entries.length,0)??0)||0);assert.ok(ids(store).includes('new'));persist.dispose();
- }
-});
-test('failed, invalid and superseded hydration never masquerades as an empty cache decision',async()=>{
- for(const mode of ['throw','invalid']){const store=new IndexStore();store.merge(snapshot([entry('new')],null));const persist=new PersistentIndex({load:async()=>{if(mode==='throw')throw Error('offline');return {bad:true};},save:async()=>{}},store);await persist.restore(context,()=>snapshot([entry('new')],null)).catch(()=>{});assert.equal(persist.loadedHistory,null);persist.dispose();}
-});
-test('runtime backend distinguishes an explicit missing index from denied or malformed replies',async()=>{
- const seen=[];const backend=runtimeIndexBackend(async message=>{seen.push(message);return {kind:'cache:result',state:null};});assert.equal(await backend.load(context),undefined);assert.deepEqual(seen,[{kind:'cache:read',context}]);
- for(const bad of [undefined,null,{}, {kind:'cache:result',state:{bad:true}}, {kind:'cache:result',state:null,extra:true}])await assert.rejects(runtimeIndexBackend(async()=>bad).load(context));
- assert.equal((await runtimeIndexBackend(async()=>({kind:'cache:result',state:state([entry('a')])})).load(context)).entries.length,1);
 });

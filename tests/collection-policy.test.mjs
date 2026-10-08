@@ -82,8 +82,8 @@ test('COLLECTION-04: middle stalls and scroll-only movement cannot become bounda
   }
 });
 
-test('COLLECTION-05: root, semantic IDs, significant viewport drift and abort invalidate old clamp proof', () => {
-  for (const override of [{ root: {} }, { signature: 'different-first' },
+test('COLLECTION-05: root, shell, IDs, significant viewport drift and abort invalidate old clamp proof', () => {
+  for (const override of [{ root: {} }, { node: {} }, { signature: 'different-first' },
     { geometry: sample(0).geometry.map((v, i) => i >= 4 ? v + 8 : v) }, { aborted: true }, { node: null }]) {
     const policy = new CollectionBoundaryWitness();
     probe(policy, 0); probe(policy, 2400); probe(policy, 4800);
@@ -154,10 +154,4 @@ test('COLLECTION-10: batched locatable IDs match exact per-ID checks using one t
     if (previousLocation === undefined) delete globalThis.location; else globalThis.location = previousLocation;
     delete globalThis.__collectionTurns; delete globalThis.__collectionReadCount;
   }
-});
-
-test('COLLECTION-11: replacing a shell with the same semantic witness retains stable head proof', () => {
-  const policy = new CollectionBoundaryWitness();
-  for (let now = 0; now <= 6080; now += 80) probe(policy, now, { node: {} });
-  assert.equal(probe(policy, 6100, { node: {} }).confirmed, true);
 });
