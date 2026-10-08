@@ -4,7 +4,7 @@ import { readTurns } from './turns';
 import { HeightLedger } from './geometry';
 import { CollectionBoundaryWitness } from './collection-policy';
 type Direction = 'older' | 'newer';
-export interface LoadReport { phase: 'scan' | 'answer' | 'jump' | 'refine' | 'head' | 'sweep'; added: number; steps: number; }
+export interface LoadReport { phase: 'scan' | 'answer' | 'jump' | 'refine' | 'head' | 'tail'; added: number; steps: number; }
 type Attempt = { method: string; before: number; requested: number; after: number; heightBefore: number; heightAfter: number; scrollEvents: number; replaced: boolean;
   boundary?: { physical: boolean; stableMs: number; probes: number; loading: boolean; rendering: boolean; confirmed: boolean } };
 export class DomAdapter implements NavigationAdapter {
@@ -22,7 +22,7 @@ export class DomAdapter implements NavigationAdapter {
   private hintEpoch = -1;
   private geometry = new HeightLedger();
   private adjacent = new Map<string, string>();
-  private collection: { stage: 'head' | 'sweep' | 'done'; boundary: CollectionBoundaryWitness; lastRenderActivity: number } | null = null;
+  private collection: { stage: 'tail' | 'head' | 'done'; boundary: CollectionBoundaryWitness; headAnchor?: { root: HTMLElement; signature: string } } | null = null;
   private lastAttempt: Attempt | null = null;
   lastLoadReport: LoadReport = { phase: 'scan', added: 0, steps: 0 };
   constructor(private store: IndexStore, private refresh: (direction?: Direction) => void) {}
@@ -133,10 +133,10 @@ export class DomAdapter implements NavigationAdapter {
     this.geometry.observe(measured, this.store.ordered ? this.store.entries.map(e => e.id)
       : measured.filter(t => t.role === 'user').map(t => t.id), scroller.clientWidth);
   }
-  begin(collect = false): void {
+  begin(collect = false, rebuild = false): void {
     this.unconfirmedDirection = 'older'; this.reversedUnconfirmed = false;
-    this.lastAttempt = null; this.lastLoadReport = { phase: collect ? 'head' : 'scan', added: 0, steps: 0 };
-    this.collection = collect ? { stage: 'head', boundary: new CollectionBoundaryWitness(), lastRenderActivity: -Infinity } : null;
+    this.lastAttempt = null; this.lastLoadReport = { phase: collect ? rebuild ? 'tail' : 'head' : 'scan', added: 0, steps: 0 };
+    this.collection = collect ? { stage: rebuild ? 'tail' : 'head', boundary: new CollectionBoundaryWitness() } : null;
   }
   get collectionFinished(): boolean { return this.collection?.stage === 'done'; }
   diagnostic(): object {
@@ -337,12 +337,12 @@ export class DomAdapter implements NavigationAdapter {
     const epoch = this.store.epoch, context = location.origin + location.pathname;
     if (this.store.context !== context) throw new Error('Conversation changed');
     if (targetId === null && this.collection?.stage === 'done') return false;
-    if (targetId === null && this.collection?.stage === 'sweep') direction = 'newer';
+    if (targetId === null && this.collection?.stage === 'tail') direction = 'newer';
     const root = this.scroller(this.nodes.values().next().value);
     const window = this.frontier(root), edge = direction === 'older' ? window[0] : window.at(-1);
     const signature = (items: typeof window) => items.flatMap(item => item.ids).join('|');
     const beforeSignature = signature(window), before = new Set(this.store.entries.map(e => e.id));
-    const phase: LoadReport['phase'] = targetId === null && this.collection ? direction === 'older' ? 'head' : 'sweep' : 'scan';
+    const phase: LoadReport['phase'] = targetId === null && this.collection ? direction === 'older' ? 'head' : 'tail' : 'scan';
     this.lastLoadReport = { phase, added: this.lastLoadReport.added, steps: this.lastLoadReport.steps + 1 };
     this.loadDirection = direction; this.loadSignal = signal;
     const attempt: Attempt = { method: edge ? 'mounted-edge-anchor' : 'wait-for-mounted-anchor', before: root.scrollTop,
@@ -350,31 +350,19 @@ export class DomAdapter implements NavigationAdapter {
     this.lastAttempt = attempt;
     const observeScroll = () => { attempt.scrollEvents++; };
     const collection = targetId === null ? this.collection : null;
-    const main = document.querySelector('main');
-    // A mounted ID can remain unchanged while its answer streams, or while a
-    // placeholder is replaced. These mutations defer boundary proof without
-    // pretending that changed text or layout discovered another prompt.
-    const renderObserver = collection && main ? new MutationObserver(records => {
-      const relevant = records.some(record => {
-        const target = record.target instanceof Element ? record.target : record.target.parentElement;
-        return target && !target.closest('aside, nav, form, [role="textbox"], [contenteditable="true"], #chatgpt-toc-root');
-      });
-      if (relevant && this.collection === collection && !signal.aborted) {
-        collection.lastRenderActivity = performance.now(); collection.boundary.reset();
-      }
-    }) : null;
-    // Geometry handles style/class changes with the same 2px tolerance; counting
-    // every cosmetic mutation as rendering would make small jitter stall proof.
-    if (main) renderObserver?.observe(main, { subtree: true, childList: true, characterData: true,
-      attributes: true, attributeFilter: ['aria-busy', 'data-loading'] });
     // Ancestors can differ from the old inferred root. Events are diagnostic
     // only; scroll pixels and events never prove a new mounted window.
     document.addEventListener('scroll', observeScroll, { capture: true, passive: true });
     try {
-      if (edge?.node.isConnected && !signal.aborted) {
+      if (collection?.stage === 'tail') {
+        root.scrollTo({ top: root.scrollHeight, behavior: 'instant' });
+        attempt.requested = root.scrollHeight;
+      } else if (edge?.node.isConnected && !signal.aborted && !(collection?.stage === 'head' && (root.scrollTop <= 2 ||
+        collection.headAnchor?.root === root && collection.headAnchor.signature === beforeSignature))) {
         edge.node.scrollIntoView({ block: direction === 'older' ? 'start' : 'end', inline: 'nearest', behavior: 'instant' });
         attempt.requested = root.scrollTop;
       }
+      if (collection?.stage === 'head') collection.headAnchor = { root, signature: beforeSignature };
       return await new Promise<boolean>(resolve => {
         const started = performance.now();
         let timer: ReturnType<typeof setTimeout>, nudged = false, finished = false;
@@ -387,7 +375,14 @@ export class DomAdapter implements NavigationAdapter {
           if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) { finish(false); return; }
           this.refresh(direction);
           if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) { finish(false); return; }
-          const currentRoot = this.scroller(this.nodes.values().next().value), current = this.frontier(currentRoot), currentSignature = signature(current);
+          const currentRoot = this.scroller(this.nodes.values().next().value);
+          // Tail prepares the root's actual bottom. Composer padding, streaming
+          // reflow and root replacement must never pull it back to a turn shell.
+          if (collection?.stage === 'tail' && currentRoot.scrollHeight - currentRoot.clientHeight - currentRoot.scrollTop > 2) {
+            currentRoot.scrollTo({ top: currentRoot.scrollHeight, behavior: 'instant' });
+            attempt.requested = currentRoot.scrollHeight;
+          }
+          const current = this.frontier(currentRoot), currentSignature = signature(current);
           attempt.after = currentRoot.scrollTop; attempt.heightAfter = currentRoot.scrollHeight;
           attempt.replaced ||= currentRoot !== root || !root.isConnected;
           const added = this.store.entries.filter(e => e.stable && !before.has(e.id)).length;
@@ -395,14 +390,38 @@ export class DomAdapter implements NavigationAdapter {
           if (currentSignature !== last) { last = currentSignature; changedSince = performance.now(); }
           const boundary = direction === 'older' ? current[0] : current.at(-1);
           const viewport = this.viewport(currentRoot), rect = boundary?.node.getBoundingClientRect();
-          const loading = !!document.querySelector('main[aria-busy="true"], main [aria-busy="true"], main [data-loading="true"], main [role="progressbar"], main [data-testid="loading-conversation"]');
+          const visibleLoading = (node: HTMLElement): boolean => {
+            if (node.closest('[hidden], [aria-hidden="true"], aside, nav, form, [role="textbox"], [contenteditable="true"], #chatgpt-toc-root')) return false;
+            const area = node.getBoundingClientRect();
+            if (!node.isConnected || area.width <= 0 || area.height <= 0) return false;
+            for (let parent: HTMLElement | null = node; parent; parent = parent.parentElement) {
+              const style = getComputedStyle(parent);
+              if (style.visibility !== 'visible' || Number(style.opacity) === 0) return false;
+            }
+            return true;
+          };
+          const conversationLoading = [...document.querySelectorAll<HTMLElement>('main[aria-busy="true"], main[data-loading="true"], main [data-testid="loading-conversation"]')].some(visibleLoading);
+          // Only visible history indicators at the outward edge block proof.
+          // Busy descendants of a turn are answer streaming, not history loading.
+          const edgeLoading = !!rect && [...document.querySelectorAll<HTMLElement>('main [aria-busy="true"], main [data-loading="true"], main [role="progressbar"]')].some(node => {
+            if (boundary!.node.contains(node) || node.closest('[data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]') ||
+              !visibleLoading(node) || !(currentRoot === document.scrollingElement || currentRoot.contains(node))) return false;
+            const area = node.getBoundingClientRect();
+            return area.bottom >= viewport.top - 2 && area.top <= viewport.bottom + 2 &&
+              (direction === 'older' ? area.top <= rect.bottom + 2 : area.bottom >= rect.top - 2);
+          });
+          const loading = conversationLoading || edgeLoading;
           const physical = !!rect && (direction === 'older'
             ? currentRoot.scrollTop <= 2 && rect.top >= viewport.top - 2 && rect.top < viewport.bottom
-            : currentRoot.scrollTop + currentRoot.clientHeight >= currentRoot.scrollHeight - 2 && rect.bottom <= viewport.bottom + 2 && rect.bottom > viewport.top);
+            : currentRoot.scrollTop + currentRoot.clientHeight >= currentRoot.scrollHeight - 2 && rect.bottom <= viewport.bottom + 2);
+          // Boundary IDs and user text survive harmless shell remounts. Neither
+          // unrelated answer text nor total scrollHeight proves a history edge.
+          const semantic = direction === 'older' ? boundary?.ids.map(id => this.store.entries.find(entry => entry.id === id && entry.stable)?.text ?? '') ?? [] : [];
           const boundaryStatus = collection?.boundary.observe({ now, physical, loading,
-            rendering: now - collection.lastRenderActivity < 320, root: currentRoot, node: boundary?.node ?? null, signature: currentSignature,
-            geometry: [currentRoot.scrollHeight, currentRoot.clientHeight, currentRoot.clientWidth, currentRoot.scrollTop,
-              viewport.top, viewport.bottom, rect?.top ?? NaN, rect?.bottom ?? NaN] });
+            rendering: false, root: currentRoot, node: boundary?.node ?? null, signature: boundary ? JSON.stringify([boundary.ids, semantic]) : '',
+            geometry: direction === 'older'
+              ? [currentRoot.clientHeight, currentRoot.clientWidth, currentRoot.scrollTop, viewport.top, viewport.bottom, rect?.top ?? NaN]
+              : [currentRoot.clientHeight, currentRoot.clientWidth, viewport.top, viewport.bottom, currentRoot.scrollHeight - currentRoot.clientHeight - currentRoot.scrollTop] });
           if (boundaryStatus) attempt.boundary = { ...boundaryStatus, stableMs: Math.round(boundaryStatus.stableMs) };
           if (current.length && (added > 0 || currentSignature !== beforeSignature) && elapsed >= 320 && performance.now() - changedSince >= 160) {
             this.lastLoadReport.added += added;
@@ -410,18 +429,24 @@ export class DomAdapter implements NavigationAdapter {
           }
           if (targetId !== null && this.mounted(targetId)) { this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return; }
           // A stalled middle window is not the start of a conversation. Probe
-          // the same direction and allow slow mounts; reverse only after a live
+          // the same direction and allow slow mounts; finish only after a live
           // physical boundary stays stable for six seconds and two clamp probes.
           const repeatBoundaryProbe = collection?.boundary.shouldProbe(now) ?? false;
           if (currentSignature === beforeSignature && boundary?.node.isConnected && rect && ((!nudged && elapsed >= 640) || repeatBoundaryProbe)) {
             nudged = true;
-            const top = currentRoot.scrollTop + (direction === 'older' ? rect.top - viewport.top : rect.bottom - viewport.bottom) +
-              (direction === 'older' ? -1 : 1) * Math.max(80, currentRoot.clientHeight * .45);
+            // Probe the numeric edge directly; padded turn alignment could
+            // point the opposite way. Repeated head batches retain their progress.
+            const step = Math.max(80, currentRoot.clientHeight * .45);
+            const top = collection && (physical || collection.stage === 'tail')
+              ? direction === 'older' ? -step : currentRoot.scrollHeight + step
+              : collection ? currentRoot.scrollTop - step
+              : currentRoot.scrollTop + (direction === 'older' ? rect.top - viewport.top : rect.bottom - viewport.bottom) +
+                (direction === 'older' ? -step : step);
             currentRoot.scrollTo({ top, behavior: 'instant' }); attempt.requested = top;
             collection?.boundary.recordProbe(now, physical && !loading && Math.abs(currentRoot.scrollTop - attempt.after) <= 2);
           }
           if (collection && this.collection === collection && boundaryStatus?.confirmed) {
-            collection.stage = collection.stage === 'head' ? 'sweep' : 'done'; collection.boundary.reset();
+            collection.stage = collection.stage === 'tail' ? 'head' : 'done'; collection.boundary.reset();
             this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return;
           }
           if (elapsed >= Math.min(targetId === null ? 6500 : 1600, Math.max(0, timeout - 200)) && current.length) {
@@ -434,7 +459,6 @@ export class DomAdapter implements NavigationAdapter {
         signal.addEventListener('abort', aborted, { once: true }); timer = setTimeout(poll, 80);
       });
     } finally {
-      renderObserver?.disconnect();
       if (signal.aborted && collection) collection.boundary.reset();
       document.removeEventListener('scroll', observeScroll, { capture: true });
       if (this.loadSignal === signal) { this.loadSignal = null; this.loadDirection = null; }

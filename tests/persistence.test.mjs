@@ -210,9 +210,12 @@ test('profile limits evict least-recently-used conversations and enforce total s
   assert.equal(await broker.load('https://chatgpt.com/c/large-a'), undefined);
 });
 
-test('corrupt profile is discarded, no fresh-chat or cross-origin persistence is accepted', async () => {
+test('corrupt profile is rejected without erasing it or reporting an empty history', async () => {
   const storage = memory(); storage.values[CACHE_KEY] = { version: 1, records: [], surprise: 'secret' };
-  const broker = new CacheBroker(storage); assert.equal(await broker.load(context), undefined);
+  const broker = new CacheBroker(storage); const before=structuredClone(storage.values[CACHE_KEY]);
+  await assert.rejects(broker.load(context), /Invalid stored profile/);
+  await assert.rejects(broker.save(state([entry('a')])), /Invalid stored profile/);
+  assert.deepEqual(storage.values[CACHE_KEY],before);
   await assert.rejects(broker.save(state([entry('a')], 'branch-a', 'https://chatgpt.com/')));
   assert.equal(conversationContext('https://chatgpt.com/c/abc?view=1#x'), 'https://chatgpt.com/c/abc');
   assert.equal(conversationContext('https://chatgpt.com/g/g-demo/c/abc'), 'https://chatgpt.com/g/g-demo/c/abc');
@@ -388,4 +391,46 @@ test('SPA A to B to A restores saved order immediately while empty, without F5 o
   store.merge(snapshot([entry('c')], null)); await coordinator.flush();
   assert.deepEqual((await broker.load(context)).segments, [{ ids: ['a', 'b', 'c'], ordered: true }]);
   assert.deepEqual((await broker.load(other)).entries.map(e => e.id), ['other']); coordinator.dispose();
+});
+
+
+test('rebuild resets only its conversation and rejects queued stale tab writes', async () => {
+  const storage=memory(),broker=new CacheBroker(storage),other='https://chatgpt.com/c/other';
+  await broker.save(state([entry('old-a'),entry('old-b')],null)); await broker.save(state([entry('other')],null,other));
+  const stale=await broker.load(context),empty=await broker.reset(context);
+  assert.equal(empty.generation,1); assert.equal(empty.entries.length,0);
+  await assert.rejects(broker.save(stale),/Stale cache generation/);
+  const store=new IndexStore();store.restoreState(empty,snapshot([entry('tail')],null));await broker.save(store.exportState());
+  assert.deepEqual((await broker.load(context)).entries.map(e=>e.id),['tail']);assert.deepEqual((await broker.load(other)).entries.map(e=>e.id),['other']);
+  const restarted=new CacheBroker(storage);await assert.rejects(restarted.save(stale),/Stale cache generation/);
+});
+
+test('confirmed hydration counts saved history rather than live mounted observations', async () => {
+  const store=new IndexStore();store.merge(snapshot([entry('live')],null));
+  const p=new PersistentIndex({load:async()=>undefined,save:async()=>{}},store);
+  await p.restore(context,()=>snapshot([entry('live')],null));assert.deepEqual(p.loadedHistory,{context,cachedEntries:0});p.dispose();
+  const archived=state([],null);archived.quarantine=[{reason:'text-change',entries:[entry('old')],segments:[{ids:['old'],ordered:true}],ordered:true}];
+  const q=new PersistentIndex({load:async()=>archived,save:async()=>{}},store);await q.restore(context,()=>snapshot([entry('live')],null));assert.equal(q.loadedHistory.cachedEntries,1);q.dispose();
+});
+
+test('failed or malformed read stays unknown and cannot trigger automatic rebuilding', async () => {
+  for(const backend of [{load:async()=>{throw new Error('denied');},save:async()=>{}},{load:async()=>({bad:true}),save:async()=>{}}]){
+    const store=new IndexStore();store.merge(snapshot([entry('live')],null));const p=new PersistentIndex(backend,store);
+    await p.restore(context,()=>snapshot([entry('live')],null)).catch(()=>{});assert.equal(p.loadedHistory,null);assert.equal(p.status,'error');p.dispose();
+  }
+});
+
+test('rebuild coordinator replaces prior witnesses without restoring them on the next flush', async()=>{
+  const broker=new CacheBroker(memory()),store=new IndexStore();store.merge(snapshot([entry('a'),entry('b')],null));
+  const p=new PersistentIndex(broker,store);await p.flush();
+  assert.equal(await p.rebuild(context,()=>snapshot([entry('b')],null),()=>true),true);
+  assert.deepEqual(ids(store),['b']);assert.equal(store.exportState().generation,1);
+  store.merge(snapshot([entry('b'),entry('new')],null));await p.flush();assert.deepEqual((await broker.load(context)).entries.map(e=>e.id),['b','new']);p.dispose();
+});
+
+test('v034 saved format stays navigable and append persists in original order',async()=>{
+  const broker=new CacheBroker(memory());await broker.save(state([entry('a'),entry('b')],null));
+  const store=new IndexStore(),p=new PersistentIndex(broker,store);store.merge(snapshot([entry('b')],null));
+  await p.restore(context,()=>snapshot([entry('b')],null));assert.equal(p.loadedHistory.cachedEntries,2);assert.equal(store.canSeek('a'),true);
+  store.merge(snapshot([entry('b'),entry('c')],null));await p.flush();assert.deepEqual((await broker.load(context)).entries.map(e=>e.id),['a','b','c']);p.dispose();
 });
