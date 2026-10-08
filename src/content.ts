@@ -117,7 +117,7 @@ function start(): Instance {
   function render(): void {
     if (!alive) return;
     scope.textContent = `本頁已看過 ${store.entries.length} 則 · 目前掛載 ${store.mounted.size} 則。歷史尚未完整；${store.branchConfidence === 'unverified' ? '當前分支未完整核對；' : ''}搜尋涵蓋已觀察資料。` +
-      (!store.ordered ? '部分順序待核對，按觀察區段分組。' : '') +
+      (!store.ordered ? '部分先後順序尚未確認，按已收錄群組顯示。' : store.recoveredIds.size ? '已沿用保存的目錄排序。' : '') +
       (store.quarantine.length ? `另有 ${store.retainedCount - store.entries.length} 筆曾看過資料已隔離，僅供搜尋。` : '') +
       (store.limitReason ? `已達${store.limitReason === 'entries' ? '5000 筆記錄' : '500 萬字元'}保留上限，已停止新增；現有資料仍可搜尋。` : '') +
       ({ loading: ' 正在讀取本機目錄。', pending: ' 本機目錄儲存中。', saved: ' 已儲存於本機。', error: ' 本機儲存失敗，本頁資料仍保留。', off: '' }[persistence.status]);
@@ -143,7 +143,7 @@ function start(): Instance {
       for (const [index, segment] of store.segments.entries()) {
         const visible = segment.ids.flatMap(id => matches.has(id) ? [matches.get(id)!] : []);
         if (!visible.length) continue;
-        if (!store.ordered) rows.push(() => make('li', 'empty', `觀察區段 ${index + 1} · ${segment.ordered ? '區段內順序已核對' : '區段內順序待核對'}`));
+        if (!store.ordered) rows.push(() => make('li', 'empty', `已收錄群組 ${index + 1} · ${segment.ordered ? '已保存區段排序' : '先後順序尚未確認'}`));
         for (const entry of visible) {
         rows.push(() => {
         const row = make('li'); const choice = button(entry.text.slice(0, 180), () => { void navigate(entry.id); }, 'entry', false);

@@ -41,7 +41,7 @@ test('null branch F5 restores exact seek candidates and original order without g
     assert.deepEqual(store.searchObserved('').map(entry => entry.id).sort(), ['a', 'b', 'c']);
     assert.equal(store.quarantine.length, 0); assert.equal(store.canSeek('a'), true);
     assert.equal(store.seekDirection('a'), 'older'); assert.equal(store.seekDirection('c', ['a']), 'newer');
-    assert.equal(store.ordered, false); assert.equal(store.branchConfidence, 'unverified'); assert.equal(store.completeness, 'partial');
+    assert.equal(store.ordered, true); assert.equal(store.branchConfidence, 'unverified'); assert.equal(store.completeness, 'partial');
     assert.deepEqual([...store.recoveredIds], ['a', 'b']);
     saved = store.exportState(); assert.equal(validStoredIndex(saved), true);
   }
@@ -300,7 +300,7 @@ test('SPA empty mounts hydrate null-branch candidates before later DOM windows a
   store.merge(snapshot([], null)); coordinator.schedule();
   gate.resolve(state([entry('a'), entry('b'), entry('c')], null));
   assert.equal(await loading, true); assert.deepEqual(ids(store), ['a', 'b', 'c']); assert.equal(store.mounted.size, 0);
-  assert.equal(store.canSeek('a'), true); assert.equal(store.seekDirection('a'), null); assert.equal(store.ordered, false);
+  assert.equal(store.canSeek('a'), true); assert.equal(store.seekDirection('a'), null); assert.equal(store.ordered, true);
   store.merge(snapshot([entry('c')], null)); coordinator.schedule(); await coordinator.flush();
   assert.deepEqual(ids(store), ['a', 'b', 'c']); assert.equal(store.seekDirection('a'), 'older');
   assert.deepEqual(writes[0].recovery.candidateIds, ['a', 'b']); assert.equal(validStoredIndex(writes[0]), true);
@@ -312,4 +312,80 @@ test('incognito does not read or write conversation storage', async () => {
   const coordinator = new PersistentIndex({ load: async () => { calls++; }, save: async () => { calls++; } }, store, { incognito: true });
   assert.equal(await coordinator.restore(context, () => snapshot([entry('a')])), false);
   coordinator.schedule(); await coordinator.flush(); coordinator.dispose(); assert.equal(calls, 0);
+});
+
+
+test('saved null-branch sorting survives empty, middle and tail mounts across repeated reloads without a rescan', () => {
+  const all = Array.from({ length: 30 }, (_, i) => entry('p-' + i, 'prompt ' + i));
+  let saved = state(all, null);
+  // The original v033 format can contain recovery candidates while its saved
+  // segments already have valid ordering. Both states must restore identically.
+  saved.recovery = { candidateIds: all.map(e => e.id) };
+  for (const live of [[], [all[15]], [all[29]], [], [all[2]]]) {
+    const store = new IndexStore(); assert.equal(store.restoreState(saved, snapshot(live, null)), true);
+    assert.deepEqual(ids(store), all.map(e => e.id));
+    assert.equal(store.ordered, true); assert.deepEqual(store.segments, [{ ids: ids(store), ordered: true }]);
+    assert.equal(store.branchConfidence, 'unverified'); assert.equal(store.completeness, 'partial');
+    assert.equal(store.quarantine.length, 0); assert.equal(store.retainedCount, 30);
+    assert.deepEqual([...store.mounted], live.map(e => e.id));
+    assert.ok(store.recoveredIds.size >= 29); assert.ok(all.every(e => store.canSeek(e.id)));
+    saved = store.exportState(); assert.equal(validStoredIndex(saved), true);
+  }
+});
+
+test('saved ordering never promotes recovered identities into a completeness proof', () => {
+  const store = new IndexStore();
+  store.restoreState(state([entry('a'), entry('b')]), snapshot([]));
+  const proof = { source: 'conversation-structure', branch: 'branch-a', exhausted: true, orderedIds: ['a', 'b'] };
+  assert.equal(store.ordered, true); assert.equal(store.recoveredIds.size, 2);
+  assert.equal(store.verifyComplete(proof), false); assert.equal(store.completeness, 'partial');
+  store.merge(snapshot([entry('b')])); assert.equal(store.verifyComplete(proof), false);
+  store.merge(snapshot([entry('a'), entry('b')])); assert.equal(store.recoveredIds.size, 0);
+  assert.equal(store.verifyComplete(proof), true);
+  const unknown = new IndexStore(); unknown.restoreState(state([entry('a'), entry('b')], null), snapshot([], null));
+  assert.equal(unknown.verifyComplete(proof), false);
+});
+
+test('restored disconnected groups retain their own order without inventing order between groups', () => {
+  const before = new IndexStore(); before.merge(snapshot([entry('a'), entry('b')], null)); before.merge(snapshot([entry('x'), entry('y')], null));
+  const after = new IndexStore(); after.restoreState(before.exportState(), snapshot([], null));
+  assert.equal(after.ordered, false);
+  assert.deepEqual(after.segments, [{ ids: ['a', 'b'], ordered: true }, { ids: ['x', 'y'], ordered: true }]);
+  assert.equal(after.seekDirection('a', ['y']), null);
+  after.merge(snapshot([entry('b'), entry('x')], null));
+  assert.equal(after.ordered, true); assert.deepEqual(ids(after), ['a', 'b', 'x', 'y']);
+});
+
+test('legacy archived prefix retains local ordering after migration but does not invent a bridge', () => {
+  const saved = state([entry('c'), entry('d')], null);
+  saved.quarantine.push({ reason: 'restored-unverified', entries: [entry('a'), entry('b')], segments: [{ ids: ['a', 'b'], ordered: true }], ordered: true });
+  const store = new IndexStore(); store.restoreState(saved, snapshot([], null));
+  assert.equal(store.ordered, false);
+  assert.deepEqual(store.segments, [{ ids: ['a', 'b'], ordered: true }, { ids: ['c', 'd'], ordered: true }]);
+  assert.equal(store.seekDirection('a', ['d']), null); assert.equal(store.seekDirection('a', ['b']), 'older');
+});
+
+test('broker merges saved overlapping windows without degrading ordering across tabs and repeated writes', async () => {
+  const broker = new CacheBroker(memory());
+  await broker.save(state([entry('a'), entry('b'), entry('c')], null));
+  for (let i = 0; i < 5; i++) {
+    await broker.save(state([entry('c'), entry('d')], null));
+    const store = new IndexStore(); store.restoreState(await broker.load(context), snapshot([entry('d')], null));
+    assert.deepEqual(ids(store), ['a', 'b', 'c', 'd']); assert.equal(store.ordered, true);
+    assert.equal(store.segments[0].ordered, true); assert.equal(store.completeness, 'partial');
+    await broker.save(store.exportState());
+  }
+});
+
+test('SPA A to B to A restores saved order immediately while empty, without F5 or recollection', async () => {
+  const broker = new CacheBroker(memory()), store = new IndexStore(), coordinator = new PersistentIndex(broker, store);
+  const other = 'https://chatgpt.com/c/other';
+  store.merge(snapshot([entry('a'), entry('b'), entry('c')], null)); await coordinator.flush();
+  store.merge(snapshot([entry('other')], null, other)); await coordinator.restore(other, () => snapshot([entry('other')], null, other)); await coordinator.flush();
+  store.merge(snapshot([], null)); assert.equal(await coordinator.restore(context, () => snapshot([], null)), true);
+  assert.deepEqual(ids(store), ['a', 'b', 'c']); assert.equal(store.ordered, true); assert.equal(store.mounted.size, 0);
+  assert.deepEqual(store.segments, [{ ids: ['a', 'b', 'c'], ordered: true }]);
+  store.merge(snapshot([entry('c')], null)); await coordinator.flush();
+  assert.deepEqual((await broker.load(context)).segments, [{ ids: ['a', 'b', 'c'], ordered: true }]);
+  assert.deepEqual((await broker.load(other)).entries.map(e => e.id), ['other']); coordinator.dispose();
 });

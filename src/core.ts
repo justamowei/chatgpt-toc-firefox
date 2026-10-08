@@ -109,7 +109,8 @@ export class IndexStore {
   segments: ObservedSegment[] = [];
   quarantine: QuarantinedGeneration[] = [];
   limitReason: 'entries' | 'characters' | null = null;
-  // Candidates retain exact identity and order hints, never a completeness proof.
+  // Restored IDs require a live body witness independently of saved ordering.
+  // Neither identity recovery nor ordering supplies a completeness proof.
   readonly recoveredIds = new Set<string>();
   private seekableIds = new Set<string>();
   private graph: OrderGraph = new Map();
@@ -341,8 +342,10 @@ export class IndexStore {
   }
   private reorder(): void {
     this.seekableIds = new Set(this.entries.filter(entry => entry.stable).map(entry => entry.id));
-    this.segments = this.graphSegments().map(segment => ({ ...segment, ordered: segment.ordered && !segment.ids.some(id => this.recoveredIds.has(id)) }));
-    this.ordered = orderedGraph(this.graph).ordered && this.recoveredIds.size === 0;
+    // Reloads and unknown branches do not revoke observed precedence.
+    // Actual contradictions invalidate that evidence in merge().
+    this.segments = this.graphSegments();
+    this.ordered = orderedGraph(this.graph).ordered;
     const byId = new Map(this.entries.map(e => [e.id, e]));
     // Grouped presentation order is deliberately not asserted as conversation order.
     this.entries = this.segments.flatMap(segment => segment.ids.map(id => byId.get(id)!));
@@ -350,7 +353,7 @@ export class IndexStore {
   verifyComplete(proof: CompleteProof): boolean {
     const ids = this.entries.map(e => e.id);
     const valid = proof.source === 'conversation-structure' && !!proof.branch && proof.branch === this.branch && proof.exhausted && ids.length > 0 &&
-      this.ordered && !this.quarantine.length && !this.limitReason && this.entries.every(e => e.stable) && new Set(proof.orderedIds).size === proof.orderedIds.length &&
+      this.ordered && this.recoveredIds.size === 0 && !this.quarantine.length && !this.limitReason && this.entries.every(e => e.stable) && new Set(proof.orderedIds).size === proof.orderedIds.length &&
       proof.orderedIds.length === ids.length && proof.orderedIds.every((id, i) => id === ids[i]);
     const completeness = valid ? 'verified-complete' : this.entries.some(e => e.stable) || this.quarantine.length ? 'partial' : 'unknown';
     if (this.completeness !== completeness) this.cacheRevision++;
