@@ -448,3 +448,12 @@ test('an unaware passive tab cannot erase another tab session numbering within t
   b.merge(snapshot([entry('c'),entry('d')],null));assert.equal(b.exportState().numbering,undefined);await broker.save(b.exportState());
   const merged=await broker.load(context);assert.deepEqual(merged.numbering.ids,['a','b','c']);
 });
+
+test('a known stale tab cannot revive explicitly revoked ranks; only a new reset generation can renumber', async () => {
+  const broker=new CacheBroker(memory());const reset=await broker.reset(context);const a=new IndexStore();a.restoreState(reset,snapshot([entry('a'),entry('b'),entry('c')],null));
+  a.assignSessionNumbers(new Set(['a','b','c']));await broker.save(a.exportState());const stale=a.exportState();
+  a.merge(snapshot([entry('a'),entry('transient','pending',false),entry('b'),entry('c')],null));await broker.save(a.exportState());
+  await broker.save(stale);assert.deepEqual((await broker.load(context)).numbering,{ids:[]});
+  const rebuilt=await broker.reset(context),fresh=new IndexStore();fresh.restoreState(rebuilt,snapshot([entry('a'),entry('b'),entry('c')],null));fresh.assignSessionNumbers(new Set(['a','b','c']));await broker.save(fresh.exportState());
+  assert.deepEqual((await broker.load(context)).numbering.ids,['a','b','c']);
+});

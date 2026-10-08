@@ -106,8 +106,12 @@ export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex)
       segments: generation.segments.map(segment => ({ ids: segment.ids.filter(id => ids.has(id)), ordered: segment.ordered })).filter(segment => segment.ids.length) });
   }
   if (incoming.generation) active.generation = incoming.generation;
-  const numbering = incoming.numbering ?? previous.numbering;
-  if (numbering && !active.quarantine.length && active.segments.length === 1 && active.segments[0].ordered && numbering.ids.every((id, i) => active.entries[i]?.id === id)) active.numbering = structuredClone(numbering);
+  // Revocation is monotonic within a reset generation. A stale known tab
+  // cannot restore invalidated ranks; rebuilding starts a new generation.
+  const numbering = previous.numbering?.ids.length === 0 ? previous.numbering : incoming.numbering ?? previous.numbering;
+  if (numbering && !numbering.ids.length) active.numbering = { ids: [] };
+  else if (numbering && !active.quarantine.length && active.segments.length === 1 && active.segments[0].ordered && numbering.ids.every((id, i) => active.entries[i]?.id === id)) active.numbering = structuredClone(numbering);
+  else if (previous.numbering || incoming.numbering) active.numbering = { ids: [] };
   else delete active.numbering;
   return active;
 }
