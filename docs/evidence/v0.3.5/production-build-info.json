@@ -1,0 +1,13 @@
+{
+  "version": "0.3.5",
+  "revision": "2026-10-08-v035",
+  "fixture": false,
+  "hashes": {
+    "background.js": "0af8f2939129c9a80667edbe4cae2d9e274a9c8483c76492eda1fa367a2ee909",
+    "content.js": "1400611cf33ab4550133aef00a322069350c2b895e4031c950abe57f676b1565",
+    "options.js": "ad5578f7c20fc63367d132b3c7bebd7755c8a46213a5d28291393d953e3e737f",
+    "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+    "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+    "manifest.json": "ab1623c2c8df4d7d68974c60bcec1719e58b553599067accdff7b5ecd6b8e73f"
+  }
+}

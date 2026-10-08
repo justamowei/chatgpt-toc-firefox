@@ -515,3 +515,13 @@ source 22cc60b 實作完整歷史來源與獨立索引；掛載目錄原保守�
 使用者回報初版v0.3.1新增0無進展與離屏not-found。本輪收集改為實際viewport反覆top0、兩次穩定可見見證後sweep0.85viewport至原閱讀訊息附近；不跳過中間未知提問，不把到頂或自然idle當全集證明。高度保存body與user-span純數字、局部DOM順序提供實測，全球順序可核對且每link successor／width有效才估算。有限locate重試、只捲動conversation root、offset返回連續600ms稳定／24px、取消後不得scroll。多層marker、root替換與非同步evict須回歸；診斷只有revision、geometry及numeric移動。
 
 原未完成Firefox LIVE門檻維持，不能把localhost模型當使用者根因已確認。未操作其profile／登入／安全設定，Windows native工具上輪因URL政策通道不支援而強制停止。來源、測試與限制見docs/scroll-mechanism-v0.3.1-r2.md；每功能或30有效分鐘commit／每次push核對SHA持續適用。
+
+## 2026-10-08：v0.3.5 單對話重建與提問編號
+
+使用者授權「清空該對話目錄→移到最底→一路往上收集→頂端自停」。clear不得影響其他對話或聊天本身；背景持久化generation阻止舊分頁／event page重啟回寫。預設10分鐘、設定1–10分鐘，停止／路由切换必须撤銷過期捲動，已提交reset ack的世代仍須在同context同步。
+
+收集只tail→head→done。頂端見證以穩定ID／正文與局部幾何、6秒＋兩次2.4秒clamp探測，忽略同語義重掛載及遠處尾端高度／progressbar；中段停滯、空掛載、載入或真正邊界變動不能標到頂。到頂不再往回收集。
+
+session提問序號只有連續重疊底→頂走訪、全穩定ID／已接通順序／無容量限制或矛盾才從1確認；否則顯示暫編。編號與撤銷持久化，F5／SPA／搜尋一致；新增須有已編號尾筆→新筆連續窗口，插入／暫時ID／正文順序分支矛盾撤銷。
+
+驗收主103 pure＋原生Firefox157.0.1 localhost5項、固定SHA獨立重建12hash；ChatGPT LIVE、簽章仍PENDING。明細見docs/release-v0.3.5.md。Git版本遞增0.3.5、工作分支fix/rebuild-collection-numbering、維護線release/v0.3、固定annotated v0.3.5；每功能或30有效分鐘commit且同步原始SHA，禁本機GCM／網路Git。

@@ -74,3 +74,5 @@
 0.3.1 的 r2–r5 是歷史上重用同一版本號的修訂；獨立記錄各 SHA 與驗收限制，不把它們都覆蓋為同一 tag。此例外僅描述既有歷史，生效後不再沿用這種交付方式。
 
 main 的本次更新限定版本／Git 規範和索引；目前可測試的完整產品來源從 release/v0.3 或最新交付 tag 取得。GitHub Actions 的官方行為與 token 權限參考：[事件](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)、[GITHUB_TOKEN](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token)。
+
+本次 v0.3.5 為同一已觀察DOM能力的重建／編號改進，PATCH；新讀取器兼容既有保存資料，保留addon ID。明列fix/rebuild-collection-numbering工作分支與chore/rebuild-collection-sync一次性雲端作業，交付後fast-forward維護線並新增不可移動v0.3.5。main只更新規範目錄。
