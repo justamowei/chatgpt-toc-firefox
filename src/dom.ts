@@ -372,7 +372,7 @@ export class DomAdapter implements NavigationAdapter {
       return await new Promise<boolean>(resolve => {
         const started = performance.now();
         let timer: ReturnType<typeof setTimeout>, nudged = false, finished = false;
-        
+
         let changedSince = started, last = beforeSignature;
         const finish = (progress: boolean) => {
           if (finished) return; finished = true; clearTimeout(timer); signal.removeEventListener('abort', aborted); resolve(progress);
