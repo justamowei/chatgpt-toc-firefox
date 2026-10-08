@@ -1,6 +1,6 @@
 # 2026-10-08 重新開發 v0.3.5（最新規格優先）
 
-以 v0.3.4 為功能基準；舊 v0.3.5、v0.3.6（含修正版）棄用。四項需求、取消/保存/邊界判定與驗收逐條見 [重新開發規格](redevelopment-v0.3.5.md)。使用者指定不相容讀取棄用版本，並重用產品版本0.3.5；以新revision/snapshot區分且保留舊tag。
+以 v0.3.4 為功能基準；舊 v0.3.5、v0.3.6（含修正版）棄用。四項需求、取消/保存/邊界判定與驗收逐條見 [重新開發規格](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/redevelopment-v0.3.5.md)。使用者指定不相容讀取棄用版本，並重用產品版本0.3.5；以新revision/snapshot區分且保留舊tag。
 
 # 開發與版本管理計畫
 

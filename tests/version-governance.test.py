@@ -35,7 +35,16 @@ class Governance(unittest.TestCase):
         versions = current_catalog["versions"]
         package = json.loads(Path("package.json").read_text(encoding="utf-8"))
         self.assertEqual(current_catalog["currentVersion"], package["version"])
-        self.assertEqual(versions[-1]["version"], package["version"])
+        if current_catalog.get("redevelopment"):
+            rebuild = current_catalog["redevelopment"]
+            self.assertEqual(rebuild["currentRevision"], package["tocRevision"])
+            self.assertEqual(rebuild["baselineTag"], "v0.3.4")
+            self.assertTrue(rebuild["preserveHistoricalObjects"])
+            self.assertFalse(rebuild["legacyCompatibility"])
+            for tag in rebuild["deprecatedTags"]:
+                self.assertEqual(local_git("cat-file", "-t", tag).strip(), "tag")
+        else:
+            self.assertEqual(versions[-1]["version"], package["version"])
         self.assertEqual(len({v["tag"] for v in versions}), len(versions))
         self.assertEqual(versions[:len(catalog["versions"])], catalog["versions"])
         self.assertEqual(current_catalog["withdrawal"], catalog["withdrawal"])

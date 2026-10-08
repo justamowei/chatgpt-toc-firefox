@@ -1,3 +1,7 @@
+# 2026-10-08 現行版本與棄用決策
+
+使用者指定以 v0.3.4 重新開發產品 **0.3.5**；revision **2026-10-08-v035-rebuild**，新固定快照 `snapshot/v0.3.5/2026-10-08-rebuild`。舊 `v0.3.5`、`v0.3.6`、`snapshot/v0.3.6/2026-10-08-r2` **棄用**；SHA/tag/當時測試證據全部保留，不移動 canonical tag。新版本不讀取棄用版本的保存格式。新交付驗收狀態將與歷史紀錄分開，ChatGPT LIVE 仍 PENDING。
+
 # 版本目錄
 
 依2026-10-07新增規範補建歷史annotatedtags；tag指向原始交付提交，沒有重新編號、重寫歷史或把舊版變成現在才驗收的新版。精確SHA與證據見 [機器可讀目錄](version-catalog.json)、[版本規範](version-policy.md)。
@@ -17,7 +21,7 @@
 
 v0.3.1固定首次交付；其後r2～r5是過去重用版本號的修訂，另保留各來源／報告，不移動v0.3.1。r5原生UI7項當時PENDING。此例外不再延續。v0.2.0於實際使用失敗後撤回，tag僅供追溯；撤回紀錄見[歷史失敗](https://github.com/justamowei/chatgpt-toc-firefox/blob/5c035c30b223886201adaa88433a7fbb8019b041/docs/live-history-failure.md)。
 
-目前適合繼續測試的是v0.3.6修正版（2026-10-08-v036-r2）；同系列維護在release/v0.3。所有版本皆未完成正式簽章與整體Firefox ChatGPT LIVE驗收，不能將合成PASS當作完整session保證。
+目前重新開發版本為 v0.3.5（2026-10-08-v035-rebuild），功能基準 v0.3.4；舊 v0.3.5、v0.3.6（含 r2）已依使用者指示棄用。舊表格是當時交付紀錄，不能當作現行可用版本推薦。維護線 release/v0.3 保留所有原始提交並向前接上回復基準與新實作。所有版本皆未完成正式簽章與整體Firefox ChatGPT LIVE驗收，不能將合成PASS當作完整session保證。
 
 同步結果以GitHub refs及另外的交付同步報告核對；Git bundle雲端備份成功不等於正常refs已同步。
 
