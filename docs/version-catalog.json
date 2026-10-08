@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.6",
+  "currentVersion": "0.3.5",
   "maintenanceBranch": "release/v0.3",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
@@ -264,7 +264,7 @@
     "restoreTagToOlderRuntime": false
   },
   "updatedAt": "2026-10-08",
-  "currentRevision": "2026-10-08-v036-r2",
+  "currentRevision": "2026-10-08-v035-rebuild",
   "sameVersionRevisions": [
     {
       "version": "0.3.6",
@@ -283,6 +283,50 @@
       ],
       "selection": "User explicitly requested same product version. Correct padded tail positioning, persistent head retry progress and visible directional history loading; preserve canonical v0.3.6 tag and original artifacts. Main and independent111 pure/15 native Firefox localhost;12 hashes matched.",
       "createdAt": "2026-10-08"
+    },
+    {
+      "version": "0.3.5",
+      "revision": "2026-10-08-v035-rebuild",
+      "userRequestedSameVersion": true,
+      "request": "回到 v0.3.4 版本，0.3.5 和 0.3.6 就棄用；根據 v0.3.4 重新開發 v0.3.5",
+      "snapshotTag": "snapshot/v0.3.5/2026-10-08-rebuild",
+      "deliveryCommit": "7003c51c74add79754c22457913c403e8b6b776d",
+      "runtimeCommit": "95a74670e26a930c6cadc3c4a29a9d40eb5a7d43",
+      "tagObject": "776b509cbec05b389827019ff095c0f7e9d2aabb",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/release-v0.3.5-rebuild.md",
+        "docs/acceptance-v0.3.5-rebuild.md"
+      ],
+      "baselineTag": "v0.3.4",
+      "baselineDelivery": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
+      "selection": "Explicit user-requested redevelopment from v034; old035/36 deprecated, tags kept;111 pure, independent native Firefox localhost11,12 identical build hashes. No deprecated cache compatibility.",
+      "createdAt": "2026-10-08"
     }
-  ]
+  ],
+  "redevelopment": {
+    "requestedAt": "2026-10-08",
+    "request": "回到 v0.3.4 版本，0.3.5 和 0.3.6 就棄用；根據 v0.3.4 重新開發 v0.3.5",
+    "baselineTag": "v0.3.4",
+    "baselineDelivery": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
+    "baselineRestoreCommit": "b054f36b07657d978576ca7934228d1d212cc1c2",
+    "workBranch": "feat/v035-rebuild-from-v034",
+    "currentRevision": "2026-10-08-v035-rebuild",
+    "snapshotTag": "snapshot/v0.3.5/2026-10-08-rebuild",
+    "deprecatedTags": [
+      "v0.3.5",
+      "v0.3.6",
+      "snapshot/v0.3.6/2026-10-08-r2"
+    ],
+    "preserveHistoricalObjects": true,
+    "legacyCompatibility": false,
+    "status": "experimental",
+    "acceptance": "docs/redevelopment-v0.3.5.md",
+    "runtimeCommit": "95a74670e26a930c6cadc3c4a29a9d40eb5a7d43",
+    "liveStatus": "PENDING",
+    "nativePassed": 11,
+    "deliveryCommit": "7003c51c74add79754c22457913c403e8b6b776d",
+    "tagObject": "776b509cbec05b389827019ff095c0f7e9d2aabb"
+  }
 }

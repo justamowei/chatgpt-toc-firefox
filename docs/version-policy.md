@@ -82,3 +82,8 @@ main 的本次更新限定版本／Git 規範和索引；目前可測試的完�
 ## 2026-10-08 使用者指定的同版本修正例外
 
 使用者明確要求「修改好的也是 v0.3.6 版」。本次邊界修正維持manifest/package/lock 0.3.6，以revision 2026-10-08-v036-r2及固定snapshot/v0.3.6/2026-10-08-r2區分，原v0.3.6 tag不移動、原報告／安裝包保留，另存修正版資料夾。機器目錄另列sameVersionRevisions，不覆盖canonical versions。此為本次明確指示的例外，後續交付仍適用前述遞增規則，除非使用者再次另有指示。工作分支fix/collection-boundary-v036；維護線release/v0.3向前更新，本機網路Git／GCM禁用。
+
+
+## 使用者指定回復基準後重用版本（2026-10-08）
+
+本次使用者明確指定：棄用舊035/36並以034重新開發035。優先採該要求，產品manifest/package為0.3.5，revision2026-10-08-v035-rebuild，固定 annotated snapshot/v0.3.5/2026-10-08-rebuild；不可移動既有canonical v0.3.5。基準程式先以獨立commit精確恢復034，再新增四項功能；Git ancestry保留後续歷史，工作feat/v035-rebuild-from-v034與release/v0.3只非force fast-forward。catalog.redevelopment另列baseline與deprecatedTags，原canonical版本表及撤回證據不重寫。此例外來自使用者當次指令，不允許一般情況任意重用版本號。
