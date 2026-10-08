@@ -1,0 +1,107 @@
+{
+  "date": "2026-10-08T09:10:36.213Z",
+  "source": "Native Firefox isolated addon, localhost virtual renderer and actual extension storage, not ChatGPT LIVE",
+  "firefox": "157.0.1",
+  "build": {
+    "version": "0.3.6",
+    "revision": "2026-10-08-v036",
+    "fixture": true,
+    "hashes": {
+      "background.js": "df48c02771c0123721c04ec910661c6dd80eba09cd94ce20698d84e19f6d941e",
+      "content.js": "a367da259d5a2a35aa2a76ac274b802f708bc7bdb2349637d8a242282659760d",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "5aff47e6e9dd04c276071d0a386c4ba27be073265038891d6815dce3ec6205c5"
+    }
+  },
+  "results": [
+    {
+      "name": "V036-01 missing cache waits for DOM then automatically collects thirty prompts without a reset",
+      "status": "PASS",
+      "elapsedMs": 16478,
+      "actual": {
+        "automatic": true,
+        "collected": 30,
+        "manualClicks": 0
+      }
+    },
+    {
+      "name": "V036-02 continuing the current session automatically appends two distinct IDs with identical text and keeps old entries",
+      "status": "PASS",
+      "elapsedMs": 512,
+      "actual": {
+        "appended": 2,
+        "distinctSameTextIds": [
+          "A:u-30",
+          "A:u-31"
+        ],
+        "total": 32
+      }
+    },
+    {
+      "name": "V036-03 F5 and remount recover thirty-two saved prompts without automatic collection or renumbering",
+      "status": "FAIL",
+      "error": "TimeoutError: Wait timed out after 20052ms",
+      "ui": {
+        "archived": 27,
+        "auto": "skipped-existing",
+        "expanded": "true",
+        "nav": null,
+        "rows": [
+          {
+            "disabled": false,
+            "id": "A:u-23",
+            "n": 1,
+            "text": "1. A 本機提問 23",
+            "title": "已收錄目錄第 1 項：A 本機提問 23"
+          },
+          {
+            "disabled": false,
+            "id": "A:u-24",
+            "n": 2,
+            "text": "2. A 本機提問 24",
+            "title": "已收錄目錄第 2 項：A 本機提問 24"
+          },
+          {
+            "disabled": false,
+            "id": "A:u-25",
+            "n": 3,
+            "text": "3. A 本機提問 25",
+            "title": "已收錄目錄第 3 項：A 本機提問 25"
+          },
+          {
+            "disabled": false,
+            "id": "A:u-26",
+            "n": 4,
+            "text": "4. A 本機提問 26",
+            "title": "已收錄目錄第 4 項：A 本機提問 26"
+          },
+          {
+            "disabled": false,
+            "id": "A:u-27",
+            "n": 5,
+            "text": "5. A 本機提問 27",
+            "title": "已收錄目錄第 5 項：A 本機提問 27"
+          },
+          {
+            "disabled": false,
+            "id": "A:u-30",
+            "n": 6,
+            "text": "6. A 本機提問 30",
+            "title": "已收錄目錄第 6 項：A 本機提問 30"
+          },
+          {
+            "disabled": false,
+            "id": "A:u-31",
+            "n": 7,
+            "text": "7. A 本機提問 31",
+            "title": "已收錄目錄第 7 項：A 本機提問 31"
+          }
+        ],
+        "scope": "本頁已看過 7 則 · 目前掛載 7 則。歷史尚未完整；當前分支未完整核對；搜尋涵蓋已觀察資料。另有 27 筆曾看過資料已隔離，僅供搜尋。 已儲存於本機。",
+        "status": "已切換對話，開始收集本頁提問。"
+      }
+    }
+  ]
+}

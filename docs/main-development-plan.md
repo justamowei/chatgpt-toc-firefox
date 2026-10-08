@@ -1,6 +1,6 @@
 # 開發與版本管理計畫
 
-2026-10-08 更新至 v0.3.5 版本入口。main保留專案基線，本次更新僅為規範文件及版本索引；完整產品與歷史功能計畫見 [release/v0.3](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/development-plan.md)。
+2026-10-08 更新至 v0.3.6 版本入口。main保留專案基線，本次更新僅為規範文件及版本索引；完整產品與歷史功能計畫見 [release/v0.3](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/development-plan.md)。
 
 ## Git與版本規則
 
@@ -21,3 +21,9 @@
 session提問序號只有連續重疊底→頂走訪、全穩定ID／已接通順序／無容量限制或矛盾才從1確認；否則顯示暫編。編號與撤銷持久化，F5／SPA／搜尋一致；新增須有已編號尾筆→新筆連續窗口，插入／暫時ID／正文順序分支矛盾撤銷。
 
 驗收主103 pure＋原生Firefox157.0.1 localhost5項、固定SHA獨立重建12hash；ChatGPT LIVE、簽章仍PENDING。明細見docs/release-v0.3.5.md。Git版本遞增0.3.5、工作分支fix/rebuild-collection-numbering、維護線release/v0.3、固定annotated v0.3.5；每功能或30有效分鐘commit且同步原始SHA，禁本機GCM／網路Git。
+
+## 2026-10-08：v0.3.6 空目錄自動收集
+
+移除編號「暫」，未知起點的tooltip仍明示已收錄目錄順序，保持持久化起點證據及矛盾撤銷。首次載入／SPA必須先成功讀取原始保存索引；只有active+quarantine合計0才自動由底往上收集。拒絕／失敗不算空，任何1筆／部分／隔離資料都不自動重跑。不執行reset、不清空觀察期間新增資料；停止／導航／切換取消，單content生命週期每context最多嘗試一次。新增穩定ID提問自动合併保存，不按文字去重；F5／SPA延續排序與編號。預設10分鐘、設定1–10分鐘不變。
+
+runtime c32e8e92ec98d0dc3969ab3e2e8170bdf726258e；測試 ff84d94ba7a8c14630c6bb46c649b2666a0dcba2。主端及GPT-6.1 Sol high獨立111純／8原生Firefox157.0.1 localhost、12buildhash一致。ChatGPT LIVE仍PENDING，首次掛載前停止按鈕未顯示為已記錄UX限制；詳見docs/release-v0.3.6.md。PATCH 0.3.6延續已觀察DOM能力和保存格式，feat/automatic-session-index、release/v0.3、不可移動annotated v0.3.6；每功能checkpoint與原始SHA雲端同步，本機GCM／網路Git禁用。
