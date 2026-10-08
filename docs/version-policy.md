@@ -63,7 +63,7 @@
 
 本機 GCM 崩潰的限制延續：不再啟動本機 Git Credential Manager 或重試本機網路 Git 指令。必要時以 GitHub 連接器保存鏡像／bundle，再由一次性的 GitHub Actions Linux runner 讀取 bundle、核對來源、使用該次 job 的 GITHUB_TOKEN 同步原始 refs。恢復程式必須拒絕在本機執行；token 只在雲端 job 環境，不能寫入來源、remote URL 或輸出。
 
-雲端恢復只允許固定版本目錄指定的 tags、既有開發分支、當前維護線及 main 的規範文件。預先驗證所有 refs；產品 refs 以 atomic、非 force 更新。失敗不移動既有 tag，也不以來源鏡像 commit 假冒原始 SHA。
+雲端恢復只允許固定版本目錄指定的 tags、已明列的 feat/fix 工作分支、當前維護線及 main 的規範文件。功能 checkpoint 可先只同步該次工作分支；經驗收選定交付後再同步維護線與新 annotated tag。預先驗證所有 refs；產品 refs 以 atomic、非 force 更新。失敗不移動既有 tag，也不以來源鏡像 commit 假冒原始 SHA。
 
 私人狀態保持；建立 Git tag 與維護分支不等於公開 GitHub Release、正式簽章或上架。公開發佈與簽章仍需另外明確授權。
 
@@ -73,4 +73,4 @@
 
 0.3.1 的 r2–r5 是歷史上重用同一版本號的修訂；獨立記錄各 SHA 與驗收限制，不把它們都覆蓋為同一 tag。此例外僅描述既有歷史，生效後不再沿用這種交付方式。
 
-main 的本次更新限定版本／Git 規範和索引；目前可測試的完整產品來源從 release/v0.3 或 v0.3.3 tag 取得。GitHub Actions 的官方行為與 token 權限參考：[事件](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)、[GITHUB_TOKEN](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token)。
+main 的本次更新限定版本／Git 規範和索引；目前可測試的完整產品來源從 release/v0.3 或最新交付 tag 取得。GitHub Actions 的官方行為與 token 權限參考：[事件](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)、[GITHUB_TOKEN](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token)。
