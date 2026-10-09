@@ -1,0 +1,33 @@
+name: Sync original v0.3.7 source and immutable tag
+on:
+  push:
+    branches: [chore/top-v037-sync]
+    paths: [recovery/top-v037.json]
+permissions:
+  contents: write
+concurrency:
+  group: toc-original-v037-sync
+  cancel-in-progress: false
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify pinned program and sync original objects
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import base64, hashlib, json, os, pathlib, subprocess, urllib.request
+          repo='justamowei/chatgpt-toc-firefox'
+          assert os.environ['GITHUB_REPOSITORY']==repo
+          assert os.environ['GITHUB_REF']=='refs/heads/chore/top-v037-sync'
+          url='https://api.github.com/repos/'+repo+'/contents/recovery/sync-top-v037.py?ref='+os.environ['GITHUB_SHA']
+          req=urllib.request.Request(url,headers={'Authorization':'Bearer '+os.environ['GITHUB_TOKEN'],'Accept':'application/vnd.github+json','User-Agent':'toc-v037-bootstrap'})
+          with urllib.request.urlopen(req,timeout=30) as r: obj=json.load(r)
+          program=base64.b64decode(obj['content'])
+          assert hashlib.sha256(program).hexdigest()=='c7b594967eacd4e000e1df4c9efac577e1257a5487aa12a673ff45025db3447c'
+          file=pathlib.Path(os.environ['RUNNER_TEMP'])/'toc-v037-sync.py'
+          file.write_bytes(program)
+          subprocess.run(['python3',str(file)],check=True)
+          PY
