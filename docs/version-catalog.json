@@ -116,6 +116,21 @@
       "selection": "New PATCH delivery: preserve previously observed saved ordering across F5 and SPA returns; strict v1 cache format remains compatible. Pure 94/94; native Firefox localhost 13/13; independent fixed-source review PASS.",
       "tagObject": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c",
       "createdAt": "2026-10-08"
+    },
+    {
+      "version": "0.3.5",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/release-v0.3.5.md",
+        "docs/acceptance-v0.3.5.md"
+      ],
+      "runtimeCommit": "f3cc43662f91bf3c156661bc524f64a8377605ce",
+      "tag": "v0.3.5",
+      "deliveryCommit": "58cdfd67e5631cbb464e2a2724ce2fc0c925359c",
+      "tagObject": "3245ec5e68f5fb45bda22b96daa41ea466621e4b",
+      "createdAt": "2026-10-10",
+      "selection": "Explicit user correction from misnumbered v0.3.7 to v0.3.5 based on v0.3.4; version/revision only, fresh pure 94/94 and native top 6/6 PASS; prior identical logic regression 20/20; LIVE PENDING."
     }
   ],
   "legacyRevisions": [
@@ -253,16 +268,6 @@
     "baselineDelivery": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
     "preserveCommitHistory": true,
     "firefoxUninstall": "PENDING: Computer Use initialization failed"
-  },
-  "pendingDelivery": {
-    "version": "0.3.5",
-    "status": "experimental",
-    "liveStatus": "PENDING",
-    "acceptance": [
-      "docs/release-v0.3.5.md",
-      "docs/acceptance-v0.3.5.md"
-    ],
-    "runtimeCommit": "f3cc43662f91bf3c156661bc524f64a8377605ce"
   },
   "versionCorrection": {
     "requestedAt": "2026-10-10",
