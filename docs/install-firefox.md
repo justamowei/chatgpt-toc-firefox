@@ -1,6 +1,6 @@
-# Firefox v0.3.7 更新與使用
+# Firefox v0.3.5 更新與使用
 
-正式manifest：outputs/Firefox-測試版-v0.3.7/manifest.json；version0.3.7／revision2026-10-10-v037。
+正式manifest：outputs/Firefox-測試版-v0.3.5/manifest.json；version0.3.5／revision2026-10-10-v035。
 
 保留插件addon ID，在Firefox about:debugging →這個Firefox，使用目前載入資料夾覆蓋本版檔案後重新載入；若舊載入資料夾已刪除，移除失效暫時插件再載入本版manifest。重新整理ChatGPT分頁。實際已保存資料是否仍在取決於Firefox是否曾卸載／清除；本次程式不清除儲存。
 

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.7",
+  "currentVersion": "0.3.5",
   "maintenanceBranch": "release/v0.3",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
@@ -116,21 +116,6 @@
       "selection": "New PATCH delivery: preserve previously observed saved ordering across F5 and SPA returns; strict v1 cache format remains compatible. Pure 94/94; native Firefox localhost 13/13; independent fixed-source review PASS.",
       "tagObject": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c",
       "createdAt": "2026-10-08"
-    },
-    {
-      "version": "0.3.7",
-      "runtimeCommit": "0a069e08a7893a55b48d061ce7dbb8a9fc0f9b64",
-      "status": "experimental",
-      "liveStatus": "PENDING",
-      "acceptance": [
-        "docs/acceptance-v0.3.7.md",
-        "docs/release-v0.3.7.md"
-      ],
-      "tag": "v0.3.7",
-      "deliveryCommit": "435a09d9a3dd3a2fae3047ead61a4599d39b2caa",
-      "tagObject": "40325dcdf03e60f07b05ef9eb49822aa41e36db5",
-      "createdAt": "2026-10-10",
-      "selection": "PATCH based on restored v0.3.4: upward collection ends at stable head, preserves observed cache; pure 94/94, native Firefox localhost 20/20, independent fixed-source review PASS; ChatGPT LIVE PENDING."
     }
   ],
   "legacyRevisions": [
@@ -249,7 +234,7 @@
     "restoreTagToOlderRuntime": false
   },
   "updatedAt": "2026-10-10",
-  "currentRevision": "2026-10-10-v037",
+  "currentRevision": "2026-10-10-v035",
   "sameVersionRevisions": [],
   "removal": {
     "requestedAt": "2026-10-10",
@@ -268,5 +253,24 @@
     "baselineDelivery": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
     "preserveCommitHistory": true,
     "firefoxUninstall": "PENDING: Computer Use initialization failed"
+  },
+  "pendingDelivery": {
+    "version": "0.3.5",
+    "status": "experimental",
+    "liveStatus": "PENDING",
+    "acceptance": [
+      "docs/release-v0.3.5.md",
+      "docs/acceptance-v0.3.5.md"
+    ]
+  },
+  "versionCorrection": {
+    "requestedAt": "2026-10-10",
+    "userRequest": "為甚麼是0.3.7? 要是0.3.5阿",
+    "reissuedVersion": "0.3.5",
+    "wrongVersion": "0.3.7",
+    "wrongTagObject": "40325dcdf03e60f07b05ef9eb49822aa41e36db5",
+    "wrongDelivery": "435a09d9a3dd3a2fae3047ead61a4599d39b2caa",
+    "previousRuntime": "0a069e08a7893a55b48d061ce7dbb8a9fc0f9b64",
+    "policy": "Explicit user correction; retain commits; retire wrong v0.3.7 ref; new v0.3.5 is the corrected v0.3.4-based fix, not restoration of removed earlier v0.3.5 runtime."
   }
 }

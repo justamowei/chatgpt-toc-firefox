@@ -40,6 +40,8 @@ class Governance(unittest.TestCase):
         for path in ["package.json", "package-lock.json", "manifests/firefox.json"]:
             self.assertEqual(json.loads(Path(path).read_text(encoding="utf-8"))["version"], current_catalog["currentVersion"])
         for tag in current_catalog["removal"]["removedTags"]:
+            if tag == "v0.3.5" and current_catalog.get("versionCorrection", {}).get("reissuedVersion") == "0.3.5":
+                continue  # Explicit user renumbering; prior removed implementation is not restored.
             self.assertNotEqual(local_git("show-ref", "--verify", "refs/tags/" + tag, check=False), 0)
 
     def test_entrypoint_refuses_local_execution_before_network_or_git(self):
