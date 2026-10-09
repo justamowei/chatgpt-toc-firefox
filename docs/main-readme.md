@@ -1,11 +1,11 @@
 # ChatGPT 對話導航器（Firefox 優先）
 
-現行重新開發版本 **v0.3.5（2026-10-08-v035-rebuild）**，以 v0.3.4 功能為基準。舊 v0.3.5、v0.3.6（含修正版）已依使用者指示棄用，歷史tag與交付證據保留。
+目前可測試版本 **v0.3.4**。請切換到 [release/v0.3](https://github.com/justamowei/chatgpt-toc-firefox/tree/release/v0.3) 取得完整開發來源，或選 [v0.3.4](https://github.com/justamowei/chatgpt-toc-firefox/tree/v0.3.4) 固定交付快照。main的本次更新僅含規範／版本索引，原專案基線保留。
 
-新增「建立完整目錄」只清當前對話，由底向上到頂停止；原收集按鈕保留已有目錄向上補收。快取全空session才自動建立，有任何保存內容不自動重跑；後續新提問持續追加。預設10min，設定可選1–10min。依使用者指示不相容讀取棄用035/36資料。
+- [版本與Git規範](docs/version-policy.md)
+- [版本目錄及撤回狀態](docs/versions.md)
+- [開發計畫](docs/development-plan.md)
 
-完整來源在 [release/v0.3](https://github.com/justamowei/chatgpt-toc-firefox/tree/release/v0.3)，工作分支 [feat/v035-rebuild-from-v034](https://github.com/justamowei/chatgpt-toc-firefox/tree/feat/v035-rebuild-from-v034)。[重新開發規格](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/redevelopment-v0.3.5.md)、[版本規範](docs/version-policy.md)、[版本目錄](docs/versions.md)、[開發計畫](docs/development-plan.md)。main選取規範與索引文件，產品來源維持release分支。
+產品仍為未簽章測試版，真實ChatGPT LIVE待驗證。v0.2.0已撤回，仅供歷史追溯。版本以固定annotatedtags標記，release/v0.3維護當前系列；每功能或30有效分鐘commit，每次交付遞增版本，不移動歷史tag。
 
-未簽章測試版。原生Firefox localhost虛擬掛載與真實ChatGPT LIVE分開驗收，LIVE PENDING；版本號不能代表完整歷史保證。
-
-本次验收111純／独立原生Firefox11通過、12建置hash相符；LIVE PENDING。[交付報告](https://github.com/justamowei/chatgpt-toc-firefox/blob/release/v0.3/docs/release-v0.3.5-rebuild.md)。
+2026-10-10：依使用者授權，以新 commit 回退 v0.3.4；v0.3.5／v0.3.6 的交付物、專用 refs 已移除。[回退與移除狀態](docs/rollback-2026-10-10.md)。目前 Firefox 中執行的插件尚未核對。

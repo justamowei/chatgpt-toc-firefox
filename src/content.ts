@@ -3,8 +3,7 @@ import { DomAdapter } from './dom';
 import { supported, BUILD_REVISION } from './config';
 import { styles } from './styles';
 import { cancelsNavigation } from './interaction';
-import { PersistentIndex, runtimeIndexBackend, conversationContext } from './persistence';
-import { AutoCollection } from './auto-collection';
+import { PersistentIndex, runtimeIndexBackend } from './persistence';
 type Instance = { show(): void; dispose(): void };
 const world = globalThis as typeof globalThis & { __chatgptToc?: Instance };
 if (window === window.top && !browser.extension.inIncognitoContext && supported(location.href)) {
@@ -23,9 +22,7 @@ function start(): Instance {
   let collecting = false, collectionStart = 0, collectionMinutes = DEFAULT_SETTINGS.collectionMinutes;
   const events = new AbortController();
   const store = new IndexStore();
-  let restoredContext = '', restoreToken = 0, restoring: Promise<boolean> | null = null;
-  const automatic = new AutoCollection();
-  let automaticVisit = 0, autoSignature = '', autoStableSince = 0, autoTimer: ReturnType<typeof setTimeout> | undefined;
+  let restoredContext = '', restoreToken = 0;
   const persistence = new PersistentIndex(runtimeIndexBackend(), store, {
     incognito: browser.extension.inIncognitoContext, onStatus: () => { if (alive) render(); },
   });
@@ -56,9 +53,8 @@ function start(): Instance {
   scope.id = 'toc-scope'; list.id = 'toc-list'; status.id = 'toc-status'; status.setAttribute('role', 'status'); status.setAttribute('aria-live', 'polite');
   const footer = make('footer');
   const earlier = button('收集整段對話', () => { void navigate(null); }); earlier.id = 'toc-earlier';
-  const build = button('建立完整目錄', () => { void navigate(null, true); }); build.id = 'toc-build';
   const back = button('回到剛才位置', () => { void restore(); }); back.id = 'toc-back';
-  const stop = button('停止', () => cancel()); stop.id = 'toc-stop';
+  const stop = button('停止', cancel); stop.id = 'toc-stop';
   const settings = button('設定', () => { void browser.runtime.sendMessage({ kind: 'options:open' }).catch(() => { if (alive) status.textContent = '無法開啟設定，請從 Firefox 附加元件頁開啟。'; }); });
   const disable = button('停用此頁', dispose); disable.id = 'toc-disable';
   const diagnosis = make('pre', 'diagnosis'); diagnosis.id = 'toc-diagnosis'; diagnosis.hidden = true;
@@ -71,14 +67,14 @@ function start(): Instance {
       observed: store.retainedCount, mounted: store.mounted.size, quarantined: store.quarantine.reduce((n, g) => n + g.entries.length, 0),
       navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
-  footer.append(earlier, build, back, stop, settings, disable, diagnose);
+  footer.append(earlier, back, stop, settings, disable, diagnose);
   const hint = make('div', 'hint', 'Shift＋O 開啟 · Esc 收合');
   panel.append(header, searchWrap, scope, list, status, footer, diagnosis, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
   const adapter = new DomAdapter(store, refresh);
   const labels: Record<NavState, string> = { idle: '請選取已收錄的提問。', loading: '正在尋找訊息…', located: '已定位並高亮正確訊息。', cancelled: '已停止導航。', 'timed-out': '已達載入上限；可稍後重試。', unsupported: '目前頁面無法完成導航，請更新導航器。', 'not-found': '尚未找到這則訊息，可繼續載入。' };
   const navigator = new Navigator(adapter, state => {
     if (!alive) return;
-    host.dataset.navigation = state; status.textContent = labels[state]; stop.hidden = state !== 'loading'; earlier.disabled = build.disabled = state === 'loading';
+    host.dataset.navigation = state; status.textContent = labels[state]; stop.hidden = state !== 'loading'; earlier.disabled = state === 'loading';
     if (state === 'timed-out') status.textContent = navigator.lastStopReason === 'batch-limit'
       ? `已達本次${collecting ? '收集' : '尋找'}步數上限，${collecting ? `新增 ${Math.max(0, store.entries.length - collectionStart)} 則；可繼續收集。` : '目標尚未重新掛載，可重試。'}`
       : `已達本次${collecting ? '收集' : '尋找'}時間上限，${collecting ? `新增 ${Math.max(0, store.entries.length - collectionStart)} 則；可繼續收集。` : '目標尚未重新掛載，可重試。'}`;
@@ -91,19 +87,10 @@ function start(): Instance {
   port.onDisconnect.addListener(() => { port = null; });
   function isDispose(message: unknown): boolean { return !!message && typeof message === 'object' && Object.keys(message).length === 1 && (message as { kind?: string }).kind === 'dispose'; }
   const runtimeListener = (message: unknown, sender: browser.runtime.MessageSender) => {
-    if (sender.id !== browser.runtime.id) return;
-    if (isDispose(message)) { dispose(); return; }
-    if (!message || typeof message !== 'object' || Array.isArray(message)) return;
-    const notice = message as { kind?: unknown; context?: unknown; generation?: unknown };
-    if (Object.keys(message).length !== 3 || notice.kind !== 'cache:invalidated' || notice.context !== store.context ||
-      !Number.isSafeInteger(notice.generation) || (notice.generation as number) < 1) return;
-    cancel(); persistence.invalidate(); restoredContext = ''; refresh();
+    if (sender.id === browser.runtime.id && isDispose(message)) dispose();
   };
   browser.runtime.onMessage.addListener(runtimeListener);
-  function cancel(suppress = true): void { if (suppress) automatic.suppress(); clearTimeout(autoTimer); autoTimer = undefined;
-    const preparing = navigationPending && navigator.state !== 'loading';
-    build.disabled = earlier.disabled = false; stop.hidden = true; navigationToken++; navigationPending = false; operation?.abort(); operation = null; navigator.cancel();
-    if (preparing) { host.dataset.navigation = 'cancelled'; status.textContent = '已停止導航。'; } }
+  function cancel(): void { navigationToken++; navigationPending = false; operation?.abort(); operation = null; navigator.cancel(); }
   function setExpanded(value: boolean, focus = true, persist = true): void {
     if (!alive) return;
     expanded = value; panel.hidden = !expanded; toggle.setAttribute('aria-expanded', String(expanded));
@@ -219,31 +206,28 @@ function start(): Instance {
     }
     reset = store.merge(snapshot, direction ?? adapter.currentDirection() ?? 'observe') || reset;
     adapter.remember();
-    if (reset) { cancel(false); adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
+    if (reset) { cancel(); adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
       status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
     if (restoredContext !== snapshot.context) {
       restoredContext = snapshot.context; const token = ++restoreToken, context = snapshot.context;
-      automaticVisit = automatic.enter(context); autoSignature = ''; autoStableSince = performance.now();
-      restoring = persistence.restore(context, () => adapter.read());
-      void restoring.then(restored => {
+      void persistence.restore(context, () => adapter.read()).then(restored => {
         if (!alive || token !== restoreToken || store.context !== context) return;
-        if (restored) { adapter.remember(); render(); }
-        automatic.settle(automaticVisit, persistence.loadedHistory?.context === context ? persistence.loadedHistory.cachedEntries : null);
-        restoring = null; persistence.schedule(); maybeAutomatic();
-      }).catch(() => { if (alive && token === restoreToken) { restoring = null; automatic.settle(automaticVisit, null); } });
+        if (restored) { cancel(); adapter.remember(); render(); }
+        persistence.schedule();
+      }).catch(() => { if (alive && token === restoreToken) persistence.schedule(); });
     } else persistence.schedule();
     if (collecting && store.limitReason && (navigationPending || navigator.state === 'loading')) {
       cancel(); status.textContent = '已達本機保留上限，收集已停止；已收錄資料仍可搜尋。';
     }
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
-      ? `${adapter.lastLoadReport.phase === 'tail' ? '正在移至對話底部，等待最後訊息掛載' : '正在選取較早掛載訊息，逐段向前收集'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可按停止。`
+      ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可按停止。`
       : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
       : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
   }
   function refresh(direction?: 'older' | 'newer'): void {
     collect(direction);
-    render(); maybeAutomatic();
+    render();
   }
   function queue(records: MutationRecord[] = []): void {
     if (!alive) return;
@@ -251,44 +235,18 @@ function start(): Instance {
     // Removed mounts must be captured immediately; ordinary streaming/scroll
     // events share one read so a token stream cannot rebuild the index per event.
     if (store.context === location.origin + location.pathname && adapter.readRemoved(records).length) collect(undefined, records);
-    if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; refresh(); }, 120);
+    if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; collect(); render(); }, 120);
   }
-  function maybeAutomatic(): void {
-    const context = store.context, visit = automaticVisit;
-    const mountedUser = () => store.entries.some(entry => entry.stable && store.mounted.has(entry.id));
-    if (!alive || !conversationContext(context) || !automatic.eligible(visit, mountedUser(), navigationPending || navigator.state === 'loading')) return;
-    const signature = store.entries.filter(entry => entry.stable && store.mounted.has(entry.id)).map(entry => entry.id).join('|');
-    if (signature !== autoSignature) { autoSignature = signature; autoStableSince = performance.now(); }
-    if (autoTimer !== undefined) return;
-    autoTimer = setTimeout(() => {
-      autoTimer = undefined;
-      if (!alive || context !== store.context || visit !== automaticVisit) return;
-      if (performance.now() - autoStableSince < 500) { maybeAutomatic(); return; }
-      if (automatic.claim(visit, mountedUser(), navigationPending || navigator.state === 'loading')) void navigate(null, true, true);
-    }, 520);
-  }
-  async function navigate(id: string | null, rebuild = false, auto = false): Promise<void> {
+  async function navigate(id: string | null): Promise<void> {
     if (!alive) return;
     refresh();
     if (id !== null && (!store.entries.some(entry => entry.id === id && entry.stable) ||
       (!adapter.canLocate(id) && (!store.canSeek(id) || store.mounted.has(id))))) {
       status.textContent = '此目標的順序、正文或目前分支尚未核對；請先手動捲動至該則提問。'; return;
     }
-    if (!auto) automatic.suppress();
-    const route = store.context;
-    cancel(false); const token = ++navigationToken;
-    operation = new AbortController(); navigationPending = true;
-    host.dataset.navigation = 'loading'; earlier.disabled = build.disabled = true; stop.hidden = false;
-    if (restoring) {
-      status.textContent = '正在讀取本機目錄，可按停止。';
-      try { await restoring; } catch {
-        if (alive && token === navigationToken) { cancel(); host.dataset.navigation = 'unsupported'; status.textContent = '無法讀取本機目錄，請稍後重試。'; }
-        return;
-      }
-    }
-    if (!alive || token !== navigationToken || route !== store.context || route !== location.origin + location.pathname) return;
-    let epoch = store.epoch;
+    cancel(); const token = ++navigationToken, epoch = store.epoch;
     collecting = id === null; collectionStart = store.entries.length;
+    operation = new AbortController(); navigationPending = true;
     if (collecting) {
       try {
         const value: unknown = await browser.runtime.sendMessage({ kind: 'settings:get' });
@@ -300,22 +258,13 @@ function start(): Instance {
     const position = await adapter.capture(operation.signal);
     if (!alive || token !== navigationToken || epoch !== store.epoch) return;
     returnPosition = position; returnEpoch = epoch; render();
-    if (rebuild && !auto) {
-      status.textContent = '正在清空本對話目錄，準備移至底部…';
-      try {
-        const reset = await persistence.rebuild(route, () => adapter.read(), () => alive && token === navigationToken && route === store.context && !operation?.signal.aborted);
-        if (!reset || !alive || token !== navigationToken || route !== store.context) return;
-      } catch { if (alive && token === navigationToken) { cancel(); host.dataset.navigation = 'unsupported'; status.textContent = '未能清空本對話目錄，建立已停止。'; } return; }
-      epoch = store.epoch; returnEpoch = epoch; collectionStart = store.entries.length;
-      adapter.remember(); render();
-    }
     delete host.dataset.restored;
-    adapter.begin(id === null, rebuild);
+    adapter.begin(id === null);
     const result = await navigator.run(id, id === null ? collectionMinutes * 60_000 : undefined);
     if (!alive || token !== navigationToken) return;
-    navigationPending = false; earlier.disabled = build.disabled = false; stop.hidden = true;
+    navigationPending = false;
     if (id === null && result === 'idle') status.textContent = adapter.collectionFinished
-      ? `${rebuild ? '已由底部向上建立目錄' : '已向上收集目錄'}，共 ${store.entries.length} 則；已到達穩定頂端並自動停止。網站完整歷史尚未核對；可返回剛才位置。`
+      ? `本次已向前、向後巡覽，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；兩端已確認穩定捲動邊界。完整歷史尚未核對；可返回剛才位置。`
       : `本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集。`;
     updateCurrent();
   }
@@ -381,7 +330,7 @@ function start(): Instance {
   function dispose(): void {
     if (!alive) return;
     void persistence.flush().catch(() => {}); persistence.dispose(); restoreToken++;
-    alive = false; cancel(); clearTimeout(autoTimer); events.abort(); observer.disconnect(); clearTimeout(refreshTimer); clearInterval(routeTimer);
+    alive = false; cancel(); events.abort(); observer.disconnect(); clearTimeout(refreshTimer); clearInterval(routeTimer);
     if (listFrame !== undefined) cancelAnimationFrame(listFrame);
     if (currentFrame !== undefined) cancelAnimationFrame(currentFrame);
     browser.runtime.onMessage.removeListener(runtimeListener); port?.disconnect(); port = null; adapter.dispose(); store.reset(); host.remove();

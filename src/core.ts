@@ -32,18 +32,16 @@ export interface StoredIndex {
   version: 1; context: string; branch: string | null; entries: Entry[]; segments: ObservedSegment[];
   quarantine: StoredGeneration[]; limitReason: 'entries' | 'characters' | null;
   recovery?: { candidateIds: string[] };
-  generation?: number;
 }
 function exactKeys(value: unknown, keys: string[]): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value) &&
     Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 }
 export function validStoredIndex(value: unknown): value is StoredIndex {
-  if (!exactKeys(value, ['version', 'context', 'branch', 'entries', 'segments', 'quarantine', 'limitReason', ...['recovery', 'generation'].filter(key => Object.hasOwn(value ?? {}, key))]) || value.version !== 1 ||
+  if (!exactKeys(value, ['version', 'context', 'branch', 'entries', 'segments', 'quarantine', 'limitReason', ...(Object.hasOwn(value ?? {}, 'recovery') ? ['recovery'] : [])]) || value.version !== 1 ||
     typeof value.context !== 'string' || !value.context || value.context.length > 2048 ||
     !(value.branch === null || typeof value.branch === 'string' && !!value.branch && value.branch.length <= 4096) ||
     ![null, 'entries', 'characters'].includes(value.limitReason as null) || !Array.isArray(value.quarantine) || value.quarantine.length > CACHE_LIMITS.entries) return false;
-  if (Object.hasOwn(value, 'generation') && (!Number.isSafeInteger(value.generation) || (value.generation as number) < 1)) return false;
   let count = 0, characters = 0;
   const group = (entries: unknown, segments: unknown): boolean => {
     if (!Array.isArray(entries) || !Array.isArray(segments) || entries.length > CACHE_LIMITS.entries || segments.length > entries.length) return false;
@@ -105,7 +103,6 @@ export class IndexStore {
   completeness: Completeness = 'unknown';
   epoch = 0;
   context = '';
-  private cacheGeneration = 0;
   branch: string | null = null;
   cacheRevision = 0;
   ordered = true;
@@ -146,7 +143,6 @@ export class IndexStore {
     };
     const entries = copy(this.entries);
     return { version: 1, context: this.context, branch: this.branch, entries, segments: segments(this.graphSegments(), entries),
-      ...(this.cacheGeneration ? { generation: this.cacheGeneration } : {}),
       quarantine: this.quarantine.map(generation => { const entries = copy(generation.entries); return {
         reason: generation.reason, entries, segments: segments(generation.segments, entries), ordered: generation.ordered,
       }; }).filter(generation => generation.entries.length), limitReason: this.limitReason,
@@ -161,7 +157,6 @@ export class IndexStore {
     const trusted = !snapshot.invalidated && snapshot.branch !== null && snapshot.branch === state.branch && overlap.length > 0 &&
       overlap.every(entry => current.get(entry.id) === entry.text);
     this.reset(snapshot.context, snapshot.branch);
-    this.cacheGeneration = state.generation ?? 0;
     const branchChanged = snapshot.branch !== null && state.branch !== null && snapshot.branch !== state.branch;
     const blocked = snapshot.invalidated || branchChanged;
     const generations: StoredGeneration[] = [];
@@ -217,7 +212,6 @@ export class IndexStore {
     return true;
   }
   reset(context = this.context, branch: string | null = this.branch): void {
-    if (context !== this.context) this.cacheGeneration = 0;
     this.epoch++; this.entries = []; this.mounted.clear(); this.completeness = 'unknown'; this.context = context; this.branch = branch;
     this.graph.clear(); this.segments = []; this.ordered = true; this.quarantine = []; this.recoveredIds.clear(); this.seekableIds.clear();
     this.count = 0; this.characters = 0; this.limitReason = null; this.cacheRevision++;
@@ -483,12 +477,12 @@ async function boundedLoad(load: () => Promise<boolean>, controller: AbortContro
 }
 
 export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean } | { kind: 'collection:set'; minutes: number } | { kind: 'options:open' } |
-  { kind: 'cache:get' | 'cache:read' | 'cache:reset'; context: string } | { kind: 'cache:set'; state: StoredIndex } | { kind: 'cache:clear' };
+  { kind: 'cache:get'; context: string } | { kind: 'cache:set'; state: StoredIndex } | { kind: 'cache:clear' };
 export function validMessage(value: unknown): value is RuntimeMessage {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const v = value as Record<string, unknown>, keys = Object.keys(v);
   if (v.kind === 'settings:get' || v.kind === 'options:open' || v.kind === 'cache:clear') return keys.length === 1;
-  if (v.kind === 'cache:get' || v.kind === 'cache:read' || v.kind === 'cache:reset') return keys.length === 2 && typeof v.context === 'string' && v.context.length <= 2048;
+  if (v.kind === 'cache:get') return keys.length === 2 && typeof v.context === 'string' && v.context.length <= 2048;
   if (v.kind === 'cache:set') return keys.length === 2 && validStoredIndex(v.state);
   if (v.kind === 'settings:set') return keys.length === 2 && typeof v.expanded === 'boolean';
   if (v.kind === 'auto:set') return keys.length === 2 && typeof v.enabled === 'boolean';

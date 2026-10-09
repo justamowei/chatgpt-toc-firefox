@@ -60,7 +60,7 @@ test('COLLECTION-02: rounded/subpixel jitter preserves proof while accumulated d
   assert.equal(drift.stableMs, 0); assert.equal(drift.probes, 0); assert.equal(drift.confirmed, false);
 });
 
-test('COLLECTION-03: unresolved edge rendering and loading defer completion beyond many nominal batches', () => {
+test('COLLECTION-03: slow answer rendering and loading defer reversal beyond many nominal batches', () => {
   for (const busy of ['rendering', 'loading']) {
     const policy = new CollectionBoundaryWitness();
     probe(policy, 0); probe(policy, 2400);
@@ -82,8 +82,8 @@ test('COLLECTION-04: middle stalls and scroll-only movement cannot become bounda
   }
 });
 
-test('COLLECTION-05: root, IDs, significant viewport drift and abort invalidate old clamp proof', () => {
-  for (const override of [{ root: {} }, { signature: 'different-first' },
+test('COLLECTION-05: root, shell, IDs, significant viewport drift and abort invalidate old clamp proof', () => {
+  for (const override of [{ root: {} }, { node: {} }, { signature: 'different-first' },
     { geometry: sample(0).geometry.map((v, i) => i >= 4 ? v + 8 : v) }, { aborted: true }, { node: null }]) {
     const policy = new CollectionBoundaryWitness();
     probe(policy, 0); probe(policy, 2400); probe(policy, 4800);
@@ -154,94 +154,4 @@ test('COLLECTION-10: batched locatable IDs match exact per-ID checks using one t
     if (previousLocation === undefined) delete globalThis.location; else globalThis.location = previousLocation;
     delete globalThis.__collectionTurns; delete globalThis.__collectionReadCount;
   }
-});
-
-
-test('COLLECTION-11: equivalent remounted shells preserve semantic edge proof', () => {
-  const policy = new CollectionBoundaryWitness();
-  probe(policy, 0); probe(policy, 2400, {node:{}}); probe(policy, 4800, {node:{}});
-  assert.equal(probe(policy, 6000, {node:{}}).confirmed, true);
-  assert.equal(probe(policy, 6001, {signature:'changed-user-text'}).confirmed, false);
-});
-
-function syntheticCollection({rebuild=false, tailPad=0, reflow=false} = {}) {
-  const previous = {location:globalThis.location, document:globalThis.document,getComputedStyle:globalThis.getComputedStyle};
-  globalThis.location = {origin:'https://chatgpt.com',pathname:'/c/unit-collection'};
-  globalThis.getComputedStyle=()=>({visibility:'visible',opacity:'1'});
-  const root = {scrollTop:0,scrollHeight:2000,clientHeight:650,clientWidth:800,isConnected:true,
-    contains:()=>true, scrollTo({top}) { this.scrollTop=Math.max(0,Math.min(top,this.scrollHeight-this.clientHeight)); }};
-  const writes=[];
-  const rawScroll=root.scrollTo.bind(root);
-  root.scrollTo=({top})=>{writes.push(top);rawScroll({top});};
-  const node={isConnected:true,contains:()=>false,scrollIntoView(){throw new Error('Physical edge must not realign a turn');},
-    getBoundingClientRect(){return {top:rebuild? -100:0,bottom:rebuild? 650-tailPad:100,width:800,height:100};}};
-  globalThis.document={scrollingElement:root,querySelectorAll:()=>[],addEventListener(){},removeEventListener(){}};
-  const store={epoch:0,context:'https://chatgpt.com/c/unit-collection',entries:[{id:'u',text:'prompt',stable:true}]};
-  const adapter=new DomAdapter(store,()=>{if(reflow){root.scrollHeight+=37;}});
-  adapter.scroller=()=>root; adapter.viewport=()=>({top:0,bottom:root.clientHeight}); adapter.frontier=()=>[{node,ids:['u']}];
-  adapter.begin(true,rebuild);
-  adapter.collection.boundary=new CollectionBoundaryWitness(20,5);
-  return {adapter,root,writes,restore(){
-    for(const key of ['location','document','getComputedStyle']) {if(previous[key]===undefined)delete globalThis[key];else globalThis[key]=previous[key];}
-  }};
-}
-
-test('COLLECTION-12: original collection confirms head then completes without sweeping to tail', async () => {
-  const setup=syntheticCollection();
-  try {
-    await setup.adapter.load('older',new AbortController().signal,1500);
-    assert.equal(setup.adapter.collectionFinished,true);
-    assert.equal(setup.adapter.lastLoadReport.phase,'head');
-    assert.ok(setup.writes.length>=2);assert.ok(setup.writes.every(top=>top<0));
-  } finally {setup.restore();}
-});
-
-test('COLLECTION-13: rebuild tail follows reflow beyond a viewport of padding without turn alignment', async () => {
-  const setup=syntheticCollection({rebuild:true,tailPad:950,reflow:true});
-  try {
-    await setup.adapter.load('older',new AbortController().signal,1500);
-    assert.equal(setup.adapter.collection.stage,'head');assert.equal(setup.adapter.collectionFinished,false);
-    assert.equal(setup.adapter.lastLoadReport.phase,'tail');
-    assert.ok(setup.writes.length>=3);assert.ok(setup.writes.every(top=>top>=2000));
-    assert.equal(setup.root.scrollTop,setup.root.scrollHeight-setup.root.clientHeight);
-  } finally {setup.restore();}
-});
-
-test('COLLECTION-14: aborting tail preparation prevents all later scroll writes', async () => {
-  const setup=syntheticCollection({rebuild:true,reflow:true});const controller=new AbortController();
-  try {
-    const pending=setup.adapter.load('older',controller.signal,1500);
-    controller.abort();assert.equal(await pending,false);
-    const count=setup.writes.length;await new Promise(resolve=>setTimeout(resolve,100));
-    assert.equal(setup.writes.length,count);assert.equal(setup.adapter.collectionFinished,false);
-  } finally {setup.restore();}
-});
-
-
-function syntheticLoader({hidden=false,answer=false,top=0}={}) {
-  return {isConnected:true,parentElement:null,
-    closest(selector){if(hidden&&selector.includes('[hidden]'))return this;if(answer&&selector.includes('conversation-turn-'))return {};return null;},
-    getBoundingClientRect(){return {top,bottom:top+20,width:100,height:20};}};
-}
-
-test('COLLECTION-15: visible outward history sibling blocks head, then removal allows completion',async()=>{
-  const setup=syntheticCollection();const loader=syntheticLoader();
-  try {
-    globalThis.document.querySelectorAll=selector=>selector.startsWith('main [aria-busy')?[loader]:[];
-    await setup.adapter.load('older',new AbortController().signal,500);
-    assert.equal(setup.adapter.collectionFinished,false);
-    globalThis.document.querySelectorAll=()=>[];
-    await setup.adapter.load('older',new AbortController().signal,1500);
-    assert.equal(setup.adapter.collectionFinished,true);
-  } finally {setup.restore();}
-});
-
-test('COLLECTION-16: hidden, remote tail and answer indicators do not block a stable head',async()=>{
-  const setup=syntheticCollection();
-  try {
-    const loaders=[syntheticLoader({hidden:true}),syntheticLoader({top:1000}),syntheticLoader({answer:true})];
-    globalThis.document.querySelectorAll=selector=>selector.startsWith('main [aria-busy')?loaders:[];
-    await setup.adapter.load('older',new AbortController().signal,1500);
-    assert.equal(setup.adapter.collectionFinished,true);
-  } finally {setup.restore();}
 });

@@ -19,5 +19,3 @@ Runtime source：a1ff15a7535cb7bf08cff683ff69104be17f1efb。主端與 GPT-6.1 So
 - [fixture build-info](evidence/v0.3.4/fixture-build-info.json)
 
 LIVE／正式安裝簽章／ESR／Android：PENDING。獨立代理未啟動瀏覽器；native 測試由主端執行，不將 localhost 合成 PASS 記為 ChatGPT LIVE。
-
-固定 delivery 25b46d412e6aa7af451eb7a507b47c291a9ade66 的[最終獨立補充審查](evidence/v0.3.4/review-final.json) PASS：runtime／建置檔案完全相同，SPA 斷言缺口已解除，原生 8+5 報告與 hashes 核對一致；未重跑或冒稱獨立 native LIVE。

@@ -10,8 +10,7 @@ from unittest.mock import patch
 spec = importlib.util.spec_from_file_location("restore", "scripts/restore-version-refs.py")
 restore = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(restore)
-# Keep the one-time seven-tag recovery program pinned to its original input.
-# A new delivery extends the current catalog without broadening recovery scope.
+# Keep the historical seven-tag recovery program scoped to its original input.
 frozen = subprocess.run(["git", "-c", "safe.directory=" + Path.cwd().as_posix(), "show", "73a2908390bae11e98af99fba407797466cb2550:docs/version-catalog.json"], capture_output=True, text=True, encoding="utf-8", check=True)
 catalog = json.loads(frozen.stdout)
 current_catalog = json.loads(Path("docs/version-catalog.json").read_text(encoding="utf-8"))
@@ -31,36 +30,17 @@ def local_git(*args, check=True):
 
 
 class Governance(unittest.TestCase):
-    def test_current_catalog_tracks_the_product_and_immutable_delivery_objects(self):
-        versions = current_catalog["versions"]
-        package = json.loads(Path("package.json").read_text(encoding="utf-8"))
-        self.assertEqual(current_catalog["currentVersion"], package["version"])
-        if current_catalog.get("redevelopment"):
-            rebuild = current_catalog["redevelopment"]
-            self.assertEqual(rebuild["currentRevision"], package["tocRevision"])
-            self.assertEqual(rebuild["baselineTag"], "v0.3.4")
-            self.assertTrue(rebuild["preserveHistoricalObjects"])
-            self.assertFalse(rebuild["legacyCompatibility"])
-            for tag in rebuild["deprecatedTags"]:
-                self.assertEqual(local_git("cat-file", "-t", tag).strip(), "tag")
-        else:
-            self.assertEqual(versions[-1]["version"], package["version"])
-        self.assertEqual(len({v["tag"] for v in versions}), len(versions))
-        self.assertEqual(versions[:len(catalog["versions"])], catalog["versions"])
-        self.assertEqual(current_catalog["withdrawal"], catalog["withdrawal"])
-        for version in versions:
-            tag = "refs/tags/" + version["tag"]
-            self.assertEqual(local_git("cat-file", "-t", tag).strip(), "tag")
-            self.assertEqual(local_git("rev-parse", tag).strip(), version["tagObject"])
-            self.assertEqual(local_git("rev-parse", tag + "^{}").strip(), version["deliveryCommit"])
-            self.assertEqual(local_git("merge-base", "--is-ancestor", version["runtimeCommit"], version["deliveryCommit"], check=False), 0)
-            for path in ["package.json", "package-lock.json", "manifests/firefox.json"]:
-                data = json.loads(local_git("show", version["deliveryCommit"] + ":" + path))
-                self.assertEqual(data["version"], version["version"])
-                if path == "package-lock.json":
-                    self.assertEqual(data["packages"][""]["version"], version["version"])
-            for report in version["acceptance"]:
-                self.assertEqual(local_git("cat-file", "-e", version["deliveryCommit"] + ":" + report, check=False), 0)
+    def test_current_selection_matches_v034_and_retired_refs_stay_absent(self):
+        self.assertEqual(current_catalog["currentVersion"], "0.3.4")
+        self.assertEqual(len(current_catalog["versions"]), 8)
+        self.assertEqual(current_catalog["versions"][:7], catalog["versions"])
+        for version in current_catalog["versions"]:
+            self.assertEqual(local_git("rev-parse", version["tag"]).strip(), version["tagObject"])
+            self.assertEqual(local_git("rev-parse", version["tag"] + "^{}").strip(), version["deliveryCommit"])
+        for path in ["package.json", "package-lock.json", "manifests/firefox.json"]:
+            self.assertEqual(json.loads(Path(path).read_text(encoding="utf-8"))["version"], "0.3.4")
+        for tag in current_catalog["removal"]["removedTags"]:
+            self.assertNotEqual(local_git("show-ref", "--verify", "refs/tags/" + tag, check=False), 0)
 
     def test_entrypoint_refuses_local_execution_before_network_or_git(self):
         with patch.dict(os.environ, {}, clear=True), patch.object(restore.urllib.request, "urlopen") as network, patch.object(restore.subprocess, "run") as process:
@@ -111,36 +91,6 @@ class Governance(unittest.TestCase):
             with self.assertRaises(ValueError):
                 restore.verify_source(changed_git, source, catalog, tags)
 
-
-    def test_explicit_same_version_revision_preserves_canonical_tag_and_snapshot_identity(self):
-        for revision in current_catalog.get("sameVersionRevisions", []):
-            canonical = next(v for v in current_catalog["versions"] if v["version"] == revision["version"])
-            self.assertTrue(revision["userRequestedSameVersion"])
-            self.assertNotEqual(revision["snapshotTag"], canonical["tag"])
-            self.assertEqual(local_git("rev-parse", canonical["tag"]).strip(), canonical["tagObject"])
-            self.assertEqual(local_git("cat-file", "-t", revision["snapshotTag"]).strip(), "tag")
-            self.assertEqual(local_git("rev-parse", revision["snapshotTag"]).strip(), revision["tagObject"])
-            self.assertEqual(local_git("rev-parse", revision["snapshotTag"] + "^{}").strip(), revision["deliveryCommit"])
-            self.assertEqual(local_git("merge-base", "--is-ancestor", revision["runtimeCommit"], revision["deliveryCommit"], check=False), 0)
-            package = json.loads(local_git("show", revision["deliveryCommit"] + ":package.json"))
-            self.assertEqual(package["version"], revision["version"])
-            self.assertEqual(package["tocRevision"], revision["revision"])
-            for path in ["manifests/firefox.json", "package-lock.json"]:
-                self.assertEqual(json.loads(local_git("show", revision["deliveryCommit"] + ":" + path))["version"], revision["version"])
-            for report in revision["acceptance"]:
-                self.assertEqual(local_git("cat-file", "-e", revision["deliveryCommit"] + ":" + report, check=False), 0)
-
-    def test_redevelopment_selection_has_exact_v034_baseline_and_preserves_deprecated_tags(self):
-        rebuild = current_catalog["redevelopment"]
-        selected = next(r for r in current_catalog["sameVersionRevisions"] if r["revision"] == current_catalog["currentRevision"])
-        self.assertEqual(selected["version"], current_catalog["currentVersion"])
-        self.assertEqual(selected["snapshotTag"], rebuild["snapshotTag"])
-        self.assertEqual(selected["deliveryCommit"], rebuild["deliveryCommit"])
-        self.assertEqual(local_git("rev-parse", rebuild["baselineTag"] + "^{}").strip(), rebuild["baselineDelivery"])
-        self.assertEqual(local_git("diff", "--name-only", rebuild["baselineTag"], rebuild["baselineRestoreCommit"], "--", "src", "scripts", "tests", "manifests", "package.json", "package-lock.json", "tsconfig.json").strip(), "")
-        self.assertEqual(set(rebuild["deprecatedTags"]), {"v0.3.5", "v0.3.6", "snapshot/v0.3.6/2026-10-08-r2"})
-        self.assertEqual(rebuild["status"], "experimental")
-        self.assertEqual(rebuild["liveStatus"], "PENDING")
 
 if __name__ == "__main__":
     unittest.main()
