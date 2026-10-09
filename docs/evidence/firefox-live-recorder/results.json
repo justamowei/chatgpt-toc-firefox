@@ -1,0 +1,18 @@
+{
+  "environment": "native Firefox localhost; not ChatGPT LIVE",
+  "results": [
+    {
+      "name": "real Firefox localhost, separate content script, scrolling/diagnostic/export",
+      "status": "PASS",
+      "samples": 16
+    },
+    {
+      "name": "allowlisted export excludes text, IDs, URL and tainted diagnostic strings",
+      "status": "PASS"
+    },
+    {
+      "name": "SPA route change stops recording and preserves export",
+      "status": "PASS"
+    }
+  ]
+}
