@@ -1,0 +1,188 @@
+name: Remove user-retired v035 and v036 refs
+on:
+  push:
+    branches: [chore/remove-retired-versions]
+    paths: [.github/workflows/remove-retired-versions.yml]
+permissions:
+  contents: write
+concurrency:
+  group: remove-retired-versions
+  cancel-in-progress: false
+jobs:
+  remove:
+    if: github.repository == 'justamowei/chatgpt-toc-firefox' && github.ref == 'refs/heads/chore/remove-retired-versions'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - name: Delete only the thirteen explicitly authorized refs and verify other refs
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json, os, sys, urllib.request, urllib.error, urllib.parse
+          if sys.platform != 'linux' or os.environ.get('GITHUB_ACTIONS') != 'true':
+              raise SystemExit('Cloud Linux execution only')
+          repo = 'justamowei/chatgpt-toc-firefox'
+          if os.environ.get('GITHUB_REPOSITORY') != repo or os.environ.get('GITHUB_REF') != 'refs/heads/chore/remove-retired-versions':
+              raise SystemExit('Unexpected repository/ref')
+          config = json.loads(r'''{
+            "remove": [
+              {
+                "ref": "refs/heads/chore/automatic-session-sync",
+                "sha": "bac92b8efee68308c79a65bb96d96745c81bb9e3"
+              },
+              {
+                "ref": "refs/heads/chore/boundary-v036-sync",
+                "sha": "4a7005f62e1fe13c78ae6c316c633f2b3e3a6a14"
+              },
+              {
+                "ref": "refs/heads/chore/rebuild-collection-sync",
+                "sha": "e58c09845a85ac796c133ddadca7e596cf941ad0"
+              },
+              {
+                "ref": "refs/heads/chore/v035-rebuild-sync",
+                "sha": "c0271a1cf9d460173f47e3ae37ef9e03f7020605"
+              },
+              {
+                "ref": "refs/heads/feat/automatic-session-index",
+                "sha": "7463fea9554969bbceddd186c775c75e63228823"
+              },
+              {
+                "ref": "refs/heads/feat/boundary-v036-index",
+                "sha": "d3d0110db43ec153a36e37a1703897b8c3d2c9e1"
+              },
+              {
+                "ref": "refs/heads/feat/v035-rebuild-from-v034",
+                "sha": "fed5380db1ebb7b0c3fbe7a6146f6a343ebda574"
+              },
+              {
+                "ref": "refs/heads/fix/collection-boundary-v036",
+                "sha": "204e46de937141923088f56b371b59ab9c976e9c"
+              },
+              {
+                "ref": "refs/heads/fix/rebuild-collection-numbering",
+                "sha": "734917a9fa7c58aea50cdf4dfa6acdacb0febc45"
+              },
+              {
+                "ref": "refs/tags/snapshot/v0.3.5/2026-10-08-rebuild",
+                "sha": "776b509cbec05b389827019ff095c0f7e9d2aabb"
+              },
+              {
+                "ref": "refs/tags/snapshot/v0.3.6/2026-10-08-r2",
+                "sha": "317711690321d5e6f1691099ef587727651cc87e"
+              },
+              {
+                "ref": "refs/tags/v0.3.5",
+                "sha": "c1d4f05c536eba5c7f802549c0e01ffc179b141d"
+              },
+              {
+                "ref": "refs/tags/v0.3.6",
+                "sha": "dd8086509733fa44d3885eef4f82ea644f5d4167"
+              }
+            ],
+            "preserved": [
+              {
+                "ref": "refs/heads/backup/r5-source-checkpoint",
+                "sha": "cd12dfb37c9313dab993cc24db8914d3cfd9c23b"
+              },
+              {
+                "ref": "refs/heads/backup/v0.3.2",
+                "sha": "9b1287dbddc84181f9740e7a667bf444356c896f"
+              },
+              {
+                "ref": "refs/heads/backup/v0.3.3",
+                "sha": "4518acc6f0581a0610ad08f7f740fe4e066e08ee"
+              },
+              {
+                "ref": "refs/heads/chore/saved-order-sync",
+                "sha": "a1ec2b3063820ad75a19c26a60a88e1e893e4278"
+              },
+              {
+                "ref": "refs/heads/chore/version-governance-sync",
+                "sha": "9600c9c2bb1793f9397ae92bd5663346701ba11a"
+              },
+              {
+                "ref": "refs/heads/feat/firefox-prototype",
+                "sha": "73a2908390bae11e98af99fba407797466cb2550"
+              },
+              {
+                "ref": "refs/heads/fix/saved-directory-order",
+                "sha": "e795138a018b34025e667524f12e94f16bec06b4"
+              },
+              {
+                "ref": "refs/heads/main",
+                "sha": "0003900edbf09e9ab59d1c5723fb04efa474988f"
+              },
+              {
+                "ref": "refs/heads/release/v0.3",
+                "sha": "fed5380db1ebb7b0c3fbe7a6146f6a343ebda574"
+              },
+              {
+                "ref": "refs/tags/v0.1.0",
+                "sha": "4d5de3f57c706b17f12470136cf2419840153bb9"
+              },
+              {
+                "ref": "refs/tags/v0.1.1",
+                "sha": "1555b5d38afa8aecfd239da1e9695a65822b311f"
+              },
+              {
+                "ref": "refs/tags/v0.2.0",
+                "sha": "e3f66412a6b6e3e7d5d764648b9e0295f9859942"
+              },
+              {
+                "ref": "refs/tags/v0.3.0",
+                "sha": "d74aa53e4f84f4a2dfd7eafc42e374fe903cbb78"
+              },
+              {
+                "ref": "refs/tags/v0.3.1",
+                "sha": "e7fc9fb48329e7fb5705453758a07b62fc931be7"
+              },
+              {
+                "ref": "refs/tags/v0.3.2",
+                "sha": "32dd2206d838d51c2e278e95b7933a001667acbc"
+              },
+              {
+                "ref": "refs/tags/v0.3.3",
+                "sha": "5a63617377aa577b3ab736e19a908079a4c92809"
+              },
+              {
+                "ref": "refs/tags/v0.3.4",
+                "sha": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c"
+              }
+            ]
+          }''')
+          token = os.environ['GITHUB_TOKEN']
+          def api(path, method='GET', missing=False):
+              req = urllib.request.Request('https://api.github.com/repos/' + repo + '/' + path, method=method, headers={'Authorization':'Bearer ' + token, 'Accept':'application/vnd.github+json', 'User-Agent':'toc-authorized-version-removal'})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as response:
+                      if response.status == 204: return None
+                      return json.load(response)
+              except urllib.error.HTTPError as e:
+                  if missing and e.code == 404: return None
+                  raise RuntimeError('GitHub HTTP ' + str(e.code)) from None
+          def ref_path(ref):
+              assert ref.startswith(('refs/heads/', 'refs/tags/'))
+              return 'git/refs/' + urllib.parse.quote(ref[5:], safe='/')
+          assert api('')['private'] is True
+          assert len(config['remove']) == 13
+          for item in config['remove']:
+              live = api(ref_path(item['ref']), missing=True)
+              if live is not None and live['object']['sha'] != item['sha']:
+                  raise RuntimeError('Lease changed: ' + item['ref'])
+          for item in config['preserved']:
+              live = api(ref_path(item['ref']))
+              assert live['object']['sha'] == item['sha'], 'Preserved ref changed: ' + item['ref']
+          for item in config['remove']:
+              live = api(ref_path(item['ref']), missing=True)
+              if live is not None:
+                  assert live['object']['sha'] == item['sha'], 'Lease changed before delete'
+                  api(ref_path(item['ref']), method='DELETE')
+              assert api(ref_path(item['ref']), missing=True) is None
+              print('REMOVED ' + item['ref'])
+          for item in config['preserved']:
+              assert api(ref_path(item['ref']))['object']['sha'] == item['sha']
+          assert api('')['private'] is True
+          print('REMOVAL_VERIFIED: 4 version tags, 9 dedicated branches; all other refs unchanged')
+          PY
