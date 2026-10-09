@@ -1,7 +1,7 @@
 {
   "name": "chatgpt-toc-firefox",
-  "version": "0.3.4",
-  "tocRevision": "2026-10-08-v034",
+  "version": "0.3.7",
+  "tocRevision": "2026-10-10-v037",
   "private": true,
   "type": "module",
   "scripts": {

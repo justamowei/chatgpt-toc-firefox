@@ -22,7 +22,7 @@ export class DomAdapter implements NavigationAdapter {
   private hintEpoch = -1;
   private geometry = new HeightLedger();
   private adjacent = new Map<string, string>();
-  private collection: { stage: 'head' | 'sweep' | 'done'; boundary: CollectionBoundaryWitness; lastRenderActivity: number } | null = null;
+  private collection: { stage: 'head' | 'done'; boundary: CollectionBoundaryWitness; lastRenderActivity: number; anchor?: { root: HTMLElement; signature: string } } | null = null;
   private lastAttempt: Attempt | null = null;
   lastLoadReport: LoadReport = { phase: 'scan', added: 0, steps: 0 };
   constructor(private store: IndexStore, private refresh: (direction?: Direction) => void) {}
@@ -332,12 +332,29 @@ export class DomAdapter implements NavigationAdapter {
     windows.sort((a, b) => distance(a) - distance(b));
     return windows[0] ?? [];
   }
+  private boundaryLoading(root: HTMLElement, viewport: { top: number; bottom: number }): boolean {
+    // Hidden progress placeholders never describe pending visible history.
+    // Root/main busy flags and visible loaders in the conversation do.
+    const candidates = new Set<Element>([root, ...document.querySelectorAll('main[aria-busy="true"], main [aria-busy="true"], main [data-loading="true"], main [role="progressbar"], main [data-testid="loading-conversation"]')]);
+    for (const node of candidates) {
+      if (node === root && node.getAttribute('aria-busy') !== 'true' && node.getAttribute('data-loading') !== 'true') continue;
+      if (node.closest('aside, nav, form, [aria-hidden="true"], [hidden], #chatgpt-toc-root')) continue;
+      let visible = true;
+      for (let parent: Element | null = node; parent; parent = parent.parentElement) {
+        const style = getComputedStyle(parent);
+        if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse' || Number(style.opacity) === 0) { visible = false; break; }
+      }
+      const rect = node.getBoundingClientRect();
+      if (visible && rect.width > 0 && rect.height > 0 && rect.bottom > viewport.top && rect.top < viewport.bottom) return true;
+    }
+    return false;
+  }
   async load(direction: Direction, signal: AbortSignal, timeout: number, targetId: string | null = null): Promise<boolean> {
     if (signal.aborted) return false;
     const epoch = this.store.epoch, context = location.origin + location.pathname;
     if (this.store.context !== context) throw new Error('Conversation changed');
     if (targetId === null && this.collection?.stage === 'done') return false;
-    if (targetId === null && this.collection?.stage === 'sweep') direction = 'newer';
+    if (targetId === null && this.collection) direction = 'older';
     const root = this.scroller(this.nodes.values().next().value);
     const window = this.frontier(root), edge = direction === 'older' ? window[0] : window.at(-1);
     const signature = (items: typeof window) => items.flatMap(item => item.ids).join('|');
@@ -371,13 +388,14 @@ export class DomAdapter implements NavigationAdapter {
     // only; scroll pixels and events never prove a new mounted window.
     document.addEventListener('scroll', observeScroll, { capture: true, passive: true });
     try {
-      if (edge?.node.isConnected && !signal.aborted) {
+      if (edge?.node.isConnected && !signal.aborted && (!collection?.anchor || collection.anchor.root !== root || collection.anchor.signature !== beforeSignature)) {
         edge.node.scrollIntoView({ block: direction === 'older' ? 'start' : 'end', inline: 'nearest', behavior: 'instant' });
         attempt.requested = root.scrollTop;
+        if (collection) collection.anchor = { root, signature: beforeSignature };
       }
       return await new Promise<boolean>(resolve => {
         const started = performance.now();
-        let timer: ReturnType<typeof setTimeout>, nudged = false, finished = false;
+        let timer: ReturnType<typeof setTimeout>, nudged = false, finished = false, lastNudgeAt = 0;
         let changedSince = started, last = beforeSignature;
         const finish = (progress: boolean) => {
           if (finished) return; finished = true; clearTimeout(timer); signal.removeEventListener('abort', aborted); resolve(progress);
@@ -395,7 +413,7 @@ export class DomAdapter implements NavigationAdapter {
           if (currentSignature !== last) { last = currentSignature; changedSince = performance.now(); }
           const boundary = direction === 'older' ? current[0] : current.at(-1);
           const viewport = this.viewport(currentRoot), rect = boundary?.node.getBoundingClientRect();
-          const loading = !!document.querySelector('main[aria-busy="true"], main [aria-busy="true"], main [data-loading="true"], main [role="progressbar"], main [data-testid="loading-conversation"]');
+          const loading = this.boundaryLoading(currentRoot, viewport);
           const physical = !!rect && (direction === 'older'
             ? currentRoot.scrollTop <= 2 && rect.top >= viewport.top - 2 && rect.top < viewport.bottom
             : currentRoot.scrollTop + currentRoot.clientHeight >= currentRoot.scrollHeight - 2 && rect.bottom <= viewport.bottom + 2 && rect.bottom > viewport.top);
@@ -413,15 +431,18 @@ export class DomAdapter implements NavigationAdapter {
           // the same direction and allow slow mounts; reverse only after a live
           // physical boundary stays stable for six seconds and two clamp probes.
           const repeatBoundaryProbe = collection?.boundary.shouldProbe(now) ?? false;
-          if (currentSignature === beforeSignature && boundary?.node.isConnected && rect && ((!nudged && elapsed >= 640) || repeatBoundaryProbe)) {
-            nudged = true;
-            const top = currentRoot.scrollTop + (direction === 'older' ? rect.top - viewport.top : rect.bottom - viewport.bottom) +
-              (direction === 'older' ? -1 : 1) * Math.max(80, currentRoot.clientHeight * .45);
+          if (currentSignature === beforeSignature && boundary?.node.isConnected && rect && ((collection ? !physical && currentRoot.scrollTop > 2 && elapsed - lastNudgeAt >= 640 : !nudged && elapsed >= 640) || repeatBoundaryProbe)) {
+            nudged = true; lastNudgeAt = elapsed;
+            // Once anchored, continue from the current position; never re-align the
+            // same shell between batches. A real head probe stays clamped at zero.
+            const step = Math.max(80, currentRoot.clientHeight * .45);
+            const top = direction === 'older' ? (physical ? -step : currentRoot.scrollTop - step)
+              : currentRoot.scrollTop + rect.bottom - viewport.bottom + step;
             currentRoot.scrollTo({ top, behavior: 'instant' }); attempt.requested = top;
             collection?.boundary.recordProbe(now, physical && !loading && Math.abs(currentRoot.scrollTop - attempt.after) <= 2);
           }
           if (collection && this.collection === collection && boundaryStatus?.confirmed) {
-            collection.stage = collection.stage === 'head' ? 'sweep' : 'done'; collection.boundary.reset();
+            collection.stage = 'done'; collection.boundary.reset();
             this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return;
           }
           if (elapsed >= Math.min(targetId === null ? 6500 : 1600, Math.max(0, timeout - 200)) && current.length) {

@@ -14,7 +14,7 @@ const evaluate = (code, ...args) => driver.executeScript(code, ...args);
 const results = [];
 const expected = Array.from({ length: 30 }, (_, i) => 'boundary:u-' + i);
 const state = () => evaluate(`const h=document.getElementById('chatgpt-toc-root');if(!h)return null;const s=h.shadowRoot;return {nav:h.dataset.navigation,expanded:s.querySelector('.toggle').getAttribute('aria-expanded')==='true',status:s.querySelector('#toc-status').textContent,scope:s.querySelector('#toc-scope').textContent,ids:[...s.querySelectorAll('#toc-list button')].map(b=>b.dataset.entryId),highlight:document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')};`);
-const stats = () => evaluate('return window.boundaryFixture.stats();');
+const stats = () => evaluate('return {...window.boundaryFixture.stats(),observedAt:performance.now()};');
 async function click(selector) {
   const shadow = await (await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();
   await evaluate('arguments[0].click();', await shadow.findElement(By.css(selector)));
@@ -94,17 +94,14 @@ async function setup(mode) {
   await driver.wait(async () => (await state())?.ids.length === 7, 10000);
 }
 async function finish(ms = 70000) { await driver.wait(async () => (await state()).nav !== 'loading', ms); }
-function verifySweep(fixture) {
-  const head = fixture.mounts.find(m => m.start === 0);
-  const firstNewer = fixture.arrivals.find(a => a.direction === 'newer');
-  assert.ok(head, 'Window zero must actually mount');assert.ok(firstNewer, 'Sweep must reach an observed newer outer edge');
-  assert.ok(firstNewer.at > head.at, 'A delayed or stalled older window cannot trigger early reverse');
-  const clamp = fixture.headClamps.find(c => c.at >= head.at);
-  assert.ok(clamp, 'The actual conversation root must reach the physical head');
-  assert.ok(firstNewer.at - clamp.at >= 5900, 'Reverse needs a stable physical head, not two short stalls');
-  assert.equal(fixture.arrivals.filter(a => a.pinned).length, 0, 'Never jump over unknown middle via pinned tail');
-  for(let i=1;i<fixture.mounts.length;i++)assert.ok(Math.abs(fixture.mounts[i].start-fixture.mounts[i-1].start)<=4, 'Each mounted window must overlap its predecessor');
-  return {firstHeadAt:Math.round(head.at),firstClampAt:Math.round(clamp.at),firstNewerAt:Math.round(firstNewer.at)};
+function verifyHead(fixture) {
+ const head=fixture.mounts.find(m=>m.start===0),clamp=fixture.headClamps.find(c=>head&&c.at>=head.at);
+ assert.ok(head,'Window zero must actually mount');assert.ok(clamp,'The actual conversation root must reach head');
+ assert.ok(fixture.observedAt-clamp.at>=5900,'Completion requires stable head proof');
+ assert.equal(fixture.top,0);assert.equal(fixture.arrivals.filter(a=>a.direction==='newer').length,0,'Never reverse after head');
+ assert.equal(fixture.arrivals.filter(a=>a.pinned).length,0,'Do not skip unknown middle through pinned tail');
+ for(let i=1;i<fixture.mounts.length;i++)assert.ok(Math.abs(fixture.mounts[i].start-fixture.mounts[i-1].start)<=4);
+ return {firstHeadAt:Math.round(head.at),firstClampAt:Math.round(clamp.at),finishedAt:Math.round(fixture.observedAt),noReverse:true};
 }
 async function test(name, run) {
   const began=Date.now();
@@ -116,7 +113,7 @@ try {
     await setup('delay');await click('#toc-earlier');await finish();const s=await state(),f=await stats();
     assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expected);
     const delayed=f.requests.filter(r=>r.direction==='older')[1];assert.equal(delayed.delay,5000);assert.ok(delayed.committedAt-delayed.at>=4950);
-    const proof=verifySweep(f);await session.screenshot('delayed-older-thirty.png');
+    const proof=verifyHead(f);await session.screenshot('delayed-older-thirty.png');
     return {collected:30,exactOrder:true,delayedMountMs:Math.round(delayed.committedAt-delayed.at),newerAfterFirstZero:true,...proof};
   });
   await test('BOUNDARY-02: frozen middle remains retryable beyond three empty batches until explicit stop', async()=>{
@@ -128,12 +125,12 @@ try {
   });
   await test('BOUNDARY-03: placeholder, slots, root, height and viewport shifts reset head evidence', async()=>{
     await setup('boundary-reset');await click('#toc-earlier');await finish();const s=await state(),f=await stats();
-    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expected);const proof=verifySweep(f);
+    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expected);const proof=verifyHead(f);
     assert.deepEqual(f.changes.map(c=>c.kind),['loading-start','slot-renumber','root-replaced','height-expanded','height-restored','loading-finished','viewport-shift','viewport-restored']);
-    const settled=f.changes.at(-1),firstNewer=f.arrivals.find(a=>a.direction==='newer');
-    assert.ok(firstNewer.at-settled.at>=5900,'No boundary proof survives loading, changed root/extent or viewport geometry');
+    const settled=f.changes.at(-1),finishedAt=f.observedAt;
+    assert.ok(finishedAt-settled.at>=5900,'No boundary proof survives loading, changed root/extent or viewport geometry');
     assert.ok(s.ids.every(id=>id.startsWith('boundary:u-')),'Unidentified loading nodes cannot become prompts');
-    return {collected:30,exactOrder:true,changes:f.changes.map(c=>c.kind),stableAfterLastChangeMs:Math.round(firstNewer.at-settled.at),...proof};
+    return {collected:30,exactOrder:true,changes:f.changes.map(c=>c.kind),stableAfterLastChangeMs:Math.round(finishedAt-settled.at),...proof};
   });
   await test('BOUNDARY-04: cancellation during five-second pending mount has no late root movement or highlight', async()=>{
     await setup('cancel');await click('#toc-earlier');await driver.wait(async()=> (await stats()).pending?.delay===5000,10000);
@@ -145,17 +142,17 @@ try {
   });
   await test('BOUNDARY-05: isolated viewport movement invalidates six-second proof with unchanged IDs and extent', async()=>{
     await setup('geometry-only');await click('#toc-earlier');await finish();const s=await state(),f=await stats();
-    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expected);const proof=verifySweep(f);
+    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expected);const proof=verifyHead(f);
     assert.deepEqual(f.changes.map(c=>c.kind),['viewport-shift','viewport-restored']);
-    const restored=f.changes.at(-1),firstNewer=f.arrivals.find(a=>a.direction==='newer');
-    assert.ok(firstNewer.at-restored.at>=5900,'Viewport movement alone must reset proof before the first batch could declare its head');
-    return {collected:30,exactOrder:true,stableAfterGeometryRestoreMs:Math.round(firstNewer.at-restored.at),...proof};
+    const restored=f.changes.at(-1),finishedAt=f.observedAt;
+    assert.ok(finishedAt-restored.at>=5900,'Viewport movement alone must reset proof before the first batch could declare its head');
+    return {collected:30,exactOrder:true,stableAfterGeometryRestoreMs:Math.round(finishedAt-restored.at),...proof};
   });
   await test('BOUNDARY-06: a 25-second middle mount survives repeated empty batches without early reverse', async()=>{
     await setup('slow-mount');await click('#toc-earlier');await finish(100000);const s=await state(),f=await stats();
     assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expected);
     const delayed=f.requests.filter(r=>r.direction==='older')[1];assert.equal(delayed.delay,25000);assert.ok(delayed.committedAt-delayed.at>=24900);
-    const proof=verifySweep(f);return {collected:30,exactOrder:true,delayedMountMs:Math.round(delayed.committedAt-delayed.at),...proof};
+    const proof=verifyHead(f);return {collected:30,exactOrder:true,delayedMountMs:Math.round(delayed.committedAt-delayed.at),...proof};
   });
 }catch(error){console.error(error);await session.screenshot('boundary-failure.png').catch(()=>{});process.exitCode=1;}
 finally {

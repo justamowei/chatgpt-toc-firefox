@@ -264,7 +264,7 @@ function start(): Instance {
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
     if (id === null && result === 'idle') status.textContent = adapter.collectionFinished
-      ? `本次已向前、向後巡覽，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；兩端已確認穩定捲動邊界。完整歷史尚未核對；可返回剛才位置。`
+      ? `本次已向上收集，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；已確認穩定頂端捲動邊界。完整歷史尚未核對；可返回剛才位置。`
       : `本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集。`;
     updateCurrent();
   }
