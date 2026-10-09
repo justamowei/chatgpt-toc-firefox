@@ -11,7 +11,7 @@ const state=()=>evaluate(`const h=document.getElementById('chatgpt-toc-root'),s=
 const stats=()=>evaluate('return window.anchorFixture.stats();');
 async function click(selector){const sh=await(await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();await evaluate('arguments[0].click();',await sh.findElement(By.css(selector)));}
 async function setup(pad=450,start=23,mode='normal'){
- await driver.get(session.url.replace('synthetic','top-'+pad+'-'+mode));
+ await driver.get(session.url.replace('synthetic','top-'+pad+'-'+start+'-'+mode));
  let code=source.replace('let total=0;',`let total=${pad};`).replace("m.style.height=total+'px'", "m.style.height=(total+450)+'px'");
  if(mode==='hidden') code+=`const h=document.createElement('div');h.setAttribute('role','progressbar');h.style.display='none';m.append(h);`;
  if(mode==='slow') code+=`const loader=document.createElement('div');loader.setAttribute('role','progressbar');loader.style.cssText='position:absolute;top:0;height:20px;width:100px';m.append(loader);root.setAttribute('aria-busy','true');setTimeout(()=>{loader.remove();root.removeAttribute('aria-busy');},9000);`;
