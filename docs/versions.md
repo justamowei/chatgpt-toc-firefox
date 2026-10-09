@@ -1,6 +1,6 @@
 # 版本目錄
 
-目前 **v0.3.7**，以v0.3.4修正。2026-10-10 依使用者明確授權，以新 commit 回退；v0.3.5／v0.3.6 及兩個同版本 snapshot tags 已移除。提交歷史保留，這些版本不再作交付選擇。[回退紀錄](rollback-2026-10-10.md)、[版本規範](version-policy.md)。
+目前 **v0.3.5**，以v0.3.4修正。2026-10-10 依使用者明確授權，以新 commit 回退；舊v0.3.5／v0.3.6及兩個snapshot tags已移除；本次依使用者指定重新採用v0.3.5。提交歷史保留，這些版本不再作交付選擇。[回退紀錄](rollback-2026-10-10.md)、[版本規範](version-policy.md)。
 
 | tag | 交付快照 | runtime | 狀態 |
 | --- | --- | --- | --- |
@@ -12,8 +12,8 @@
 | v0.3.2 | [5fd1d4d](https://github.com/justamowei/chatgpt-toc-firefox/commit/5fd1d4dd8dfc1c12342e0a4ccbf01dc31365f748) | 2c9d0d2 | 實驗版／LIVE PENDING |
 | v0.3.3 | [5695198](https://github.com/justamowei/chatgpt-toc-firefox/commit/56951988cb7d258eafeadacfa02174226a824093) | 567dfda | 實驗版／LIVE PENDING |
 | v0.3.4 | [25b46d4](https://github.com/justamowei/chatgpt-toc-firefox/commit/25b46d412e6aa7af451eb7a507b47c291a9ade66) | a1ff15a | 實驗版／LIVE PENDING |
-| v0.3.7 | [435a09d](https://github.com/justamowei/chatgpt-toc-firefox/commit/435a09d9a3dd3a2fae3047ead61a4599d39b2caa) | 0a069e0 | 實驗版／LIVE PENDING |
+| v0.3.5 | [58cdfd6](https://github.com/justamowei/chatgpt-toc-firefox/commit/58cdfd67e5631cbb464e2a2724ce2fc0c925359c) | f3cc436 | 實驗版／LIVE PENDING |
 
 v0.3.1 固定首次交付，r2–r5 歷史修訂保留來源，不移動原 tag。v0.2.0 實際使用失敗後撤回。詳細來源與驗收連結見 [機器可讀目錄](version-catalog.json)。當前完整來源在 release/v0.3；所有版本仍未完成正式簽章及整體 Firefox ChatGPT LIVE 驗收。
 
-新交付v0.3.7：頂端向上單向收集、persistent邊緣anchor、可見loading核對；完整證據見[本版報告](release-v0.3.7.md)。固定交付 435a09d9a3dd3a2fae3047ead61a4599d39b2caa；annotated tag object 40325dcdf03e60f07b05ef9eb49822aa41e36db5。
+新交付v0.3.5：依使用者明確指定，更正先前誤標v0.3.7。相同頂端停止修正，未恢復舊0.3.5程式。固定交付與tag身份由[機器可讀目錄](version-catalog.json)記錄。
