@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.5",
+  "currentVersion": "0.3.4",
   "maintenanceBranch": "release/v0.3",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
@@ -115,36 +115,6 @@
       ],
       "selection": "New PATCH delivery: preserve previously observed saved ordering across F5 and SPA returns; strict v1 cache format remains compatible. Pure 94/94; native Firefox localhost 13/13; independent fixed-source review PASS.",
       "tagObject": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c",
-      "createdAt": "2026-10-08"
-    },
-    {
-      "version": "0.3.5",
-      "tag": "v0.3.5",
-      "deliveryCommit": "ba101b8b446f1be554c484027fce7acdcf8d029f",
-      "runtimeCommit": "6497a1b71bbbe48341022704b111ba611c16bad7",
-      "status": "experimental",
-      "liveStatus": "PENDING",
-      "acceptance": [
-        "docs/acceptance-v0.3.5.md",
-        "docs/release-v0.3.5.md"
-      ],
-      "selection": "New PATCH: atomically rebuild only the selected conversation bottom-up, stop at stable observed head and persist session prompt ordinals. Main and independent pure103/103, native Firefox localhost5/5; twelve build hashes match.",
-      "tagObject": "c1d4f05c536eba5c7f802549c0e01ffc179b141d",
-      "createdAt": "2026-10-08"
-    },
-    {
-      "version": "0.3.6",
-      "tag": "v0.3.6",
-      "deliveryCommit": "5aa5b4e6ddae39cd8d33b8de8abd25c997ac9150",
-      "runtimeCommit": "c32e8e92ec98d0dc3969ab3e2e8170bdf726258e",
-      "status": "experimental",
-      "liveStatus": "PENDING",
-      "acceptance": [
-        "docs/acceptance-v0.3.6.md",
-        "docs/release-v0.3.6.md"
-      ],
-      "selection": "New PATCH: remove temporary number prefix, automatically scan only successfully loaded empty saved histories without resetting, and append new prompt IDs. Main and GPT-6.1 Sol high independent pure111/111, native Firefox localhost8/8; twelve build hashes matched.",
-      "tagObject": "dd8086509733fa44d3885eef4f82ea644f5d4167",
       "createdAt": "2026-10-08"
     }
   ],
@@ -263,70 +233,25 @@
     "preserveHistoricalPass": true,
     "restoreTagToOlderRuntime": false
   },
-  "updatedAt": "2026-10-08",
-  "currentRevision": "2026-10-08-v035-rebuild",
-  "sameVersionRevisions": [
-    {
-      "version": "0.3.6",
-      "revision": "2026-10-08-v036-r2",
-      "userRequestedSameVersion": true,
-      "request": "修改好的也是 v0.3.6 版",
-      "snapshotTag": "snapshot/v0.3.6/2026-10-08-r2",
-      "deliveryCommit": "77ca0d14d8963aadede76ed3b4f7235dd0c190cb",
-      "runtimeCommit": "5f1479c9133364a38fd7b2eb54ce129970610274",
-      "tagObject": "317711690321d5e6f1691099ef587727651cc87e",
-      "status": "experimental",
-      "liveStatus": "PENDING",
-      "acceptance": [
-        "docs/release-v0.3.6-r2.md",
-        "docs/acceptance-v0.3.6-r2.md"
-      ],
-      "selection": "User explicitly requested same product version. Correct padded tail positioning, persistent head retry progress and visible directional history loading; preserve canonical v0.3.6 tag and original artifacts. Main and independent111 pure/15 native Firefox localhost;12 hashes matched.",
-      "createdAt": "2026-10-08"
-    },
-    {
-      "version": "0.3.5",
-      "revision": "2026-10-08-v035-rebuild",
-      "userRequestedSameVersion": true,
-      "request": "回到 v0.3.4 版本，0.3.5 和 0.3.6 就棄用；根據 v0.3.4 重新開發 v0.3.5",
-      "snapshotTag": "snapshot/v0.3.5/2026-10-08-rebuild",
-      "deliveryCommit": "7003c51c74add79754c22457913c403e8b6b776d",
-      "runtimeCommit": "95a74670e26a930c6cadc3c4a29a9d40eb5a7d43",
-      "tagObject": "776b509cbec05b389827019ff095c0f7e9d2aabb",
-      "status": "experimental",
-      "liveStatus": "PENDING",
-      "acceptance": [
-        "docs/release-v0.3.5-rebuild.md",
-        "docs/acceptance-v0.3.5-rebuild.md"
-      ],
-      "baselineTag": "v0.3.4",
-      "baselineDelivery": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
-      "selection": "Explicit user-requested redevelopment from v034; old035/36 deprecated, tags kept;111 pure, independent native Firefox localhost11,12 identical build hashes. No deprecated cache compatibility.",
-      "createdAt": "2026-10-08"
-    }
-  ],
-  "redevelopment": {
-    "requestedAt": "2026-10-08",
-    "request": "回到 v0.3.4 版本，0.3.5 和 0.3.6 就棄用；根據 v0.3.4 重新開發 v0.3.5",
-    "baselineTag": "v0.3.4",
-    "baselineDelivery": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
-    "baselineRestoreCommit": "b054f36b07657d978576ca7934228d1d212cc1c2",
-    "workBranch": "feat/v035-rebuild-from-v034",
-    "currentRevision": "2026-10-08-v035-rebuild",
-    "snapshotTag": "snapshot/v0.3.5/2026-10-08-rebuild",
-    "deprecatedTags": [
+  "updatedAt": "2026-10-10",
+  "currentRevision": "2026-10-08-v034",
+  "sameVersionRevisions": [],
+  "removal": {
+    "requestedAt": "2026-10-10",
+    "request": "全部移除；同意將本機程式與 release/v0.3 以新 commit 回退到 v0.3.4",
+    "removedVersions": [
+      "0.3.5",
+      "0.3.6"
+    ],
+    "removedTags": [
       "v0.3.5",
       "v0.3.6",
+      "snapshot/v0.3.5/2026-10-08-rebuild",
       "snapshot/v0.3.6/2026-10-08-r2"
     ],
-    "preserveHistoricalObjects": true,
-    "legacyCompatibility": false,
-    "status": "experimental",
-    "acceptance": "docs/redevelopment-v0.3.5.md",
-    "runtimeCommit": "95a74670e26a930c6cadc3c4a29a9d40eb5a7d43",
-    "liveStatus": "PENDING",
-    "nativePassed": 11,
-    "deliveryCommit": "7003c51c74add79754c22457913c403e8b6b776d",
-    "tagObject": "776b509cbec05b389827019ff095c0f7e9d2aabb"
+    "baselineTag": "v0.3.4",
+    "baselineDelivery": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
+    "preserveCommitHistory": true,
+    "firefoxUninstall": "PENDING: Computer Use initialization failed"
   }
 }
