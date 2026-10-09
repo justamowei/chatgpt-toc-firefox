@@ -261,7 +261,8 @@
     "acceptance": [
       "docs/release-v0.3.5.md",
       "docs/acceptance-v0.3.5.md"
-    ]
+    ],
+    "runtimeCommit": "f3cc43662f91bf3c156661bc524f64a8377605ce"
   },
   "versionCorrection": {
     "requestedAt": "2026-10-10",

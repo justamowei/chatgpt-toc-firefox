@@ -27,3 +27,7 @@
 [原 empty SPA 超時](evidence/v0.3.5/original-recovery-failure.json) 發現混合 A／B 目錄識別值。測試頁只等筆數而未等 route 身份，freeze 也未取消已排程的掛載；修正 harness 後，產品 content.js hash 完全相同，8/8 回歸 PASS，空掛載時恢復 30 筆。尚未證明原次失敗的唯一原因，不表述成已確認的環境原因。
 
 正式產物僅匹配原有 ChatGPT 網域；未新增 fixture host 權限。對話快取、背景保存與導航內容核對路徑保持 v0.3.4，獨立審查確認產品非相關路徑無改動。
+
+## 更正後補充驗證
+
+更正後 runtime：f3cc43662f91bf3c156661bc524f64a8377605ce。94/94 純測試、6/6 原生 Firefox localhost 頂端回歸、typecheck 與兩種產物嚴格 lint PASS（各零 errors/notices/warnings）。[原生結果](evidence/v0.3.5/native-top.json)、[純測試](evidence/v0.3.5/pure-tests.txt)、[正式產物](evidence/v0.3.5/production-build.json)。正式 content.js 逐字核對只變更 revision 字串；背景、設定與CSS產物hash不變。先前20項合成回歸保留為功能來源證據，不當作更正版重跑20項。ChatGPT LIVE仍未測。

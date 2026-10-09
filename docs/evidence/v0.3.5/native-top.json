@@ -1,0 +1,63 @@
+{
+  "suite": "native Firefox localhost, not ChatGPT LIVE",
+  "results": [
+    {
+      "name": "TOP-0-normal",
+      "status": "PASS",
+      "actual": {
+        "count": 30,
+        "top": 0,
+        "scrollEvents": 8,
+        "status": "本次已向上收集，新增 23 則；已確認穩定頂端捲動邊界。完整歷史尚未核對；可返回剛才位置。",
+        "noLateScroll": true
+      }
+    },
+    {
+      "name": "TOP-450-normal",
+      "status": "PASS",
+      "actual": {
+        "count": 30,
+        "top": 0,
+        "scrollEvents": 10,
+        "status": "本次已向上收集，新增 23 則；已確認穩定頂端捲動邊界。完整歷史尚未核對；可返回剛才位置。",
+        "noLateScroll": true
+      }
+    },
+    {
+      "name": "TOP-450-hidden",
+      "status": "PASS",
+      "actual": {
+        "count": 30,
+        "top": 0,
+        "scrollEvents": 10,
+        "status": "本次已向上收集，新增 23 則；已確認穩定頂端捲動邊界。完整歷史尚未核對；可返回剛才位置。",
+        "noLateScroll": true
+      }
+    },
+    {
+      "name": "TOP-large-unknown-spacer-remains-cancellable",
+      "status": "PASS",
+      "actual": {
+        "top": 0,
+        "unprovenHead": true,
+        "cancellable": true
+      }
+    },
+    {
+      "name": "TOP-visible-loader-delays-proof",
+      "status": "PASS",
+      "actual": {
+        "waitedMs": 15225,
+        "top": 0
+      }
+    },
+    {
+      "name": "TOP-frozen-middle-stop",
+      "status": "PASS",
+      "actual": {
+        "middleTop": 54698,
+        "lateScroll": false
+      }
+    }
+  ]
+}

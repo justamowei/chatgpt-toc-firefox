@@ -16,7 +16,7 @@
 
 按「收集整段對話」從目前位置向上巡覽，保留現有目錄。從頁尾開始可覆蓋本次經過的整段；從中間開始不會補收尚未看過的更晚訊息。本次不加入清空重建、自動全收或新的編號功能。設定的 1–10 分鐘期限、停止操作、缓存與離屏導航沿用 v0.3.4。
 
-Firefox 載入本機 outputs/Firefox-測試版-v0.3.5/manifest.json；更新步驟見 [安裝說明](install-firefox.md)。正式產物 content.js SHA256：520a9acbc1fb6954d1ef07b8301fd7d8eff512382b74ac69d010becf98de7498。ZIP SHA256：21e0a76096c639994a84a37f338c64188930ef5dcee5a93487553c366f5a6be3。
+Firefox 載入本機 outputs/Firefox-測試版-v0.3.5/manifest.json；更新步驟見 [安裝說明](install-firefox.md)。正式產物 content.js SHA256：eb20132a677b1feda1349885f5c6c735a6244e7a4e3ce5cc0602b8dd5352df33。ZIP SHA256：27c418444ccf29c483f4b0dbb56ce2c1ed3133d29cabeacf06fc05dce6b1eab9。
 
 ## 驗收與限制
 
@@ -25,3 +25,7 @@ Firefox 載入本機 outputs/Firefox-測試版-v0.3.5/manifest.json；更新步�
 ChatGPT LIVE 尚未實測，個人 Firefox 及現有插件未操作。若頁首有大於視窗且無法辨識的留白，導致 root 雖到零但首則訊息仍不可見，會保守等待至停止或期限，不宣稱完成。頂端捲動邊界成立也不能當作完整歷史已核對。
 
 此為 PATCH 實驗版，使用新的不可變 v0.3.5 tag；已刪除的舊v0.3.5程式不恢復、v0.3.6保持移除，歷史八個正式 tag 不移動。固定交付 commit／tag object 由 [版本目錄](version-catalog.json) 記錄，僅版本／revision更正，功能來源保持0a069e08。
+
+## 更正後補充驗證
+
+更正後 runtime：f3cc43662f91bf3c156661bc524f64a8377605ce。94/94 純測試、6/6 原生 Firefox localhost 頂端回歸、typecheck 與兩種產物嚴格 lint PASS（各零 errors/notices/warnings）。[原生結果](evidence/v0.3.5/native-top.json)、[純測試](evidence/v0.3.5/pure-tests.txt)、[正式產物](evidence/v0.3.5/production-build.json)。正式 content.js 逐字核對只變更 revision 字串；背景、設定與CSS產物hash不變。先前20項合成回歸保留為功能來源證據，不當作更正版重跑20項。ChatGPT LIVE仍未測。
