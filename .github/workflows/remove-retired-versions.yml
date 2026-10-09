@@ -154,7 +154,7 @@ jobs:
           }''')
           token = os.environ['GITHUB_TOKEN']
           def api(path, method='GET', missing=False):
-              req = urllib.request.Request('https://api.github.com/repos/' + repo + '/' + path, method=method, headers={'Authorization':'Bearer ' + token, 'Accept':'application/vnd.github+json', 'User-Agent':'toc-authorized-version-removal'})
+              req = urllib.request.Request(('https://api.github.com/repos/' + repo + '/' + path).rstrip('/'), method=method, headers={'Authorization':'Bearer ' + token, 'Accept':'application/vnd.github+json', 'User-Agent':'toc-authorized-version-removal'})
               try:
                   with urllib.request.urlopen(req, timeout=30) as response:
                       if response.status == 204: return None
