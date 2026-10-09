@@ -30,15 +30,15 @@ def local_git(*args, check=True):
 
 
 class Governance(unittest.TestCase):
-    def test_current_selection_matches_v034_and_retired_refs_stay_absent(self):
-        self.assertEqual(current_catalog["currentVersion"], "0.3.4")
-        self.assertEqual(len(current_catalog["versions"]), 8)
+    def test_current_selection_matches_product_and_retired_refs_stay_absent(self):
+        self.assertEqual(current_catalog["currentVersion"], json.loads(Path("package.json").read_text(encoding="utf-8"))["version"])
+        self.assertEqual(len(current_catalog["versions"]), 8 if current_catalog.get("pendingDelivery") else 9)
         self.assertEqual(current_catalog["versions"][:7], catalog["versions"])
         for version in current_catalog["versions"]:
             self.assertEqual(local_git("rev-parse", version["tag"]).strip(), version["tagObject"])
             self.assertEqual(local_git("rev-parse", version["tag"] + "^{}").strip(), version["deliveryCommit"])
         for path in ["package.json", "package-lock.json", "manifests/firefox.json"]:
-            self.assertEqual(json.loads(Path(path).read_text(encoding="utf-8"))["version"], "0.3.4")
+            self.assertEqual(json.loads(Path(path).read_text(encoding="utf-8"))["version"], current_catalog["currentVersion"])
         for tag in current_catalog["removal"]["removedTags"]:
             self.assertNotEqual(local_git("show-ref", "--verify", "refs/tags/" + tag, check=False), 0)
 

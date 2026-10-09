@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.4",
+  "currentVersion": "0.3.7",
   "maintenanceBranch": "release/v0.3",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
@@ -234,7 +234,7 @@
     "restoreTagToOlderRuntime": false
   },
   "updatedAt": "2026-10-10",
-  "currentRevision": "2026-10-08-v034",
+  "currentRevision": "2026-10-10-v037",
   "sameVersionRevisions": [],
   "removal": {
     "requestedAt": "2026-10-10",
@@ -253,5 +253,15 @@
     "baselineDelivery": "25b46d412e6aa7af451eb7a507b47c291a9ade66",
     "preserveCommitHistory": true,
     "firefoxUninstall": "PENDING: Computer Use initialization failed"
+  },
+  "pendingDelivery": {
+    "version": "0.3.7",
+    "runtimeCommit": "0a069e08a7893a55b48d061ce7dbb8a9fc0f9b64",
+    "status": "experimental",
+    "liveStatus": "PENDING",
+    "acceptance": [
+      "docs/acceptance-v0.3.7.md",
+      "docs/release-v0.3.7.md"
+    ]
   }
 }

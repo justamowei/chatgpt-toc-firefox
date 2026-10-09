@@ -13,13 +13,13 @@ const state=()=>evaluate(`const h=document.getElementById('chatgpt-toc-root'),s=
 const wait=p=>driver.wait(p,20000);
 async function click(selector){const s=await(await driver.findElement(By.id('chatgpt-toc-root'))).getShadowRoot();const b=await s.findElement(By.css(selector));await evaluate('arguments[0].click();',b);}
 async function mount(prefix='A',start=23){await evaluate(renderer,start,prefix);await wait(async()=>!!await state());if((await state()).expanded!=='true')await click('.toggle');}
-async function switchRoute(prefix){await evaluate('history.pushState({},"",arguments[0]);',url.replace('recovery-A','recovery-'+prefix));await driver.sleep(200);await mount(prefix);}
+async function switchRoute(prefix){await evaluate('history.pushState({},"",arguments[0]);',url.replace('recovery-A','recovery-'+prefix));await driver.sleep(200);await mount(prefix);await wait(async()=>{const s=await state();return s.ids.length>0&&s.ids.every(id=>id.startsWith(prefix+':'));});}
 async function exactTarget(index){const id='A:u-'+index;await wait(async()=> (await state()).ids.includes(id)&&!(await state()).disabled.includes(id));assert.equal(await evaluate('return !!document.querySelector(arguments[0]);','[data-message-id="'+id+'"]'),false);await click('#toc-list button[data-entry-id="'+id+'"]');await driver.wait(async()=>{const s=await state();return s.nav==='located'&&s.highlight===id;},25000);return id;}
 async function seedLegacy(){
    await driver.get(session.optionsUrl);
    await evaluate(`return (async()=>{const context=arguments[0];const entries=Array.from({length:30},(_,i)=>({id:'A:u-'+i,text:'A 本機提問 '+i,stable:true}));const tail=entries.slice(23),prefix=entries.slice(0,23);await browser.storage.local.set({'toc-index-v1':{version:1,records:[{touched:Date.now(),state:{version:1,context,branch:null,entries:tail,segments:[{ids:tail.map(e=>e.id),ordered:true}],quarantine:[{reason:'restored-unverified',entries:prefix,segments:[{ids:prefix.map(e=>e.id),ordered:true}],ordered:true}],limitReason:null}}]}});return true;})();`,url);
 }
-async function test(name,run){const started=Date.now();try{const actual=await run();results.push({name,status:'PASS',elapsedMs:Date.now()-started,actual});console.log(name+' PASS '+JSON.stringify(actual));}catch(e){results.push({name,status:'FAIL',error:String(e),ui:await state()});throw e;}}
+async function test(name,run){const started=Date.now();try{const actual=await run();results.push({name,status:'PASS',elapsedMs:Date.now()-started,actual});console.log(name+' PASS '+JSON.stringify(actual));}catch(e){results.push({name,status:'FAIL',error:String(e),ui:await state(),fixture:await evaluate('return window.anchorFixture?.stats();').catch(()=>null),url:await driver.getCurrentUrl()});throw e;}}
 try{
  await driver.get(session.optionsUrl);
  await wait(()=>evaluate(`return (async()=> (await browser.scripting.getRegisteredContentScripts({ids:['chatgpt-toc']})).length===1)();`));
@@ -52,7 +52,7 @@ try{
  });
  await test('V034-08 saved index restores while the SPA has an empty message mount',async()=>{
    await switchRoute('B');await wait(async()=> (await state()).ids.length===7);
-   await evaluate('history.pushState({},"",arguments[0]);document.querySelector("main").replaceChildren();',url);
+   await evaluate('window.anchorFixture.freeze();history.pushState({},"",arguments[0]);document.querySelector("main").replaceChildren();',url);
    await wait(async()=> (await state()).ids.length===30);
    const s=await state();assert.deepEqual(s.ids,Array.from({length:30},(_,n)=>'A:u-'+n));assert.deepEqual(s.groups,[]);assert.equal(s.archived,0);
    assert.match(s.scope,/目前掛載 0 則/);assert.match(s.scope,/已沿用保存的目錄排序/);

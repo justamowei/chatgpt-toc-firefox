@@ -1,0 +1,108 @@
+{
+  "date": "2026-10-09T18:46:34.111Z",
+  "source": "Native Firefox isolated addon, localhost virtual renderer with null branch, SPA routing and real extension storage; not ChatGPT LIVE",
+  "firefox": "157.0.1",
+  "build": {
+    "version": "0.3.7",
+    "revision": "2026-10-10-v037",
+    "fixture": true,
+    "hashes": {
+      "background.js": "58c117acd1e7a59f0afee5fdd5194725e65da8508a02a47e3b739d2810aaacab",
+      "content.js": "1fb2f50d34a190f10f9eedddbc401df0e21450e25f751e620ec67c48b8a08956",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "8fea091c0bf4099cac43fcf510aa0673b333e65c07cf4d58a06088dfef2031ca"
+    }
+  },
+  "results": [
+    {
+      "name": "V034-01 null-branch full collection persists all thirty exact prompts",
+      "status": "PASS",
+      "elapsedMs": 8396,
+      "actual": {
+        "collected": 30,
+        "branch": null,
+        "minutes": 10
+      }
+    },
+    {
+      "name": "V034-02 SPA A to B to A restores the full index without F5 and seeks an unmounted prompt",
+      "status": "PASS",
+      "elapsedMs": 2732,
+      "actual": {
+        "restored": 30,
+        "otherConversation": 7,
+        "exactHighlight": "A:u-3"
+      }
+    },
+    {
+      "name": "V034-03 F5 retains clickable saved prompts and verifies both navigation directions",
+      "status": "PASS",
+      "elapsedMs": 4259,
+      "actual": {
+        "restored": 30,
+        "exactTargets": [
+          "A:u-3",
+          "A:u-24"
+        ],
+        "claimsComplete": false
+      }
+    },
+    {
+      "name": "V034-07 repeated F5 restores the saved thirty-row order before any scrolling",
+      "status": "PASS",
+      "elapsedMs": 1093,
+      "actual": {
+        "refreshes": 3,
+        "restored": 30,
+        "automaticRecollection": false
+      }
+    },
+    {
+      "name": "V034-08 saved index restores while the SPA has an empty message mount",
+      "status": "PASS",
+      "elapsedMs": 476,
+      "actual": {
+        "emptyMount": true,
+        "restoredBeforeMount": 30,
+        "orderingRetained": true
+      }
+    },
+    {
+      "name": "V034-04 v032 archived prefix migrates without recollecting and is navigable",
+      "status": "PASS",
+      "elapsedMs": 9118,
+      "actual": {
+        "migrated": 30,
+        "exactTargets": [
+          "A:u-3",
+          "A:u-24"
+        ],
+        "coldPrefixToTail": true
+      }
+    },
+    {
+      "name": "V034-05 settings save a two-minute deadline, survive reload and apply to the next collection",
+      "status": "PASS",
+      "elapsedMs": 594,
+      "actual": {
+        "defaultMinutes": 10,
+        "savedMinutes": 2,
+        "persistedAfterReload": true,
+        "nextCollectionMinutes": 2,
+        "explicitStop": true
+      }
+    },
+    {
+      "name": "V034-06 a changed offscreen body cancels old navigation rather than highlighting the wrong version",
+      "status": "PASS",
+      "elapsedMs": 3337,
+      "actual": {
+        "falseHighlight": false,
+        "oldVersionArchived": true,
+        "state": "cancelled"
+      }
+    }
+  ]
+}

@@ -1,11 +1,9 @@
-# Firefox v0.3.4 更新與使用
+# Firefox v0.3.7 更新與使用
 
-正式 manifest：outputs/Firefox-測試版-v0.3.4/manifest.json 或 dist/firefox/manifest.json；version 0.3.4，revision 2026-10-08-v034。
+正式manifest：outputs/Firefox-測試版-v0.3.7/manifest.json；version0.3.7／revision2026-10-10-v037。
 
-1. 保留既有索引：把新版資料夾內檔案覆蓋到目前載入插件的資料夾，保持同一 addon ID，在 Firefox about:debugging →「這個 Firefox」按「重新載入」。不要先卸載或清除索引。
-2. 首次安裝：從上述頁面「載入暫時附加元件」選新版 manifest，允許 chatgpt.com 網站權限。重整已開啟 ChatGPT 分頁；之後新頁面預設自動啟用。
-3. 點目錄或輸入框外 Shift+O 開啟，Esc 收合。縮小格子只有目前掛載可定位提問，展開保留已收錄提問。
-4. 等 scope 顯示「已儲存於本機」，切換對話或 F5 可直接恢復已保存提問與原本排序，不需要重新收集。保存項目可點選尋找，重新掛載時核對 ID 與正文；舊分支矛盾資料只供搜尋。
-5. 「收集整段對話」預設最多 10 分鐘。面板「設定」→收集時間選 1–10 分鐘→「儲存收集時間」，下一次執行生效。到達穩定兩端可提早停止，也可按「停止」；Alt 不停止。
+保留插件addon ID，在Firefox about:debugging →這個Firefox，使用目前載入資料夾覆蓋本版檔案後重新載入；若舊載入資料夾已刪除，移除失效暫時插件再載入本版manifest。重新整理ChatGPT分頁。實際已保存資料是否仍在取決於Firefox是否曾卸載／清除；本次程式不清除儲存。
 
-每對話 5000 筆／500 萬正文，profile 最近使用 12 個對話／600 萬 JSON 字元；無痕不保存。暫時 addon 未簽章，Firefox 重啟可能移除，不承諾卸載後快取。Firefox 157.0.1 原生合成驗收 13 項通過，ChatGPT LIVE 未完成；見 [完整報告](release-v0.3.4.md)。
+按「收集整段對話」由目前位置向上收集；到穩定頂端直接结束，保留已收錄資料，不轉向下補收。從中間開始時，尚未看過的更晚訊息不會因這次向上巡覽憑空加入；可先自行移到頁尾再開始。Shift+O開啟、Esc收合、停止按鈕與真正閱讀操作取消，Alt不停止。預設10分鐘，設定可選1–10分鐘。
+
+本版有本機原生Firefox合成驗收，真實ChatGPT LIVE仍PENDING，未簽章。

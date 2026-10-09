@@ -1,0 +1,16 @@
+{
+  "suite": "native Firefox localhost, not ChatGPT LIVE",
+  "results": [
+    {
+      "name": "REPRO-original-v034-padding-head-loop",
+      "status": "PASS",
+      "actual": {
+        "state": "loading",
+        "actualFirstWindow": 0,
+        "scrollTop": 157,
+        "scrollEvents": 7,
+        "status": "正在選取較早掛載訊息，逐段向前收集 · 本次新增 0 則 · 最多 10 分鐘，可按停止。"
+      }
+    }
+  ]
+}
