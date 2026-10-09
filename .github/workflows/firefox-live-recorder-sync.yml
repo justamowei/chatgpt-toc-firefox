@@ -1,0 +1,32 @@
+name: Preserve Firefox live recorder checkpoint
+on:
+  push:
+    branches: [chore/firefox-live-recorder-sync]
+permissions:
+  contents: write
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Verify and push original local checkpoint
+        env:
+          GIT_TERMINAL_PROMPT: 0
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib,pathlib,subprocess
+          raw=base64.b64decode(pathlib.Path('recovery/firefox-live-recorder.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest() == '4701d981468c20851fb04e57b7fc3b1e154872a6fbda7931e417875ec6174ef7'
+          bundle=pathlib.Path('/tmp/firefox-live-recorder.bundle');bundle.write_bytes(raw)
+          expected='f0b0423d72f18897de49f6fd7eee61f37a87f731'
+          def git(*args): return subprocess.check_output(['git',*args],text=True).strip()
+          git('bundle','verify',str(bundle))
+          git('fetch','--no-tags',str(bundle),'refs/heads/feat/firefox-live-recorder:refs/remotes/bundle/firefox-live-recorder')
+          assert git('rev-parse','refs/remotes/bundle/firefox-live-recorder') == expected
+          git('push','origin',expected+':refs/heads/feat/firefox-live-recorder')
+          remote=git('ls-remote','origin','refs/heads/feat/firefox-live-recorder')
+          assert remote.split()[0] == expected
+          print('Original checkpoint verified: '+expected)
+          PY
