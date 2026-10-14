@@ -223,7 +223,8 @@ function start(): Instance {
     if (navigator.state === 'loading') status.textContent = collecting
       ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可按停止。`
       : adapter.lastLoadReport.phase === 'jump' ? '正在直接跳到已觀察區段，等待目標掛載…'
-      : adapter.lastLoadReport.phase === 'refine' ? '正在核對目標並校正位置…' : '正在逐段載入目標附近的訊息…';
+      : adapter.lastLoadReport.phase === 'refine' ? '正在核對目標並校正位置…'
+      : adapter.fastFallbackMessage ? `${adapter.fastFallbackMessage}；正在逐段尋找…` : '正在逐段載入目標附近的訊息…';
     host.dataset.navigationMode = adapter.lastLoadReport.phase === 'jump' ? 'fast' : 'walk';
   }
   function refresh(direction?: 'older' | 'newer'): void {
