@@ -1,0 +1,42 @@
+name: Preserve fast eligibility candidate
+on:
+  push:
+    branches: [chore/fast-v041-sync]
+permissions:
+  contents: write
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Preserve original candidate work branch without altering releases
+        env:
+          GIT_TERMINAL_PROMPT: 0
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib,pathlib,subprocess,json,os
+          assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux', 'Cloud runner only'
+          raw=base64.b64decode(pathlib.Path('recovery/fast-v041.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='e69ccb9808682b0b68bfa75a11ffa6a08e60168177d3fde9240b542ceb21f372'
+          p=pathlib.Path('/tmp/fast-v041.bundle');p.write_bytes(raw)
+          def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
+          expected='8cdfb598a1f0fc9ae180fd45abacf5dfd8b5ee23';branch='refs/heads/fix/fast-eligibility-v041'
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),branch+':refs/remotes/bundle/fast-v041')
+          assert git('rev-parse','refs/remotes/bundle/fast-v041')==expected
+          catalog=json.loads(git('show','4f7ff2bd2be4404a701cf46c0526a364f7407776:docs/version-catalog.json'))
+          def refs():return {r:s for s,r in (line.split() for line in git('ls-remote','origin').splitlines())}
+          before=refs()
+          for v in catalog['versions']:
+           assert before['refs/tags/'+v['tag']]==v['tagObject']
+           assert before['refs/tags/'+v['tag']+'^{}']==v['deliveryCommit']
+          assert before.get(branch) in (None,'4f7ff2bd2be4404a701cf46c0526a364f7407776',expected)
+          git('push','--atomic','origin',expected+':'+branch)
+          after=refs();assert after[branch]==expected
+          for r in ['refs/heads/main','refs/heads/release/v0.3','refs/heads/release/v0.4']:
+           assert after.get(r)==before.get(r)
+          for v in catalog['versions']:
+           assert after['refs/tags/'+v['tag']]==before['refs/tags/'+v['tag']]
+          print('Original diagnostic candidate work branch synced: '+expected)
+          PY
