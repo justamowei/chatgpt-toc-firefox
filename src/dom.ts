@@ -386,8 +386,9 @@ export class DomAdapter implements NavigationAdapter {
     if (!eligibility.widthCompatible) return skip('width-changed');
     const origin = root === document.scrollingElement ? 0 : root.getBoundingClientRect().top + root.clientTop;
     const segmentIds = new Set(segment.ids);
-    const mounted = readTurns().filter(turn => turn.role === 'user' && turn.stableId && segmentIds.has(turn.stableId) && root.contains(turn.node))
+    const allMountedUsers = readTurns().filter(turn => turn.role === 'user' && turn.stableId && root.contains(turn.node))
       .map(turn => ({ id: turn.stableId!, y: root.scrollTop + turn.node.getBoundingClientRect().top - origin }));
+    const mounted = allMountedUsers.filter(turn => segmentIds.has(turn.id));
     eligibility.mountedAnchors = mounted.length;
     const y = this.geometry.estimate(seekId, mounted, segment.ids, root.clientWidth);
     eligibility.estimatedY = y;
@@ -429,7 +430,7 @@ export class DomAdapter implements NavigationAdapter {
         // identical mounted window and canvas survive, restore its proven
         // cursor before walking, rather than following a disjoint pinned tail.
         const currentOrigin = root === document.scrollingElement ? 0 : root.getBoundingClientRect().top + root.clientTop;
-        const samePositions = mounted.every(item => {
+        const samePositions = allMountedUsers.every(item => {
           const node = this.nodes.get(item.id);
           return !!node && Math.abs(root.scrollTop + node.getBoundingClientRect().top - currentOrigin - item.y) <= 2;
         });

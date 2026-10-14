@@ -31,7 +31,15 @@ def local_git(*args, check=True):
 
 class Governance(unittest.TestCase):
     def test_current_selection_matches_product_and_retired_refs_stay_absent(self):
-        self.assertEqual(current_catalog["currentVersion"], json.loads(Path("package.json").read_text(encoding="utf-8"))["version"])
+        candidate = current_catalog.get("workingCandidate")
+        source_version = candidate["version"] if candidate else current_catalog["currentVersion"]
+        if candidate:
+            self.assertEqual(candidate["status"], "diagnostic-candidate")
+            self.assertTrue(candidate["branch"].startswith("fix/"))
+            self.assertNotIn("v" + source_version, [v["tag"] for v in current_catalog["versions"]])
+            self.assertEqual(local_git("show-ref", "--verify", "--quiet", "refs/tags/v" + source_version, check=False), 1)
+            self.assertGreater(tuple(map(int, source_version.split("."))), tuple(map(int, current_catalog["currentVersion"].split("."))))
+        self.assertEqual(source_version, json.loads(Path("package.json").read_text(encoding="utf-8"))["version"])
         original_tags = list(tags) + ["v0.3.4", "v0.3.5"]
         expected_tags = original_tags.copy()
         current_tag = "v" + current_catalog["currentVersion"]
@@ -45,7 +53,7 @@ class Governance(unittest.TestCase):
             self.assertEqual(local_git("rev-parse", version["tag"]).strip(), version["tagObject"])
             self.assertEqual(local_git("rev-parse", version["tag"] + "^{}").strip(), version["deliveryCommit"])
         for path in ["package.json", "package-lock.json", "manifests/firefox.json"]:
-            self.assertEqual(json.loads(Path(path).read_text(encoding="utf-8"))["version"], current_catalog["currentVersion"])
+            self.assertEqual(json.loads(Path(path).read_text(encoding="utf-8"))["version"], source_version)
         for tag in current_catalog["removal"]["removedTags"]:
             if tag == "v0.3.5" and current_catalog.get("versionCorrection", {}).get("reissuedVersion") == "0.3.5":
                 continue  # Explicit user renumbering; prior removed implementation is not restored.
