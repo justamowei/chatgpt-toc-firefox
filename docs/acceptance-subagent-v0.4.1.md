@@ -1,3 +1,5 @@
+> 2026-10-15 已撤回：v0.4.0／v0.4.1 不再作目前開發版本；以下 PASS 只代表當時的驗收範圍。已回退 v0.3.5，見 [回退紀錄](rollback-v04-2026-10-15.md)。
+
 # v0.4.1 診斷候選獨立核對
 
 2026-10-15，GPT-6.1 Sol high 驗收子代理，只讀固定 runtime checkpoint 16bb24d905300e4eea187f00e76b415cfb525f2c。結果：diagnostic candidate PASS，未發現 blocking；ChatGPT LIVE PENDING。
