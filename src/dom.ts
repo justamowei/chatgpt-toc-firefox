@@ -367,6 +367,7 @@ export class DomAdapter implements NavigationAdapter {
     if (y === null || !Number.isFinite(y) || y < -2 || y > root.scrollHeight + 2 || budget < 320 || signal.aborted) return false;
     const epoch = this.store.epoch, context = this.store.context;
     if (context !== location.origin + location.pathname || !root.isConnected) return false;
+    const beforeIds = [...this.nodes.keys()], beforeWidth = root.clientWidth, beforeClient = root.clientHeight;
     const started = performance.now(), top = Math.max(0, Math.min(root.scrollHeight - root.clientHeight, y - 16));
     this.fast = { result: 'jumping', attempts: 1, fallbacks: 0, elapsedMs: 0 };
     this.lastLoadReport = { phase: 'jump', added: this.lastLoadReport.added, steps: this.lastLoadReport.steps + 1 };
@@ -394,6 +395,20 @@ export class DomAdapter implements NavigationAdapter {
         // A wrong estimate must never become a recurring jump. Existing prompt
         // data remains; only page geometry is discarded before walking again.
         this.fast.result = 'miss'; this.fast.fallbacks = 1; this.geometry.reset();
+        // Edge-only renderers can ignore an absolute jump entirely. If the
+        // identical mounted window and canvas survive, restore its proven
+        // cursor before walking, rather than following a disjoint pinned tail.
+        const currentOrigin = root === document.scrollingElement ? 0 : root.getBoundingClientRect().top + root.clientTop;
+        const samePositions = mounted.every(item => {
+          const node = this.nodes.get(item.id);
+          return !!node && Math.abs(root.scrollTop + node.getBoundingClientRect().top - currentOrigin - item.y) <= 2;
+        });
+        if (!attempt.replaced && root.isConnected && root === this.scroller(this.nodes.values().next().value) &&
+          Math.abs(root.scrollHeight - attempt.heightBefore) <= 2 && Math.abs(root.clientWidth - beforeWidth) <= 2 &&
+          Math.abs(root.clientHeight - beforeClient) <= 2 && samePositions && this.nodes.size === beforeIds.length &&
+          beforeIds.every(id => this.nodes.has(id)) && live()) {
+          root.scrollTo({ top: attempt.before, behavior: 'instant' }); attempt.after = root.scrollTop;
+        }
       } else this.fast.result = 'cancelled';
       return false;
     } finally {
