@@ -1,4 +1,4 @@
-name: Preserve v0.4.0 navigation checkpoint
+name: Preserve v0.4.0 original delivery
 on:
   push:
     branches: [chore/warm-v040-sync]
@@ -11,21 +11,42 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Verify original commit and push only the work branch
+      - name: Verify immutable history and atomically push only v0.4 delivery refs
         env:
           GIT_TERMINAL_PROMPT: 0
         run: |
           python3 - <<'PY'
-          import base64,hashlib,pathlib,subprocess
+          import base64,hashlib,pathlib,subprocess,json,os
+          assert os.environ.get('GITHUB_ACTIONS') == 'true' and os.environ.get('RUNNER_OS') == 'Linux', 'Cloud runner only'
           raw=base64.b64decode(pathlib.Path('recovery/warm-v040.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest() == '42532ce19e4d7d1579c4d324f79071f3e18e2a02a301990b5e6dede12852fc51'
+          assert hashlib.sha256(raw).hexdigest() == 'f29f9b904febed36ef774cfbe7311ce95e88492cae7b7763a828bb80e879ef35'
           bundle=pathlib.Path('/tmp/warm-v040.bundle');bundle.write_bytes(raw)
-          expected='c1e01866df7478dfdee060f42cadbc0de46ad458'
+          expected='4f7ff2bd2be4404a701cf46c0526a364f7407776'
           def git(*args): return subprocess.check_output(['git',*args],text=True).strip()
           git('bundle','verify',str(bundle))
-          git('fetch','--no-tags',str(bundle),'refs/heads/feat/warm-navigation-v040:refs/remotes/bundle/warm-v040')
+          git('fetch','--no-tags',str(bundle),'refs/heads/feat/warm-navigation-v040:refs/remotes/bundle/warm-v040','refs/heads/release/v0.4:refs/remotes/bundle/release-v04','refs/tags/v0.4.0:refs/tags/v0.4.0')
           assert git('rev-parse','refs/remotes/bundle/warm-v040') == expected
-          git('push','origin',expected+':refs/heads/feat/warm-navigation-v040')
-          assert git('ls-remote','origin','refs/heads/feat/warm-navigation-v040').split()[0] == expected
-          print('Original checkpoint verified: '+expected)
+          assert git('rev-parse','refs/remotes/bundle/release-v04') == expected
+          assert git('cat-file','-t','v0.4.0') == 'tag'
+          assert git('rev-parse','v0.4.0') == 'f64d4454b80935866081ab30210b1f7ebc951f6d'
+          assert git('rev-parse','v0.4.0^{}') == '7cfe8c3fbec7b2b68eb6b9bb6c9bc8652fe32892'
+          git('diff','--exit-code','c1e01866df7478dfdee060f42cadbc0de46ad458',expected,'--','src','package.json','package-lock.json','manifests','scripts/build.mjs')
+          catalog=json.loads(git('show',expected+':docs/version-catalog.json'))
+          assert catalog['currentVersion'] == '0.4.0' and catalog['maintenanceBranch'] == 'release/v0.4'
+          def refs():return {ref:sha for sha,ref in (line.split() for line in git('ls-remote','origin').splitlines())}
+          before=refs()
+          for v in catalog['versions'][:-1]:
+              assert before.get('refs/tags/'+v['tag']) == v['tagObject']
+              assert before.get('refs/tags/'+v['tag']+'^{}') == v['deliveryCommit']
+          for ref,sha in [('refs/heads/release/v0.4',expected),('refs/tags/v0.4.0','f64d4454b80935866081ab30210b1f7ebc951f6d')]:
+              assert before.get(ref) in (None,sha), 'Ref already differs: '+ref
+          git('push','--atomic','origin',expected+':refs/heads/feat/warm-navigation-v040',expected+':refs/heads/release/v0.4','refs/tags/v0.4.0:refs/tags/v0.4.0')
+          after=refs()
+          assert after['refs/heads/feat/warm-navigation-v040'] == expected
+          assert after['refs/heads/release/v0.4'] == expected
+          assert after['refs/tags/v0.4.0'] == 'f64d4454b80935866081ab30210b1f7ebc951f6d'
+          assert after['refs/tags/v0.4.0^{}'] == '7cfe8c3fbec7b2b68eb6b9bb6c9bc8652fe32892'
+          assert after.get('refs/heads/release/v0.3') == before.get('refs/heads/release/v0.3')
+          for v in catalog['versions'][:-1]:assert after['refs/tags/'+v['tag']] == before['refs/tags/'+v['tag']]
+          print('Original feature/release/tag delivery verified: '+expected)
           PY
