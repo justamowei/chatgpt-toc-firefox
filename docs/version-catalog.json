@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.5",
-  "maintenanceBranch": "release/v0.3",
+  "currentVersion": "0.4.0",
+  "maintenanceBranch": "release/v0.4",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
     {
@@ -131,6 +131,24 @@
       "tagObject": "3245ec5e68f5fb45bda22b96daa41ea466621e4b",
       "createdAt": "2026-10-10",
       "selection": "Explicit user correction from misnumbered v0.3.7 to v0.3.5 based on v0.3.4; version/revision only, fresh pure 94/94 and native top 6/6 PASS; prior identical logic regression 20/20; LIVE PENDING."
+    },
+    {
+      "version": "0.4.0",
+      "tag": "v0.4.0",
+      "deliveryCommit": "7cfe8c3fbec7b2b68eb6b9bb6c9bc8652fe32892",
+      "runtimeCommit": "c1e01866df7478dfdee060f42cadbc0de46ad458",
+      "tagObject": "f64d4454b80935866081ab30210b1f7ebc951f6d",
+      "createdAt": "2026-10-14",
+      "status": "experimental",
+      "liveStatus": "PENDING",
+      "acceptance": [
+        "docs/release-v0.4.0.md",
+        "docs/acceptance-v0.4.0.md",
+        "docs/acceptance-subagent-v0.4.0.md"
+      ],
+      "selection": "New observed-geometry direct navigation mode with bounded exact-ID verification and cold/invalid-layout fallback. Firefox localhost product26/26, recorder3/3, pure95/95, governance7/7; independent fixed-source/build/package review PASS. ChatGPT LIVE PENDING.",
+      "packageSHA256": "b3dfc8955a99c1c5acfc6762bffce2ba4fd1f496ad2ce65187fee224befb0f0b",
+      "revision": "2026-10-14-v040"
     }
   ],
   "legacyRevisions": [
@@ -248,8 +266,8 @@
     "preserveHistoricalPass": true,
     "restoreTagToOlderRuntime": false
   },
-  "updatedAt": "2026-10-10",
-  "currentRevision": "2026-10-10-v035",
+  "updatedAt": "2026-10-14",
+  "currentRevision": "2026-10-14-v040",
   "sameVersionRevisions": [],
   "removal": {
     "requestedAt": "2026-10-10",
