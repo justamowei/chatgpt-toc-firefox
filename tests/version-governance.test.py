@@ -32,7 +32,14 @@ def local_git(*args, check=True):
 class Governance(unittest.TestCase):
     def test_current_selection_matches_product_and_retired_refs_stay_absent(self):
         self.assertEqual(current_catalog["currentVersion"], json.loads(Path("package.json").read_text(encoding="utf-8"))["version"])
-        self.assertEqual(len(current_catalog["versions"]), 8 if current_catalog.get("pendingDelivery") else 9)
+        original_tags = list(tags) + ["v0.3.4", "v0.3.5"]
+        expected_tags = original_tags.copy()
+        current_tag = "v" + current_catalog["currentVersion"]
+        if not current_catalog.get("pendingDelivery") and current_tag not in expected_tags:
+            expected_tags.append(current_tag)
+        self.assertEqual([v["tag"] for v in current_catalog["versions"]], expected_tags)
+        for historical_tag, original_object in {"v0.3.4": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c", "v0.3.5": "3245ec5e68f5fb45bda22b96daa41ea466621e4b"}.items():
+            self.assertEqual(next(v["tagObject"] for v in current_catalog["versions"] if v["tag"] == historical_tag), original_object)
         self.assertEqual(current_catalog["versions"][:7], catalog["versions"])
         for version in current_catalog["versions"]:
             self.assertEqual(local_git("rev-parse", version["tag"]).strip(), version["tagObject"])

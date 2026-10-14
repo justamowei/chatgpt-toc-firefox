@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.5",
-  "maintenanceBranch": "release/v0.3",
+  "currentVersion": "0.4.0",
+  "maintenanceBranch": "release/v0.4",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
     {
@@ -248,8 +248,8 @@
     "preserveHistoricalPass": true,
     "restoreTagToOlderRuntime": false
   },
-  "updatedAt": "2026-10-10",
-  "currentRevision": "2026-10-10-v035",
+  "updatedAt": "2026-10-14",
+  "currentRevision": "2026-10-14-v040",
   "sameVersionRevisions": [],
   "removal": {
     "requestedAt": "2026-10-10",
@@ -278,5 +278,16 @@
     "wrongDelivery": "435a09d9a3dd3a2fae3047ead61a4599d39b2caa",
     "previousRuntime": "0a069e08a7893a55b48d061ce7dbb8a9fc0f9b64",
     "policy": "Explicit user correction; retain commits; retire wrong v0.3.7 ref; new v0.3.5 is the corrected v0.3.4-based fix, not restoration of removed earlier v0.3.5 runtime."
+  },
+  "pendingDelivery": {
+    "version": "0.4.0",
+    "status": "experimental-candidate",
+    "liveStatus": "PENDING",
+    "workBranch": "feat/warm-navigation-v040",
+    "acceptance": [
+      "docs/release-v0.4.0.md",
+      "docs/acceptance-v0.4.0.md"
+    ],
+    "runtimeCommit": "c1e01866df7478dfdee060f42cadbc0de46ad458"
   }
 }

@@ -1,6 +1,6 @@
 # Firefox 真實 ChatGPT 實測
 
-此工具是獨立的本機診斷附加元件，與目錄產品 v0.3.5 並存，不更換產品、不清除已存目錄。工具 manifest 的 0.1.0 是記錄器版本，並非目錄產品的新版本。
+此工具是獨立的本機診斷附加元件，與目前目錄產品並存，不更換產品、不清除已存目錄。工具 manifest 的 0.1.1 是記錄器版本，並非目錄產品的新版本。
 
 ## 使用方法
 
@@ -35,3 +35,7 @@
 - 專案現有 Selenium／geckodriver 可啟動隔離 Firefox，適合 localhost 回歸。這次已以独立記錄器 content script 在原生 Firefox localhost 通過三項：滾動／掛載／診斷／下載、輸出白名單、切换 SPA 停止。命令 `node tests/firefox-live-recorder.mjs`；結果 `docs/evidence/firefox-live-recorder/results.json`。
 - 一般 shell 沙箱曾阻擋測試 Firefox 分頁子程序啟動（SpawnTarget / Browsing context discarded）；經自動審核允許後，在隔離測試設定檔執行通過。沒有操作使用者現有 Firefox、複製個人設定檔或登入憑證。這不能解除原生 Computer Use 對真實 Firefox 的控制限制。
 - **真正 ChatGPT Firefox 現場驗證：PENDING，需取得上方使用者操作的現場紀錄。**
+
+## v0.4.0 診斷補充
+
+記錄器 0.1.1 另保留 navigation.fast 的白名單結果與 attempts/fallbacks/elapsedMs，以及 observed-span-jump 方法名。可核對第一次收集後直接跳轉是否啟動、是否miss回退；不增加聊天內容或真實ID的匯出。

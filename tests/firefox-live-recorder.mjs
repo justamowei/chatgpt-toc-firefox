@@ -4,6 +4,7 @@ import {resolve} from 'node:path';
 import {fixtureSession} from './firefox-session.mjs';
 const session=await fixtureSession('artifacts/firefox-live-recorder',{handleRequest:async(req,res)=>{res.setHeader('Content-Type','text/html');res.end('<!doctype html><html><body style="margin:0"><main></main></body></html>');return true;}});
 const {driver,artifacts}=session, results=[];
+const expectedVersion=JSON.parse(await readFile('package.json','utf8')).version;
 const execute=(code,...args)=>driver.executeScript(code,...args);
 const click=id=>execute("document.getElementById('toc-live-recorder').shadowRoot.getElementById(arguments[0]).click()",id);
 const status=()=>execute("return document.getElementById('toc-live-recorder')?.shadowRoot.getElementById('status').textContent");
@@ -30,7 +31,7 @@ try {
  await driver.sleep(2500);await click('end');await click('save');
  let data=JSON.parse(await execute("return fetch(window.recorderUrl).then(r=>r.text())"));
  assert.ok(data.samples.length>=10);assert.equal(data.ended.reason,'user');assert.ok(data.actions.some(a=>a.action==='collect'));
- assert.ok(data.samples.some(s=>s.diagnostic?.version==='0.3.5'));assert.ok(data.samples.some(s=>s.diagnostic?.attempt?.method==='mounted-edge-anchor'));
+ assert.ok(data.samples.some(s=>s.diagnostic?.version===expectedVersion));assert.ok(data.samples.some(s=>s.diagnostic?.attempt?.method==='mounted-edge-anchor'));
  assert.ok(data.samples.some(s=>s.scrollEvents>0));assert.ok(data.samples.some(s=>s.mutations.added>0));
  assert.ok(data.samples.some(s=>s.mounted.some(n=>n.message!==null)));assert.ok(!JSON.stringify(data).includes('PRIVATE-MESSAGE-ID'));
  const stable=await status();await driver.sleep(500);assert.equal(await status(),stable);

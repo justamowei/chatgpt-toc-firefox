@@ -24,9 +24,11 @@
       if (/^\d+\.\d+\.\d+$/.test(d.version)) out.version = d.version;
       if (/^\d{4}-\d{2}-\d{2}-v\d+$/.test(d.revision)) out.revision = d.revision;
       out.scroll = numericFields(nav?.scroll, ['client','width','height','top']);
+      out.fast = numericFields(nav?.fast, ['attempts','fallbacks','elapsedMs']);
+      if (['cold','jumping','mounted','miss','cancelled'].includes(nav?.fast?.result)) out.fast.result = nav.fast.result;
       out.collection = ['head','done'].includes(nav?.collection) ? nav.collection : null;
       out.attempt = numericFields(attempt, ['before','requested','after','heightBefore','heightAfter','scrollEvents']);
-      if (['mounted-edge-anchor','wait-for-mounted-anchor'].includes(attempt?.method)) out.attempt.method = attempt.method;
+      if (['mounted-edge-anchor','wait-for-mounted-anchor','observed-span-jump'].includes(attempt?.method)) out.attempt.method = attempt.method;
       if (typeof attempt?.replaced === 'boolean') out.attempt.replaced = attempt.replaced;
       if (boundary) { out.boundary = numericFields(boundary,['stableMs','probes']); for (const key of ['physical','loading','rendering','confirmed']) if (typeof boundary[key] === 'boolean') out.boundary[key] = boundary[key]; }
       return out;
