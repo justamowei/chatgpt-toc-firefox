@@ -13,7 +13,8 @@
 | v0.3.3 | [5695198](https://github.com/justamowei/chatgpt-toc-firefox/commit/56951988cb7d258eafeadacfa02174226a824093) | 567dfda | 實驗版／LIVE PENDING |
 | v0.3.4 | [25b46d4](https://github.com/justamowei/chatgpt-toc-firefox/commit/25b46d412e6aa7af451eb7a507b47c291a9ade66) | a1ff15a | 實驗版／LIVE PENDING |
 | v0.3.5 | [58cdfd6](https://github.com/justamowei/chatgpt-toc-firefox/commit/58cdfd67e5631cbb464e2a2724ce2fc0c925359c) | f3cc436 | 實驗版／LIVE PENDING |
+| v0.4.0 | [7cfe8c3](https://github.com/justamowei/chatgpt-toc-firefox/commit/7cfe8c3fbec7b2b68eb6b9bb6c9bc8652fe32892) | c1e0186 | 測試版；暖區段快速導航；LIVE PENDING |
 
 v0.3.1 固定首次交付，r2–r5 歷史修訂保留來源，不移動原 tag。v0.2.0 實際使用失敗後撤回。詳細來源與驗收連結見 [機器可讀目錄](version-catalog.json)。當前完整來源在 release/v0.3；所有版本仍未完成正式簽章及整體 Firefox ChatGPT LIVE 驗收。
 
-新交付v0.3.5：依使用者明確指定，更正先前誤標v0.3.7。相同頂端停止修正，未恢復舊0.3.5程式。固定交付與tag身份由[機器可讀目錄](version-catalog.json)記錄。
+歷史交付v0.3.5：依使用者明確指定，更正先前誤標v0.3.7。相同頂端停止修正，未恢復舊0.3.5程式。固定交付與tag身份由[機器可讀目錄](version-catalog.json)記錄。
