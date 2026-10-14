@@ -1,0 +1,50 @@
+name: Restore development to v0.3.5
+on:
+  push:
+    branches: [chore/rollback-v035-20261015]
+permissions:
+  contents: write
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Verify v0.3.5 bytes and atomically preserve rollback refs
+        env:
+          GIT_TERMINAL_PROMPT: 0
+        run: |
+          python3 - <<'PY'
+          import os,base64,hashlib,pathlib,subprocess,json
+          assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux', 'Cloud runner only'
+          raw=base64.b64decode(pathlib.Path('recovery/rollback-v035.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='c9518055aa4c511f14dfeb5384b1a2a2840c26dca8953378e2299d358a085309'
+          p=pathlib.Path('/tmp/rollback-v035.bundle');p.write_bytes(raw)
+          def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
+          expected='c8f7131224a97b109f76a9f77c3008599ff426d8'
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),'refs/heads/fix/rollback-v035-20261015:refs/remotes/bundle/rollback-v035')
+          assert git('rev-parse','refs/remotes/bundle/rollback-v035')==expected
+          git('diff','--exit-code','v0.3.5',expected,'--','src','manifests','scripts','tools','package.json','package-lock.json','tsconfig.json','tests',':(exclude)tests/version-governance.test.py')
+          package=json.loads(git('show',expected+':package.json'));assert package['version']=='0.3.5' and package['tocRevision']=='2026-10-10-v035'
+          catalog=json.loads(git('show',expected+':docs/version-catalog.json'));assert catalog['currentVersion']=='0.3.5' and catalog['maintenanceBranch']=='release/v0.3'
+          assert 'workingCandidate' not in catalog
+          assert next(v for v in catalog['versions'] if v['version']=='0.4.0')['status']=='withdrawn'
+          def refs():return {r:s for s,r in (line.split() for line in git('ls-remote','origin').splitlines())}
+          before=refs();updates={'release/v0.3': '354de0edd2baeec4c7b6f5b873737931dcd63265', 'release/v0.4': '4f7ff2bd2be4404a701cf46c0526a364f7407776', 'feat/warm-navigation-v040': '4f7ff2bd2be4404a701cf46c0526a364f7407776', 'fix/fast-eligibility-v041': '95312f5f85602cb7ab01c5c5491fb015d0493fa1', 'fix/rollback-v035-20261015': None}
+          assert before.get('refs/heads/main')=='e5a03536fc0015a779a0b8acf3eea45c285aca68'
+          for branch,old in updates.items():
+           assert before.get('refs/heads/'+branch) in (old,expected), 'Changed branch: '+branch
+           if old:git('merge-base','--is-ancestor',old,expected)
+          for v in catalog['versions']:
+           assert before['refs/tags/'+v['tag']]==v['tagObject']
+           assert before['refs/tags/'+v['tag']+'^{}']==v['deliveryCommit']
+          git('push','--atomic','origin',*(expected+':refs/heads/'+branch for branch in updates))
+          after=refs()
+          for branch in updates:assert after['refs/heads/'+branch]==expected
+          assert after['refs/heads/main']==before['refs/heads/main']
+          for v in catalog['versions']:
+           assert after['refs/tags/'+v['tag']]==before['refs/tags/'+v['tag']]
+           assert after['refs/tags/'+v['tag']+'^{}']==before['refs/tags/'+v['tag']+'^{}']
+          print('Rollback original commit and all five product refs verified: '+expected)
+          PY
