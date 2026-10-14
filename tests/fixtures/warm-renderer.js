@@ -4,7 +4,7 @@ main.style.cssText='position:relative;margin:0;padding:0';
 let root=document.createElement('div');root.setAttribute('data-scroll-root','');root.style.cssText='height:650px;width:1100px;overflow:auto;position:relative';main.before(root);root.append(main);
 const heights=Array.from({length:count},(_,i)=>i===24?55000:600+(i%3)*90),tops=[];
 let total=0,gap=0,loadedHead=count-6,pending=null,fetchPending=false,delay=80,renderGeneration=0;
-const commands=[],fetches=[],mounts=[];
+const commands=[],fetches=[],mounts=[],edits=new Map();
 function layout(){total=0;tops.length=0;for(let i=0;i<count;i++){if(i===40)total+=gap;tops.push(total);total+=heights[i];}main.style.height=total+'px';}
 function indexAt(y){let index=0;for(let i=0;i<count;i++)if(tops[i]<=y)index=i;return index;}
 function render(){
@@ -14,7 +14,7 @@ function render(){
   const shell=document.createElement('section');shell.dataset.testid='conversation-turn-'+(i*2+(role==='user'?0:1));shell.dataset.turnId=prefix+':'+role[0]+'-'+i;shell.dataset.turn=role;
   const offset=role==='user'?0:90,height=role==='user'?90:heights[i]-90;
   shell.style.cssText='position:absolute;left:20px;right:20px;top:'+(tops[i]+offset)+'px;height:'+height+'px';
-  const body=document.createElement('div');body.dataset.messageAuthorRole=role;body.dataset.messageId=prefix+':'+role[0]+'-'+i;body.textContent=role==='user'?'Local question '+i:'Local answer '+i;body.style.minHeight='70px';shell.append(body);main.append(shell);
+  const body=document.createElement('div');body.dataset.messageAuthorRole=role;body.dataset.messageId=prefix+':'+role[0]+'-'+i;body.textContent=role==='user'?(edits.get(i)??'Local question '+i):'Local answer '+i;body.style.minHeight='70px';shell.append(body);main.append(shell);
  }
  mounts.push({start,loadedHead,top:root.scrollTop,at:performance.now()});
 }
@@ -34,7 +34,8 @@ window.warmFixture={
  at(i){clearTimeout(pending);root.scrollTop=tops[i]+15;previous=root.scrollTop;render();},
  delay(ms){delay=ms;},
  resize(width){root.style.width=width+'px';render();},
- shift(){gap=18000;layout();this.tail();},
+ shift(amount=18000){gap=amount;layout();this.tail();},
+ edit(i){edits.set(i,'Changed local question '+i);render();},
  replaceRoot(){const next=document.createElement('div');next.setAttribute('data-scroll-root','');next.style.cssText=root.style.cssText;const top=root.scrollTop;root.replaceWith(next);next.append(main);root=next;connect();root.scrollTop=top;previous=top;render();},
  reset(){commands.length=0;mounts.length=0;},
  stats(){return {loadedHead,fetches:fetches.slice(),commands:commands.slice(),mounts:mounts.slice(),top:root.scrollTop,width:root.clientWidth,height:root.scrollHeight};}
