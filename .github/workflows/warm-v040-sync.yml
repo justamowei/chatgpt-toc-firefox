@@ -18,9 +18,9 @@ jobs:
           python3 - <<'PY'
           import base64,hashlib,pathlib,subprocess
           raw=base64.b64decode(pathlib.Path('recovery/warm-v040.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest() == '17a407728d1676af867ea6847c31f842b1da065f211f3c14d58e7dedad2c5557'
+          assert hashlib.sha256(raw).hexdigest() == '42532ce19e4d7d1579c4d324f79071f3e18e2a02a301990b5e6dede12852fc51'
           bundle=pathlib.Path('/tmp/warm-v040.bundle');bundle.write_bytes(raw)
-          expected='61dbe02a34b5d7fbe9779202eb54ecd5153dc215'
+          expected='c1e01866df7478dfdee060f42cadbc0de46ad458'
           def git(*args): return subprocess.check_output(['git',*args],text=True).strip()
           git('bundle','verify',str(bundle))
           git('fetch','--no-tags',str(bundle),'refs/heads/feat/warm-navigation-v040:refs/remotes/bundle/warm-v040')
