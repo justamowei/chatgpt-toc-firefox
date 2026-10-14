@@ -1,0 +1,31 @@
+name: Preserve v0.4.0 navigation checkpoint
+on:
+  push:
+    branches: [chore/warm-v040-sync]
+permissions:
+  contents: write
+jobs:
+  preserve:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Verify original commit and push only the work branch
+        env:
+          GIT_TERMINAL_PROMPT: 0
+        run: |
+          python3 - <<'PY'
+          import base64,hashlib,pathlib,subprocess
+          raw=base64.b64decode(pathlib.Path('recovery/warm-v040.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest() == '6d128c5c178dbe6081e4380835d4f4618155107d5fcffd082940f56202e8c79f'
+          bundle=pathlib.Path('/tmp/warm-v040.bundle');bundle.write_bytes(raw)
+          expected='1e49fa95a676eefc4fbdec6d7a320bb7f469cbd8'
+          def git(*args): return subprocess.check_output(['git',*args],text=True).strip()
+          git('bundle','verify',str(bundle))
+          git('fetch','--no-tags',str(bundle),'refs/heads/feat/warm-navigation-v040:refs/remotes/bundle/warm-v040')
+          assert git('rev-parse','refs/remotes/bundle/warm-v040') == expected
+          git('push','origin',expected+':refs/heads/feat/warm-navigation-v040')
+          assert git('ls-remote','origin','refs/heads/feat/warm-navigation-v040').split()[0] == expected
+          print('Original checkpoint verified: '+expected)
+          PY
