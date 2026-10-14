@@ -222,8 +222,9 @@ function start(): Instance {
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
       ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可按停止。`
-      : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
-      : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
+      : adapter.lastLoadReport.phase === 'jump' ? '正在直接跳到已觀察區段，等待目標掛載…'
+      : adapter.lastLoadReport.phase === 'refine' ? '正在核對目標並校正位置…' : '正在逐段載入目標附近的訊息…';
+    host.dataset.navigationMode = adapter.lastLoadReport.phase === 'jump' ? 'fast' : 'walk';
   }
   function refresh(direction?: 'older' | 'newer'): void {
     collect(direction);

@@ -145,3 +145,11 @@ test('GEOMETRY-09: window-local order collects spans during global ambiguity and
   assert.equal(ledger.estimate('c', [{ id: 'tail', y: 1450 }], fullOrder, 800), 750);
   assert.equal(ledger.estimate('tail', [{ id: 'a', y: 50 }], fullOrder, 800), 1450);
 });
+
+
+test('GEOMETRY-10: fast eligibility requires an observed user at compatible width and resets with page geometry', () => {
+ const ledger=new HeightLedger();ledger.observe([user('a',0),answer('answer-a',30,170),user('b',200)],['a','b'],800);
+ assert.equal(ledger.observedUser('a',808),true);assert.equal(ledger.observedUser('a',809),false);
+ assert.equal(ledger.observedUser('unseen',800),false);assert.equal(ledger.observedUser('answer-a',800),false);
+ ledger.reset();assert.equal(ledger.observedUser('a',800),false);
+});

@@ -21,6 +21,9 @@ export class DomAdapter implements NavigationAdapter {
   private reversedUnconfirmed = false;
   private hintEpoch = -1;
   private geometry = new HeightLedger();
+  private geometryRoot: HTMLElement | null = null;
+  private fastAttempted = false;
+  private fast = { result: 'cold', attempts: 0, fallbacks: 0, elapsedMs: 0 };
   private adjacent = new Map<string, string>();
   private collection: { stage: 'head' | 'done'; boundary: CollectionBoundaryWitness; lastRenderActivity: number; anchor?: { root: HTMLElement; signature: string } } | null = null;
   private lastAttempt: Attempt | null = null;
@@ -120,8 +123,10 @@ export class DomAdapter implements NavigationAdapter {
   // Height measurements remain diagnostic; anchor walking never navigates
   // using stale absolute positions in ChatGPT's changing virtual height model.
   remember(): void {
-    if (this.hintEpoch !== this.store.epoch) { this.geometry.reset(); this.adjacent.clear(); this.collection = null; this.hintEpoch = this.store.epoch; }
+    if (this.hintEpoch !== this.store.epoch) { this.geometry.reset(); this.geometryRoot = null; this.adjacent.clear(); this.collection = null; this.hintEpoch = this.store.epoch; }
     const scroller = this.scroller(this.nodes.values().next().value);
+    if (this.geometryRoot && this.geometryRoot !== scroller) this.geometry.reset();
+    this.geometryRoot = scroller;
     const top = scroller === document.scrollingElement ? 0 : scroller.getBoundingClientRect().top + scroller.clientTop;
     const measured = readTurns().filter(t => t.stableId && t.node.isConnected).map(t => {
       const rect = t.node.getBoundingClientRect();
@@ -135,6 +140,7 @@ export class DomAdapter implements NavigationAdapter {
   }
   begin(collect = false): void {
     this.unconfirmedDirection = 'older'; this.reversedUnconfirmed = false;
+    this.fastAttempted = false; this.fast = { result: 'cold', attempts: 0, fallbacks: 0, elapsedMs: 0 };
     this.lastAttempt = null; this.lastLoadReport = { phase: collect ? 'head' : 'scan', added: 0, steps: 0 };
     this.collection = collect ? { stage: 'head', boundary: new CollectionBoundaryWitness(), lastRenderActivity: -Infinity } : null;
   }
@@ -143,7 +149,7 @@ export class DomAdapter implements NavigationAdapter {
     const root = this.scroller(this.nodes.values().next().value);
     return { scroll: { tag: root.tagName, marked: root.hasAttribute('data-scroll-root'), overflow: getComputedStyle(root).overflowY,
       client: root.clientHeight, width: root.clientWidth, height: root.scrollHeight, top: root.scrollTop, connected: root.isConnected },
-      geometry: this.geometry.diagnostic(), adjacentWitnesses: this.adjacent.size, collection: this.collection?.stage ?? null, lastAttempt: this.lastAttempt };
+      geometry: this.geometry.diagnostic(), fast: { ...this.fast }, adjacentWitnesses: this.adjacent.size, collection: this.collection?.stage ?? null, lastAttempt: this.lastAttempt };
   }
   private top(node: HTMLElement): number {
     const scroller = this.scroller(node);
@@ -349,8 +355,65 @@ export class DomAdapter implements NavigationAdapter {
     }
     return false;
   }
+  private async jumpObserved(targetId: string, signal: AbortSignal, timeout: number): Promise<boolean> {
+    const seekId = this.returnWitness?.id === targetId ? this.returnWitness.anchorId ?? targetId : targetId;
+    const root = this.scroller(this.nodes.values().next().value);
+    if (!this.store.ordered || root !== this.geometryRoot || !this.geometry.observedUser(seekId, root.clientWidth)) return false;
+    const origin = root === document.scrollingElement ? 0 : root.getBoundingClientRect().top + root.clientTop;
+    const mounted = readTurns().filter(turn => turn.role === 'user' && turn.stableId && root.contains(turn.node))
+      .map(turn => ({ id: turn.stableId!, y: root.scrollTop + turn.node.getBoundingClientRect().top - origin }));
+    const y = this.geometry.estimate(seekId, mounted, this.store.entries.map(entry => entry.id), root.clientWidth);
+    const budget = Math.min(2200, timeout - 600);
+    if (y === null || !Number.isFinite(y) || y < -2 || y > root.scrollHeight + 2 || budget < 320 || signal.aborted) return false;
+    const epoch = this.store.epoch, context = this.store.context;
+    if (context !== location.origin + location.pathname || !root.isConnected) return false;
+    const started = performance.now(), top = Math.max(0, Math.min(root.scrollHeight - root.clientHeight, y - 16));
+    this.fast = { result: 'jumping', attempts: 1, fallbacks: 0, elapsedMs: 0 };
+    this.lastLoadReport = { phase: 'jump', added: this.lastLoadReport.added, steps: this.lastLoadReport.steps + 1 };
+    const attempt: Attempt = { method: 'observed-span-jump', before: root.scrollTop, requested: top, after: root.scrollTop,
+      heightBefore: root.scrollHeight, heightAfter: root.scrollHeight, scrollEvents: 0, replaced: false };
+    this.lastAttempt = attempt;
+    const onScroll = () => { attempt.scrollEvents++; };
+    document.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    const live = () => !signal.aborted && epoch === this.store.epoch && context === location.origin + location.pathname;
+    try {
+      if (!live()) return false;
+      root.scrollTo({ top, behavior: 'instant' });
+      while (live() && performance.now() - started < budget) {
+        await new Promise<void>(resolve => setTimeout(resolve, 80));
+        if (!live()) break;
+        this.refresh();
+        if (!live()) break;
+        const currentRoot = this.scroller(this.nodes.values().next().value);
+        attempt.after = currentRoot.scrollTop; attempt.heightAfter = currentRoot.scrollHeight;
+        attempt.replaced ||= currentRoot !== root || !root.isConnected;
+        if (attempt.replaced) break;
+        if (this.mounted(targetId)) { this.fast.result = 'mounted'; return true; }
+      }
+      if (live()) {
+        // A wrong estimate must never become a recurring jump. Existing prompt
+        // data remains; only page geometry is discarded before walking again.
+        this.fast.result = 'miss'; this.fast.fallbacks = 1; this.geometry.reset();
+      } else this.fast.result = 'cancelled';
+      return false;
+    } finally {
+      this.fast.elapsedMs = Math.round(performance.now() - started);
+      document.removeEventListener('scroll', onScroll, { capture: true });
+    }
+  }
+
   async load(direction: Direction, signal: AbortSignal, timeout: number, targetId: string | null = null): Promise<boolean> {
     if (signal.aborted) return false;
+    if (targetId !== null && !this.fastAttempted) {
+      const batchStarted = performance.now();
+      this.fastAttempted = true;
+      if (await this.jumpObserved(targetId, signal, timeout)) return true;
+      if (signal.aborted) return false;
+      timeout = Math.max(0, timeout - (performance.now() - batchStarted));
+      if (timeout <= 200) return false;
+      // Navigation direction may have changed after a missed geometric jump.
+      direction = this.direction(targetId);
+    }
     const epoch = this.store.epoch, context = location.origin + location.pathname;
     if (this.store.context !== context) throw new Error('Conversation changed');
     if (targetId === null && this.collection?.stage === 'done') return false;
@@ -388,7 +451,8 @@ export class DomAdapter implements NavigationAdapter {
     // only; scroll pixels and events never prove a new mounted window.
     document.addEventListener('scroll', observeScroll, { capture: true, passive: true });
     try {
-      if (edge?.node.isConnected && !signal.aborted && (!collection?.anchor || collection.anchor.root !== root || collection.anchor.signature !== beforeSignature)) {
+      const mayAlign = !collection || (root.scrollTop > 2 && !!edge && edge.node.getBoundingClientRect().top < this.viewport(root).top - 2);
+      if (mayAlign && edge?.node.isConnected && !signal.aborted && (!collection?.anchor || collection.anchor.root !== root || collection.anchor.signature !== beforeSignature)) {
         edge.node.scrollIntoView({ block: direction === 'older' ? 'start' : 'end', inline: 'nearest', behavior: 'instant' });
         attempt.requested = root.scrollTop;
         if (collection) collection.anchor = { root, signature: beforeSignature };
@@ -463,5 +527,5 @@ export class DomAdapter implements NavigationAdapter {
   }
   clearHighlight(): void { this.highlightCleanup?.(); }
   clearReturnWitness(): void { this.returnWitness = null; }
-  dispose(): void { this.clearHighlight(); this.clearReturnWitness(); this.nodes.clear(); this.geometry.reset(); this.adjacent.clear(); this.collection = null; }
+  dispose(): void { this.clearHighlight(); this.clearReturnWitness(); this.nodes.clear(); this.geometry.reset(); this.geometryRoot = null; this.adjacent.clear(); this.collection = null; }
 }
