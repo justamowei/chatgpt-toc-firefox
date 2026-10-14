@@ -107,16 +107,6 @@ export class HeightLedger {
     return null;
   }
 
-  observedUser(id: string, width: number): boolean {
-    const measuredWidth = this.observedUserWidth(id);
-    return measuredWidth !== null && positive(width) && Math.abs(measuredWidth - width) <= WIDTH_TOLERANCE;
-  }
-
-  observedUserWidth(id: string): number | null {
-    const measurement = this.measurements.get(id);
-    return measurement?.role === 'user' ? measurement.width : null;
-  }
-
   diagnostic(): HeightDiagnostic {
     let measuredAnswers = 0;
     for (const measurement of this.measurements.values()) if (measurement.role === 'assistant') measuredAnswers++;

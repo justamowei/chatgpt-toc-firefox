@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.4.0",
-  "maintenanceBranch": "release/v0.4",
+  "currentVersion": "0.3.5",
+  "maintenanceBranch": "release/v0.3",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
     {
@@ -139,7 +139,7 @@
       "runtimeCommit": "c1e01866df7478dfdee060f42cadbc0de46ad458",
       "tagObject": "f64d4454b80935866081ab30210b1f7ebc951f6d",
       "createdAt": "2026-10-14",
-      "status": "experimental-user-reported-issue",
+      "status": "withdrawn",
       "liveStatus": "USER_REPORTED_FAIL: distant navigation remains walking; actual page root cause pending",
       "acceptance": [
         "docs/release-v0.4.0.md",
@@ -148,7 +148,9 @@
       ],
       "selection": "New observed-geometry direct navigation mode with bounded exact-ID verification and cold/invalid-layout fallback. Firefox localhost product26/26, recorder3/3, pure95/95, governance7/7; independent fixed-source/build/package review PASS. ChatGPT LIVE PENDING.",
       "packageSHA256": "b3dfc8955a99c1c5acfc6762bffce2ba4fd1f496ad2ce65187fee224befb0f0b",
-      "revision": "2026-10-14-v040"
+      "revision": "2026-10-14-v040",
+      "withdrawnAt": "2026-10-15",
+      "withdrawalReason": "User requested rollback of all v0.4 development to v0.3.5"
     }
   ],
   "legacyRevisions": [
@@ -266,8 +268,8 @@
     "preserveHistoricalPass": true,
     "restoreTagToOlderRuntime": false
   },
-  "updatedAt": "2026-10-14",
-  "currentRevision": "2026-10-14-v040",
+  "updatedAt": "2026-10-15",
+  "currentRevision": "2026-10-10-v035",
   "sameVersionRevisions": [],
   "removal": {
     "requestedAt": "2026-10-10",
@@ -297,10 +299,34 @@
     "previousRuntime": "0a069e08a7893a55b48d061ce7dbb8a9fc0f9b64",
     "policy": "Explicit user correction; retain commits; retire wrong v0.3.7 ref; new v0.3.5 is the corrected v0.3.4-based fix, not restoration of removed earlier v0.3.5 runtime."
   },
-  "workingCandidate": {
-    "version": "0.4.1",
-    "branch": "fix/fast-eligibility-v041",
-    "status": "diagnostic-candidate",
-    "liveStatus": "PENDING: user page skip reason not yet received; no verified real-world fix"
+  "withdrawnCandidates": [
+    {
+      "version": "0.4.1",
+      "branch": "fix/fast-eligibility-v041",
+      "status": "withdrawn",
+      "liveStatus": "PENDING: user page skip reason not yet received; no verified real-world fix",
+      "withdrawnAt": "2026-10-15",
+      "reason": "User requested full v0.4 rollback to v0.3.5",
+      "lastSourceHead": "95312f5f85602cb7ab01c5c5491fb015d0493fa1",
+      "runtimeCommit": "16bb24d905300e4eea187f00e76b415cfb525f2c"
+    }
+  ],
+  "rollbackV04": {
+    "requestedAt": "2026-10-15",
+    "request": "回退整個 v0.4.0 和 v0.4.1，讓開發版本回到 v0.3.5",
+    "baselineTag": "v0.3.5",
+    "baselineDelivery": "58cdfd67e5631cbb464e2a2724ce2fc0c925359c",
+    "sourceParent": "95312f5f85602cb7ab01c5c5491fb015d0493fa1",
+    "activeBranch": "fix/rollback-v035-20261015",
+    "retiredBranches": [
+      "release/v0.4",
+      "feat/warm-navigation-v040",
+      "fix/fast-eligibility-v041"
+    ],
+    "preserveCommitHistory": true,
+    "preserve10AnnotatedTags": true,
+    "archiveFolder": "outputs/已撤回-v0.4-2026-10-15",
+    "report": "rollback-v04-2026-10-15.md",
+    "firefoxRuntimeReplacement": "Not performed; manual reload of restored v0.3.5 manifest required"
   }
 }
