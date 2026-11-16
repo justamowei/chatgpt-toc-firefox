@@ -52,8 +52,11 @@ export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex)
       const entries = new Map(state.entries.map(entry => [entry.id, entry]));
       for (const segment of state.segments) {
         const items = segment.ids.map(id => entries.get(id)!);
-        if (segment.ordered) store.merge({ context: state.context, branch: state.branch, entries: items });
-        else for (const entry of items) store.merge({ context: state.context, branch: state.branch, entries: [entry] });
+        const head = state.observedHeadId;
+        if (segment.ordered) store.merge({ context: state.context, branch: state.branch, entries: items,
+          observedHeadId: head && segment.ids.includes(head) ? head : undefined });
+        else for (const entry of items) store.merge({ context: state.context, branch: state.branch, entries: [entry],
+          observedHeadId: head === entry.id ? head : undefined });
       }
     };
     observe(next);
@@ -87,6 +90,7 @@ export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex)
     ...historical(previous.quarantine), ...active.entries, ...historical(generations)]) consider(entry);
   active.entries = active.entries.filter(entry => allowed.get(entry.id)?.has(entry.text));
   const activeIds = new Set(active.entries.map(entry => entry.id));
+  if (active.observedHeadId && !activeIds.has(active.observedHeadId)) delete active.observedHeadId;
   if (active.recovery) {
     active.recovery.candidateIds = active.recovery.candidateIds.filter(id => activeIds.has(id));
     if (!active.recovery.candidateIds.length) delete active.recovery;

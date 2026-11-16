@@ -212,7 +212,7 @@ function start(): Instance {
     // Capture short-lived, first-seen removed prompts as plain data before the
     // UI debounce. Never carry removed content across a route/known branch.
     if (snapshot.context === store.context && snapshot.branch === store.branch) for (const entries of adapter.readRemoved(records)) {
-      reset = store.merge({ ...snapshot, entries }) || reset;
+      reset = store.merge({ ...snapshot, entries, observedHeadId: undefined }) || reset;
     }
     reset = store.merge(snapshot, direction ?? adapter.currentDirection() ?? 'observe') || reset;
     const target = targetWitness;

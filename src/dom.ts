@@ -93,7 +93,17 @@ export class DomAdapter implements NavigationAdapter {
       // Do not consume on read alone: a persistence probe may read without merging.
     } else if (pending && newest && newest.id !== pending.tail && newest.stable &&
       this.store.canSeek(newest.id) && promptText(newest.text) === pending.text) this.submission = null;
-    return { entries, context, branch, disputedUserIds: new Set(this.disputedUserIds), submittedAppend };
+    const firstTurn = turns[0], firstPrompt = entries[0];
+    let observedHeadId: string | undefined;
+    if (firstTurn?.role === 'user' && firstPrompt?.stable && firstTurn.stableId === firstPrompt.id) {
+      const root = this.scroller(firstTurn.node);
+      if (root.scrollTop <= 2 && root.scrollHeight > root.clientHeight + 2) {
+        const viewport = this.viewport(root), rect = firstTurn.node.getBoundingClientRect();
+        if (rect.height > 0 && rect.top >= viewport.top - 2 && rect.top < viewport.bottom &&
+          !this.boundaryLoading(root, viewport)) observedHeadId = firstPrompt.id;
+      }
+    }
+    return { entries, context, branch, disputedUserIds: new Set(this.disputedUserIds), submittedAppend, observedHeadId };
   }
   readRemoved(records: MutationRecord[]): Entry[][] {
     const groups: Entry[][] = [];

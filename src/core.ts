@@ -1,6 +1,6 @@
 export type Completeness = 'unknown' | 'partial' | 'verified-complete';
 export interface Entry { id: string; text: string; stable: boolean; slot?: string; }
-export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; disputedUserIds?: ReadonlySet<string>; submittedAppend?: { epoch: number; after: string; id: string }; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
+export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; disputedUserIds?: ReadonlySet<string>; observedHeadId?: string; submittedAppend?: { epoch: number; after: string; id: string }; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
 export interface CompleteProof { source: 'conversation-structure'; branch: string; exhausted: boolean; orderedIds: string[]; }
 export interface Settings { auto: boolean; expanded: boolean; collectionMinutes: number; }
 export const DEFAULT_SETTINGS: Settings = { auto: true, expanded: false, collectionMinutes: 10 };
@@ -32,13 +32,15 @@ export interface StoredIndex {
   version: 1; context: string; branch: string | null; entries: Entry[]; segments: ObservedSegment[];
   quarantine: StoredGeneration[]; limitReason: 'entries' | 'characters' | null;
   recovery?: { candidateIds: string[] };
+  observedHeadId?: string;
 }
 function exactKeys(value: unknown, keys: string[]): value is Record<string, unknown> {
   return !!value && typeof value === 'object' && !Array.isArray(value) &&
     Object.keys(value).length === keys.length && keys.every(key => Object.hasOwn(value, key));
 }
 export function validStoredIndex(value: unknown): value is StoredIndex {
-  if (!exactKeys(value, ['version', 'context', 'branch', 'entries', 'segments', 'quarantine', 'limitReason', ...(Object.hasOwn(value ?? {}, 'recovery') ? ['recovery'] : [])]) || value.version !== 1 ||
+  if (!exactKeys(value, ['version', 'context', 'branch', 'entries', 'segments', 'quarantine', 'limitReason', ...(Object.hasOwn(value ?? {}, 'recovery') ? ['recovery'] : []),
+    ...(Object.hasOwn(value ?? {}, 'observedHeadId') ? ['observedHeadId'] : [])]) || value.version !== 1 ||
     typeof value.context !== 'string' || !value.context || value.context.length > 2048 ||
     !(value.branch === null || typeof value.branch === 'string' && !!value.branch && value.branch.length <= 4096) ||
     ![null, 'entries', 'characters'].includes(value.limitReason as null) || !Array.isArray(value.quarantine) || value.quarantine.length > CACHE_LIMITS.entries) return false;
@@ -62,6 +64,7 @@ export function validStoredIndex(value: unknown): value is StoredIndex {
     return seen.size === ids.size;
   };
   if (!group(value.entries, value.segments)) return false;
+  if (Object.hasOwn(value, 'observedHeadId') && !(value.entries as Entry[]).some(entry => entry.id === value.observedHeadId)) return false;
   if (Object.hasOwn(value, 'recovery')) {
     if (!exactKeys(value.recovery, ['candidateIds']) || !Array.isArray(value.recovery.candidateIds)) return false;
     const ids = new Set((value.entries as Entry[]).map(entry => entry.id)), candidates = value.recovery.candidateIds;
@@ -81,10 +84,14 @@ function removeGraphVertex(graph: OrderGraph, id: string): void {
   for (const edges of graph.values()) if (edges.delete(id)) for (const next of successors) edges.add(next);
   graph.delete(id);
 }
-function orderedGraph(graph: OrderGraph): { ids: string[]; ordered: boolean; cycle: boolean } {
+function orderedGraph(graph: OrderGraph, preferredFirst?: string): { ids: string[]; ordered: boolean; cycle: boolean } {
   const incoming = new Map([...graph.keys()].map(id => [id, 0]));
   for (const edges of graph.values()) for (const id of edges) incoming.set(id, incoming.get(id)! + 1);
   const ready = [...incoming].filter(([, count]) => !count).map(([id]) => id), ids: string[] = [];
+  if (preferredFirst && incoming.get(preferredFirst) === 0) {
+    ready.splice(ready.indexOf(preferredFirst), 1);
+    ready.unshift(preferredFirst);
+  }
   let ordered = true;
   for (let cursor = 0; cursor < ready.length; cursor++) {
     if (ready.length - cursor !== 1) ordered = false;
@@ -114,6 +121,7 @@ export class IndexStore {
   readonly recoveredIds = new Set<string>();
   private seekableIds = new Set<string>();
   private graph: OrderGraph = new Map();
+  private observedHeadId?: string;
   private count = 0;
   private characters = 0;
   private limits: CacheLimits;
@@ -150,6 +158,7 @@ export class IndexStore {
       quarantine: this.quarantine.map(generation => { const entries = copy(generation.entries); return {
         reason: generation.reason, entries, segments: segments(generation.segments, entries), ordered: generation.ordered,
       }; }).filter(generation => generation.entries.length), limitReason: this.limitReason,
+      ...(this.observedHeadId ? { observedHeadId: this.observedHeadId } : {}),
       ...(this.recoveredIds.size ? { recovery: { candidateIds: entries.filter(entry => this.recoveredIds.has(entry.id)).map(entry => entry.id) } } : {}) };
   }
   restoreState(value: unknown, snapshot: Snapshot): boolean {
@@ -225,12 +234,13 @@ export class IndexStore {
     this.count = this.entries.length + this.quarantine.reduce((count, generation) => count + generation.entries.length, 0);
     this.characters = [...this.entries, ...this.quarantine.flatMap(generation => generation.entries)].reduce((count, entry) => count + entry.text.length, 0);
     this.limitReason = this.count >= this.limits.entries ? 'entries' : this.characters >= this.limits.characters ? 'characters' : null;
+    if (state.observedHeadId && this.graph.has(state.observedHeadId)) this.observedHeadId = state.observedHeadId;
     this.reorder(); this.merge(snapshot); this.completeness = this.retainedCount ? 'partial' : 'unknown'; this.cacheRevision++;
     return true;
   }
   reset(context = this.context, branch: string | null = this.branch): void {
     this.epoch++; this.entries = []; this.mounted.clear(); this.completeness = 'unknown'; this.context = context; this.branch = branch;
-    this.graph.clear(); this.segments = []; this.ordered = true; this.quarantine = []; this.recoveredIds.clear(); this.seekableIds.clear();
+    this.graph.clear(); this.observedHeadId = undefined; this.segments = []; this.ordered = true; this.quarantine = []; this.recoveredIds.clear(); this.seekableIds.clear();
     this.count = 0; this.characters = 0; this.limitReason = null; this.cacheRevision++;
   }
   merge(snapshot: Snapshot, _direction: 'older' | 'newer' | 'observe' = 'observe'): boolean {
@@ -345,6 +355,12 @@ export class IndexStore {
       this.graph.get(append.after)!.add(append.id);
       changed = true;
     }
+    const head = snapshot.observedHeadId;
+    if (!snapshot.invalidated && !orderChanged && head && currentTexts.has(head) && byId.get(head)?.stable &&
+      !snapshot.disputedUserIds?.has(head) && head !== this.observedHeadId) {
+      this.observedHeadId = head;
+      changed = true;
+    }
     this.entries = [...byId.values()];
     if (changed) this.reorder();
     const previousCompleteness = this.completeness;
@@ -358,13 +374,14 @@ export class IndexStore {
   }
   private removeVertex(id: string): void {
     removeGraphVertex(this.graph, id);
+    if (this.observedHeadId === id) this.observedHeadId = undefined;
   }
   private isolate(reason: QuarantineReason): void {
     const stable = this.entries.filter(e => e.stable), ids = new Set(stable.map(e => e.id));
     if (stable.length) this.quarantine.push({ epoch: this.epoch, reason, entries: stable,
       segments: this.segments.map(s => ({ ids: s.ids.filter(id => ids.has(id)), ordered: s.ordered })).filter(s => s.ids.length), ordered: this.ordered });
     for (const e of this.entries) if (!e.stable) { this.count--; this.characters -= e.text.length; }
-    this.epoch++; this.entries = []; this.graph.clear(); this.segments = []; this.ordered = true; this.recoveredIds.clear();
+    this.epoch++; this.entries = []; this.graph.clear(); this.observedHeadId = undefined; this.segments = []; this.ordered = true; this.recoveredIds.clear();
   }
   private graphSegments(): ObservedSegment[] {
     const neighbors = new Map([...this.graph.keys()].map(id => [id, new Set<string>()]));
@@ -376,8 +393,13 @@ export class IndexStore {
       for (let i = 0; i < component.length; i++) for (const next of neighbors.get(component[i])!) if (!visited.has(next)) { visited.add(next); component.push(next); }
       components.push(component);
     }
+    // The first prompt in the loaded range places its component first in
+    // the directory. It adds no ordering edges to other components.
+    const head = this.observedHeadId;
+    const headIndex = head ? components.findIndex(component => component.includes(head)) : -1;
+    if (headIndex > 0) components.unshift(components.splice(headIndex, 1)[0]);
     return components.map(component => {
-      const local = orderedGraph(new Map(component.map(id => [id, this.graph.get(id)!])));
+      const local = orderedGraph(new Map(component.map(id => [id, this.graph.get(id)!])), head);
       return { ids: local.ids, ordered: local.ordered };
     });
   }
