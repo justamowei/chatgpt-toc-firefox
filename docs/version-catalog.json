@@ -330,8 +330,8 @@
     "firefoxRuntimeReplacement": "Not performed; manual reload of restored v0.3.5 manifest required"
   },
   "workingCandidate": {
-    "version": "0.3.7",
-    "revision": "2026-11-17-v037",
+    "version": "0.3.6",
+    "revision": "2026-11-17-v036-r2",
     "branch": "fix/auto-index-new-prompts",
     "status": "test-candidate",
     "liveStatus": "PENDING",

@@ -13,7 +13,8 @@
 | PATCH | 同一主要能力內的錯誤修正、效能或介面／設定改進，保留相容性或提供舊資料遷移 | 0.3.2 → 0.3.3 |
 
 - `0.x.y` 都是實驗／測試版，不因編號增加就成為穩定版。`1.0.0` 必須完成文件指定的真實 Firefox ChatGPT 驗收、安裝／更新與簽章交付條件，不能只靠 localhost 合成測試。
-- 新的可安裝交付只要產品行為、DOM 辨識、持久化或導航程式有變更，就必須遞增版本。禁止將不同產品程式反覆交付成同一個 `0.3.1`，也禁止移動既有 tag 或覆蓋原交付包。
+- 同一項工作在選定交付前，若測試候選仍有問題，直接修正原候選版號；保留 manifest/package/lock 版本，遞增 build revision（例如 v0.3.6 r2）、另存 Git commit 並同步。此規則依使用者 2026-11-17 更正，優先於下方歷史候選規則。
+- 已選定交付並建立 tag 的版本仍固定不變。其後的產品行為、DOM 辨識、持久化或導航若有修正，另開版本候選；不得移動既有 tag 或覆蓋已選定的交付包。
 - 單純規範、驗收報告、測試入口或 Git 恢復工具的變更不改產品版本，另建 commit；不得藉此把產品程式變更當作文件更新。
 - 版本號不表示「對話完整」「LIVE 通過」或「已正式安裝」。版本目錄另外記錄實驗、撤回、驗收範圍及同步狀態。
 - 各功能／測試 checkpoint 都有 commit，但只有實際選定的交付快照建立 `vX.Y.Z` tag；不需要每次 commit 都改版本。
@@ -73,7 +74,7 @@
 
 對照 [版本目錄](versions.md) 與機器可讀 [version-catalog.json](version-catalog.json)。挑選已交付且有固定來源／驗收文件的快照，保留原 SHA，不重編版本號：0.1.0、0.1.1、0.2.0（已撤回）、0.3.0、0.3.1（首次交付）、0.3.2、0.3.3。
 
-0.3.1 的 r2–r5 是歷史上重用同一版本號的修訂；獨立記錄各 SHA 與驗收限制，不把它們都覆蓋為同一 tag。此例外僅描述既有歷史，生效後不再沿用這種交付方式。
+0.3.1 的 r2–r5 是歷史上重用同一版本號的修訂；獨立記錄各 SHA 與驗收限制，不把它們都覆蓋為同一 tag。這段記錄只說明當時交付；現行未定版候選依第 1 節以 revision 區分，已選定的 tag 仍保持固定。
 
 main 的本次更新限定版本／Git 規範和索引；目前可測試的完整產品來源從 release/v0.3 或最新交付 tag 取得。GitHub Actions 的官方行為與 token 權限參考：[事件](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows)、[GITHUB_TOKEN](https://docs.github.com/en/actions/tutorials/authenticate-with-github_token)。
 
