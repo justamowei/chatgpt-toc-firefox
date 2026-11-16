@@ -1,4 +1,4 @@
-name: Deliver v0.3.6 r4
+name: Sync v0.3.7 group navigation candidate
 on:
   push:
     branches: [chore/rollback-v035-20261015]
@@ -11,28 +11,24 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Verify and sync original commits
+      - name: Sync fixed candidate source
         run: |
           python3 - <<'PY'
           import os,json,pathlib,base64,hashlib,subprocess
           assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux'
           def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
-          head='d5f85b5bb946f31b610d87aaf0655f90df97704e';tag='8d9e701080b45e67b1fe6c53394fb76d0c2b7e4d';work='refs/heads/fix/auto-index-new-prompts';release='refs/heads/release/v0.3';t='refs/tags/v0.3.6'
-          raw=base64.b64decode(pathlib.Path('recovery/delivery-v036-r4.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest()=='18d617d0ef371757820a84dffc502c2a9b585e32f0ca191dad74491932747d8e'
-          p=pathlib.Path('/tmp/v036-r4.bundle');p.write_bytes(raw)
-          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),work+':refs/remotes/bundle/v036',t+':'+t)
-          assert git('rev-parse','refs/remotes/bundle/v036')==head
-          assert git('rev-parse',t)==tag and git('rev-parse',t+'^{}')=='f0c0870c8ddf37ab30b5f214a417bf587fb73e5d'
-          def refs():return {r:s for s,r in (line.split() for line in git('ls-remote','origin').splitlines())}
-          before=refs()
-          assert before[work] in ('ed24a453f06a99dc6c97a9a36a5961f80c3b2336',head)
-          assert before[release] in ('33647255042b7cff3525548bad7bd69cd55791e1',head)
-          assert before.get(t) in (None,tag)
-          pkg=json.loads(git('show',head+':package.json'))
-          assert pkg['version']=='0.3.6' and pkg['tocRevision']=='2026-11-17-v036-r4'
-          git('push','--atomic','origin',head+':'+work,head+':'+release,t+':'+t)
-          after=refs()
-          assert after[work]==after[release]==head and after[t]==tag
-          assert all(after[r]==s for r,s in before.items() if r.startswith('refs/tags/'))
+          head='3367d57fbaedcae31dbdee8b788b910dfb48dc83';old='d5f85b5bb946f31b610d87aaf0655f90df97704e';ref='refs/heads/fix/prompt-group-navigation'
+          raw=base64.b64decode(pathlib.Path('recovery/candidate-group-v037.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='6fa7244d8c92e5e7625d17763701c82ea20b66ef43f20c7f7dcfdc7ecd73438a'
+          p=pathlib.Path('/tmp/candidate-group-v037.bundle');p.write_bytes(raw)
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/group037')
+          assert git('rev-parse','refs/remotes/bundle/group037')==head and git('rev-parse',head+'^')==old
+          p=json.loads(git('show',head+':package.json'))
+          assert p['version']=='0.3.7'
+          before=git('ls-remote','origin',ref)
+          assert not before or before.split()[0]==head
+          assert git('ls-remote','origin','refs/heads/release/v0.3').split()[0]==old
+          assert git('ls-remote','origin','refs/tags/v0.3.6').split()[0]=='8d9e701080b45e67b1fe6c53394fb76d0c2b7e4d'
+          git('push','--atomic','origin',head+':'+ref)
+          assert git('ls-remote','origin',ref).split()[0]==head
           PY
