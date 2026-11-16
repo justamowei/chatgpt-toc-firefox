@@ -1,4 +1,4 @@
-name: Sync prompt identity collision fix
+name: Sync v0.3.6 candidate revision
 on:
   push:
     branches: [chore/rollback-v035-20261015]
@@ -14,19 +14,21 @@ jobs:
       - name: Sync exact source commit
         run: |
           python3 - <<'PY'
-          import os, json, pathlib, base64, hashlib, subprocess
+          import os,json,pathlib,base64,hashlib,subprocess
           assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux'
           def git(*a): return subprocess.check_output(['git',*a],text=True).strip()
-          head='71716c83a32a2ad8c45591990e0b69eb12215f11'
-          old='4fc2072499f9ab2452af11270db006106993cf37'
+          head='f5805b4ff8db39139b7d6b9927258a03143b9803'
+          old='71716c83a32a2ad8c45591990e0b69eb12215f11'
           ref='refs/heads/fix/auto-index-new-prompts'
-          raw=base64.b64decode(pathlib.Path('recovery/prompt-id-collision.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest()=='5653e3276e0106f7893f0e4d23ffd9855620c6c772feba9d1cf5715df1fcdb6f'
-          path=pathlib.Path('/tmp/prompt-id-collision.bundle');path.write_bytes(raw)
+          raw=base64.b64decode(pathlib.Path('recovery/auto-index-v036-r2.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='6d44e9b4b04b42f171e37dc42a7c5283d883840de716a39fd7e720c8a03d1239'
+          path=pathlib.Path('/tmp/auto-index-v036-r2.bundle');path.write_bytes(raw)
           git('bundle','verify',str(path));git('fetch','--no-tags',str(path),ref+':refs/remotes/bundle/new-prompts')
           assert git('rev-parse','refs/remotes/bundle/new-prompts')==head
           assert git('rev-parse',head+'^')==old
-          assert json.loads(git('show',head+':package.json'))['version']=='0.3.7'
+          git('diff','--exit-code',old,head,'--','src','tests')
+          p=json.loads(git('show',head+':package.json'))
+          assert p['version']=='0.3.6' and p['tocRevision']=='2026-11-17-v036-r2'
           assert git('ls-remote','origin',ref).split()[0] in (old,head)
           git('push','--atomic','origin',head+':'+ref)
           assert git('ls-remote','origin',ref).split()[0]==head
