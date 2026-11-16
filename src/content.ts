@@ -12,7 +12,7 @@ if (window === window.top && !browser.extension.inIncognitoContext && supported(
 }
 function start(): Instance {
   let alive = true, expanded = false, query = '', railKey = '', navigationToken = 0, uiRevision = 0;
-  let currentPrompt: string | undefined, listGeneration = 0, listQuery = '', listOrdered = true, listSegments = '';
+  let currentPrompt: string | undefined, listGeneration = 0, listQuery = '';
   let renderedEntries: typeof store.entries = [], renderedQuarantine: typeof store.quarantine = [];
   const listButtons = new Map<string, HTMLButtonElement>(), railButtons = new Map<string, HTMLButtonElement>();
   let currentLocatable = new Set<string>();
@@ -66,7 +66,7 @@ function start(): Instance {
     for (const [label, selector] of Object.entries({ main: 'main', legacyRole: '[data-message-author-role]', turnShell: '[data-testid^="conversation-turn-"][data-turn]', turnKey: '[data-turn-key]', userBubble: '[data-user-message-bubble]', conversationRole: '[data-conversation-role]', agentStart: '[data-chatgpt-agent-turn-start]' })) counts[label] = document.querySelectorAll(selector).length;
     diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, revision: BUILD_REVISION, collected: store.entries.length,
       observed: store.retainedCount, mounted: store.mounted.size, quarantined: store.quarantine.reduce((n, g) => n + g.entries.length, 0),
-      groups: store.segments.length, limitReason: store.limitReason, quarantineReasons: [...new Set(store.quarantine.map(group => group.reason))],
+      limitReason: store.limitReason, quarantineReasons: [...new Set(store.quarantine.map(group => group.reason))],
       navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
   footer.append(earlier, back, stop, settings, disable, diagnose);
@@ -119,7 +119,7 @@ function start(): Instance {
   function render(): void {
     if (!alive) return;
     scope.textContent = `本頁已看過 ${store.entries.length} 則 · 目前掛載 ${store.mounted.size} 則。歷史尚未完整；${store.branchConfidence === 'unverified' ? '當前分支未完整核對；' : ''}搜尋涵蓋已觀察資料。` +
-      (!store.ordered ? '部分先後順序尚未確認，按已收錄群組顯示。' : store.recoveredIds.size ? '已沿用保存的目錄排序。' : '') +
+      (store.recoveredIds.size ? '已沿用保存的目錄排序。' : '') +
       (store.quarantine.length ? `另有 ${store.retainedCount - store.entries.length} 筆曾看過資料已隔離，僅供搜尋。` : '') +
       (store.limitReason ? `已達${store.limitReason === 'entries' ? '5000 筆記錄' : '500 萬字元'}保留上限，已停止新增；現有資料仍可搜尋。` : '') +
       ({ loading: ' 正在讀取本機目錄。', pending: ' 本機目錄儲存中。', saved: ' 已儲存於本機。', error: ' 本機儲存失敗，本頁資料仍保留。', off: '' }[persistence.status]);
@@ -129,30 +129,26 @@ function start(): Instance {
       store.mounted.has(id) ? currentLocatable.has(id) : stable && store.canSeek(id);
     // Collapse is a visibility update. Retain list nodes and its scroll position;
     // refresh cached rows only when data/search/order actually changes.
-    const segmentKey = store.ordered ? '' : store.segments.map(s => `${s.ordered}:${s.ids.join('|')}`).join(';');
-    const changed = !listBuilt || listQuery !== query || listOrdered !== store.ordered || listSegments !== segmentKey ||
+    const changed = !listBuilt || listQuery !== query ||
       renderedEntries.length !== store.entries.length || store.entries.some((e, i) => e !== renderedEntries[i]) ||
       renderedQuarantine.length !== store.quarantine.length || store.quarantine.some((g, i) => g !== renderedQuarantine[i]);
     if (expanded && changed) {
-      listBuilt = true; listQuery = query; listOrdered = store.ordered; listSegments = segmentKey;
+      listBuilt = true; listQuery = query;
       renderedEntries = [...store.entries]; renderedQuarantine = [...store.quarantine];
-      const entries = store.search(query), matches = new Map(entries.map(e => [e.id, e]));
+      const entries = store.search(query);
       const generation = ++listGeneration;
       if (listFrame !== undefined) cancelAnimationFrame(listFrame);
       const focused = shadow.activeElement instanceof HTMLElement ? shadow.activeElement.dataset.entryId : undefined;
       list.replaceChildren(); listButtons.clear();
       const rows: (() => HTMLLIElement)[] = [];
-      for (const [index, segment] of store.segments.entries()) {
-        const visible = segment.ids.flatMap(id => matches.has(id) ? [matches.get(id)!] : []);
-        if (!visible.length) continue;
-        if (!store.ordered) rows.push(() => make('li', 'empty', `已收錄群組 ${index + 1} · ${segment.ordered ? '已保存區段排序' : '先後順序尚未確認'}`));
-        for (const entry of visible) {
+      for (const entry of entries) {
         rows.push(() => {
-        const row = make('li'); const choice = button(entry.text.slice(0, 180), () => { void navigate(entry.id); }, 'entry', false);
-        choice.dataset.entryId = entry.id; choice.title = entry.text; choice.disabled = !selectable(entry.id, entry.stable);
-        choice.setAttribute('aria-current', String(entry.id === currentPrompt)); listButtons.set(entry.id, choice); row.append(choice); return row;
+          const row = make('li');
+          const choice = button(entry.text.slice(0, 180), () => { void navigate(entry.id); }, 'entry', false);
+          choice.dataset.entryId = entry.id; choice.title = entry.text; choice.disabled = !selectable(entry.id, entry.stable);
+          choice.setAttribute('aria-current', String(entry.id === currentPrompt));
+          listButtons.set(entry.id, choice); row.append(choice); return row;
         });
-        }
       }
       const mountedOnlyText = new Set(entries.filter(entry => !entry.stable).map(entry => entry.text));
       const archived = store.quarantine.flatMap(group => group.entries.filter(entry => group.reason !== 'invalidated' ||
