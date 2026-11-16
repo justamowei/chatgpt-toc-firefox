@@ -27,8 +27,12 @@ export function readTurns(roots?: ParentNode[]): Turn[] {
     const bubble = candidate.hasAttribute('data-user-message-bubble');
     const sentinel = candidate.hasAttribute('data-chatgpt-agent-turn-start');
     const role: Role | null = explicit === 'user' || explicit === 'assistant' ? explicit : bubble ? 'user' : sentinel ? 'assistant' : null;
+    // A sent prompt can appear as a bare bubble before ChatGPT attaches its turn shell
+    // or message ID. The bubble itself is an explicit user marker. Unidentified bubbles
+    // are mounted-only until the renderer supplies stable identity.
+    const liveUserBubble = role === 'user' && bubble && !!candidate.closest('main');
     if (!role || ((bubble || sentinel || candidate.hasAttribute('data-conversation-role')) && !group && !shell &&
-      !(candidate.hasAttribute('data-message-id') && explicit === role))) continue;
+      !liveUserBubble && !(candidate.hasAttribute('data-message-id') && explicit === role))) continue;
     if (role === 'user' && candidate.parentElement?.closest('[data-message-author-role="assistant"], [data-conversation-role="assistant"], [data-turn="assistant"]')) continue;
     let node = candidate;
     if (candidate === shell) node = candidate.querySelector<HTMLElement>(role === 'user'

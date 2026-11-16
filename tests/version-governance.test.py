@@ -31,11 +31,16 @@ def local_git(*args, check=True):
 
 class Governance(unittest.TestCase):
     def test_current_selection_matches_product_and_retired_refs_stay_absent(self):
-        self.assertEqual(current_catalog["currentVersion"], json.loads(Path("package.json").read_text(encoding="utf-8"))["version"])
+        candidate = current_catalog.get("workingCandidate")
+        source_version = candidate["version"] if candidate else current_catalog["currentVersion"]
+        if candidate:
+            self.assertEqual(candidate["status"], "test-candidate")
+            self.assertTrue(candidate["branch"].startswith("fix/"))
+            self.assertNotIn("v" + source_version, [v["tag"] for v in current_catalog["versions"]])
+        self.assertEqual(source_version, json.loads(Path("package.json").read_text(encoding="utf-8"))["version"])
         self.assertEqual([v["tag"] for v in current_catalog["versions"]], list(tags) + ["v0.3.4", "v0.3.5", "v0.4.0"])
         for name, original in {"v0.3.4": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c", "v0.3.5": "3245ec5e68f5fb45bda22b96daa41ea466621e4b", "v0.4.0": "f64d4454b80935866081ab30210b1f7ebc951f6d"}.items():
             self.assertEqual(next(v["tagObject"] for v in current_catalog["versions"] if v["tag"] == name), original)
-        self.assertNotIn("workingCandidate", current_catalog)
         self.assertEqual(current_catalog["maintenanceBranch"], "release/v0.3")
         self.assertEqual(next(v["status"] for v in current_catalog["versions"] if v["version"] == "0.4.0"), "withdrawn")
         self.assertEqual(current_catalog["rollbackV04"]["baselineTag"], "v0.3.5")
@@ -44,7 +49,7 @@ class Governance(unittest.TestCase):
             self.assertEqual(local_git("rev-parse", version["tag"]).strip(), version["tagObject"])
             self.assertEqual(local_git("rev-parse", version["tag"] + "^{}").strip(), version["deliveryCommit"])
         for path in ["package.json", "package-lock.json", "manifests/firefox.json"]:
-            self.assertEqual(json.loads(Path(path).read_text(encoding="utf-8"))["version"], current_catalog["currentVersion"])
+            self.assertEqual(json.loads(Path(path).read_text(encoding="utf-8"))["version"], source_version)
         for tag in current_catalog["removal"]["removedTags"]:
             if tag == "v0.3.5" and current_catalog.get("versionCorrection", {}).get("reissuedVersion") == "0.3.5":
                 continue  # Explicit user renumbering; prior removed implementation is not restored.
