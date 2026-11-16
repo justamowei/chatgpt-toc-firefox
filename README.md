@@ -9,3 +9,5 @@ v0.3.5 使用掛載邊緣逐段導航，本機保存已看過目錄，向上收�
 [回退紀錄](docs/rollback-v04-2026-10-15.md) · [安裝](docs/install-firefox.md) · [v0.3.5 報告](docs/release-v0.3.5.md) · [版本規範](docs/version-policy.md) · [版本目錄](docs/versions.md)
 
 此為未簽章測試版。恢復專案檔案不代表已替換個人 Firefox 正在執行的附加元件；請手動改載入 v0.3.5。真正 Firefox ChatGPT LIVE 仍未完成整體驗收。
+
+日常開發：在 Firefox 驗收本次功能；不例行全套測試或子代理驗收。每個功能／修正或 30 分鐘有效開發提交 Git 並同步私人 GitHub。詳見[現行開發流程](docs/development-plan.md)。
