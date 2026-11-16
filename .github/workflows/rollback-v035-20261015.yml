@@ -1,4 +1,4 @@
-name: Sync development workflow documentation
+name: Sync new prompt indexing fix
 on:
   push:
     branches: [chore/rollback-v035-20261015]
@@ -11,29 +11,22 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Verify and sync original documentation commit
+      - name: Verify and push exact work branch commit
         run: |
           python3 - <<'PY'
-          import os, pathlib, base64, hashlib, subprocess
+          import json,os, pathlib,base64,hashlib,subprocess
           assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux'
           def git(*a): return subprocess.check_output(['git',*a],text=True).strip()
-          head='33647255042b7cff3525548bad7bd69cd55791e1'
-          old='c8f7131224a97b109f76a9f77c3008599ff426d8'
-          branch='refs/heads/fix/rollback-v035-20261015'
-          release='refs/heads/release/v0.3'
-          b=base64.b64decode(pathlib.Path('recovery/rollback-v035.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(b).hexdigest()=='d5147bb7c2fa072ebed9a70d03b3fdda0d74f6b5458ccd0b855a5ce5445895ec'
-          p=pathlib.Path('/tmp/workflow-20261117.bundle');p.write_bytes(b)
-          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),branch+':refs/remotes/bundle/workflow')
-          assert git('rev-parse','refs/remotes/bundle/workflow')==head
-          assert git('rev-parse',head+'^')==old
-          assert set(git('diff','--name-only',old,head).splitlines())=={'README.md','docs/development-plan.md','docs/version-policy.md'}
-          def refs(): return {r:s for s,r in (line.split() for line in git('ls-remote','origin').splitlines())}
-          before=refs()
-          assert all(before[r] in (old,head) for r in (branch,release))
-          git('push','--atomic','origin',head+':'+branch,head+':'+release)
-          after=refs()
-          assert all(after[r]==head for r in (branch,release))
-          assert {r:s for r,s in before.items() if r.startswith('refs/tags/')}=={r:s for r,s in after.items() if r.startswith('refs/tags/')}
-          print(head)
+          head='3b3dd5de89a52637f3fb118b9508415a7086a174'
+          ref='refs/heads/fix/auto-index-new-prompts'
+          raw=base64.b64decode(pathlib.Path('recovery/auto-index-new-prompts.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='57b2b93add70133c2aab24f65d1f64995cca3f5cb539b26491cbf58ecc20abb9'
+          p=pathlib.Path('/tmp/new-prompts.bundle');p.write_bytes(raw)
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/new-prompts')
+          assert git('rev-parse','refs/remotes/bundle/new-prompts')==head
+          assert git('rev-parse',head+'^')=='33647255042b7cff3525548bad7bd69cd55791e1'
+          assert json.loads(git('show',head+':package.json'))['version']=='0.3.8'
+          assert not git('ls-remote','origin',ref) or git('ls-remote','origin',ref).split()[0]==head
+          git('push','--atomic','origin',head+':'+ref)
+          assert git('ls-remote','origin',ref).split()[0]==head
           PY
