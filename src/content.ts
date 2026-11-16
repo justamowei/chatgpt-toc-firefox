@@ -124,8 +124,8 @@ function start(): Instance {
       ({ loading: ' 正在讀取本機目錄。', pending: ' 本機目錄儲存中。', saved: ' 已儲存於本機。', error: ' 本機儲存失敗，本頁資料仍保留。', off: '' }[persistence.status]);
     back.disabled = !returnPosition || returnEpoch !== store.epoch;
     currentLocatable = adapter.locatableIds();
-    const selectable = (id: string, stable: boolean) => stable &&
-      (store.mounted.has(id) ? currentLocatable.has(id) : store.canSeek(id));
+    const selectable = (id: string, stable: boolean) =>
+      store.mounted.has(id) ? currentLocatable.has(id) : stable && store.canSeek(id);
     // Collapse is a visibility update. Retain list nodes and its scroll position;
     // refresh cached rows only when data/search/order actually changes.
     const segmentKey = store.ordered ? '' : store.segments.map(s => `${s.ordered}:${s.ids.join('|')}`).join(';');
@@ -185,7 +185,7 @@ function start(): Instance {
       const liveEntries = new Map(store.entries.map(entry => [entry.id, entry]));
       const railEntries = [...store.mounted].flatMap(id => {
         const entry = liveEntries.get(id);
-        return entry && currentLocatable.has(id) ? [entry] : [];
+        return entry?.stable && currentLocatable.has(id) ? [entry] : [];
       });
       for (const entry of railEntries) {
         const mark = button('', () => { void navigate(entry.id); }, 'mark', false); mark.dataset.entryId = entry.id;
@@ -243,8 +243,9 @@ function start(): Instance {
   async function navigate(id: string | null): Promise<void> {
     if (!alive) return;
     refresh();
-    if (id !== null && (!store.entries.some(entry => entry.id === id && entry.stable) ||
-      (!adapter.canLocate(id) && (!store.canSeek(id) || store.mounted.has(id))))) {
+    const entry = id === null ? undefined : store.entries.find(candidate => candidate.id === id);
+    if (id !== null && (!entry ||
+      (!adapter.canLocate(id) && (!entry.stable || !store.canSeek(id) || store.mounted.has(id))))) {
       status.textContent = '此目標的順序、正文或目前分支尚未核對；請先手動捲動至該則提問。'; return;
     }
     cancel(); const token = ++navigationToken, epoch = store.epoch;
@@ -263,7 +264,7 @@ function start(): Instance {
     returnPosition = position; returnEpoch = epoch; render();
     delete host.dataset.restored;
     adapter.begin(id === null);
-    const result = await navigator.run(id, id === null ? collectionMinutes * 60_000 : undefined);
+    const result = await navigator.run(id, id === null ? collectionMinutes * 60_000 : undefined, entry?.stable === false);
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
     if (id === null && result === 'idle') status.textContent = adapter.collectionFinished

@@ -407,7 +407,7 @@ export class Navigator {
     if (this.state === 'loading') { this.lastStopReason = 'cancelled'; this.setState('cancelled'); }
   }
   private setState(state: NavState): void { this.state = state; this.changed(state); }
-  async run(id: string | null, collectionTotalMs?: number): Promise<NavState> {
+  async run(id: string | null, collectionTotalMs?: number, mountedOnly = false): Promise<NavState> {
     this.cancel();
     const generation = ++this.generation, controller = new AbortController(); this.controller = controller;
     const live = () => generation === this.generation && !controller.signal.aborted;
@@ -437,6 +437,7 @@ export class Navigator {
           // verification finishes. A failed attempt is not proof of absence;
           // keep seeking within the same cancellation and load limits.
         }
+        if (id !== null && mountedOnly) return this.finish('not-found', generation, 'stalled');
         if (performance.now() - started >= totalMs) return this.finish('timed-out', generation, 'time-limit');
         // Check after locating the previous batch's result so the final stalled
         // or permitted load still gets one chance to verify its exact target.

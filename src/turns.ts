@@ -5,10 +5,15 @@ const userMarker = '[data-user-message-bubble], [data-message-author-role="user"
 type Role = 'user' | 'assistant';
 export interface Turn { node: HTMLElement; role: Role; stableId: string | null; slot: string | null; text: string; }
 function identity(node: Element | null, attribute: string): string | null { return node?.getAttribute(attribute)?.trim() || null; }
-function textOf(node: HTMLElement): string {
+function textOf(node: HTMLElement, user = false): string {
   const parts: string[] = [];
   function read(current: Node): void {
     if (current.nodeType === 1 && (current as Element).matches('button, [role="button"], nav, script, style, svg, [aria-hidden="true"], [contenteditable="true"]')) return;
+    // The site can render a leading screen-reader speaker label inside the turn.
+    // Match its own element, never strip a prefix from the user's typed text.
+    if (user && current !== node && current.nodeType === 1 &&
+      (current as Element).matches('h1,h2,h3,h4,h5,h6,.sr-only,.visually-hidden,[data-testid="user-message-label"]') && !parts.some(part => part.trim()) &&
+      /^(?:你說|您說|You said)\s*[:：]$/iu.test((current.textContent ?? '').trim())) return;
     if (current.nodeType === 3) parts.push(current.nodeValue ?? '');
     else for (const child of current.childNodes) read(child);
   }
@@ -47,7 +52,7 @@ export function readTurns(roots?: ParentNode[]): Turn[] {
       node = content;
     }
     if (seen.has(node)) continue;
-    const text = textOf(node);
+    const text = textOf(node, role === 'user');
     if (role === 'assistant' && !text) continue;
     // A stable empty user placeholder is hydration, not evidence of an attachment.
     if (role === 'user' && !text && !node.querySelector('img, video, audio')) continue;

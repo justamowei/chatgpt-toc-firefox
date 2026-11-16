@@ -100,18 +100,24 @@ export class DomAdapter implements NavigationAdapter {
   }
   currentDirection(): Direction | undefined { return this.loadSignal && !this.loadSignal.aborted ? this.loadDirection ?? undefined : undefined; }
   mounted(id: string): boolean { return this.store.context === location.origin + location.pathname && !!this.nodes.get(id)?.isConnected; }
+  private matchesPrompt(id: string, expected: Entry, turn: ReturnType<typeof readTurns>[number]): boolean {
+    return turn.role === 'user' && turn.node.isConnected && this.nodes.get(id) === turn.node &&
+      expected.text === turn.text && (expected.stable ? turn.stableId === id : this.transient.get(turn.node) === id);
+  }
   canLocate(id: string): boolean {
     if (!this.mounted(id)) return false;
     const expected = this.store.entries.find(e => e.id === id);
-    return !!expected?.stable && readTurns().some(e => e.role === 'user' && e.stableId === id && e.node === this.nodes.get(id) && e.text === expected.text);
+    return !!expected && readTurns().some(turn => this.matchesPrompt(id, expected, turn));
   }
   locatableIds(): Set<string> {
     const ids = new Set<string>();
     if (this.store.context !== location.origin + location.pathname) return ids;
-    const expected = new Map(this.store.entries.filter(entry => entry.stable).map(entry => [entry.id, entry]));
+    const expected = new Map(this.store.entries.map(entry => [entry.id, entry]));
     for (const turn of readTurns()) {
-      const id = turn.stableId;
-      if (id && turn.role === 'user' && turn.node.isConnected && this.nodes.get(id) === turn.node && expected.get(id)?.text === turn.text) ids.add(id);
+      for (const id of [turn.stableId, this.transient.get(turn.node)]) {
+        const entry = id ? expected.get(id) : undefined;
+        if (id && entry && this.matchesPrompt(id, entry, turn)) ids.add(id);
+      }
     }
     return ids;
   }
@@ -199,22 +205,27 @@ export class DomAdapter implements NavigationAdapter {
   async locate(id: string, signal: AbortSignal): Promise<boolean> {
     let node = this.nodes.get(id);
     if (signal.aborted || !this.mounted(id) || !node?.isConnected) return false;
-    const turn = readTurns().find(e => e.stableId === id && e.node === node);
-    if (!turn) return false;
     const expected = this.store.entries.find(e => e.id === id);
-    if (expected && (turn.role !== 'user' || !this.canLocate(id))) return false;
+    const originalNode = node;
+    const turn = readTurns().find(e => e.node === node && (expected ? this.matchesPrompt(id, expected, e) : e.stableId === id));
+    if (!turn) return false;
+    const stillMatches = (e: typeof turn) => e.node === node && e.role === turn.role && e.text === turn.text &&
+      (expected && !expected.stable
+        ? node === originalNode && e.stableId === turn.stableId && this.matchesPrompt(id, expected, e)
+        : e.stableId === id);
     // Returning to an answer needs the captured role and SHA-256 version too.
     const witness = this.returnWitness?.id === id ? this.returnWitness : null;
     if (!expected && !witness) return false;
     const context = location.origin + location.pathname, epoch = this.store.epoch;
     if (witness && (witness.role !== turn.role || witness.version !== await this.version(turn.text))) return false;
     if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname || !this.mounted(id) ||
-      !readTurns().some(e => e.node === node && e.stableId === id && e.role === turn.role && e.text === turn.text)) return false;
+      !readTurns().some(stillMatches)) return false;
     let scrollWrites = 0, lastWrite = -Infinity;
     const place = (current: HTMLElement): void => {
       // Let the browser resolve all scrolling ancestors and lazy turn shells,
       // just as selecting an already mounted message does.
-      this.shell(current).scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
+      const anchor = expected?.stable === false ? current : this.shell(current);
+      anchor.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
       lastWrite = performance.now(); scrollWrites++;
     };
     // Move just the live conversation viewport. scrollIntoView can move other
@@ -226,7 +237,7 @@ export class DomAdapter implements NavigationAdapter {
       if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) return false;
       this.refresh(); node = this.nodes.get(id);
       if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) return false;
-      if (node?.isConnected && readTurns().some(e => e.node === node && e.stableId === id && e.role === turn.role && e.text === turn.text)) {
+      if (node?.isConnected && readTurns().some(stillMatches)) {
         const root = this.scroller(node), viewport = this.viewport(root), rect = node.getBoundingClientRect();
         if (rect.bottom > viewport.top && rect.top < viewport.bottom && performance.now() - lastWrite >= 240) break;
         if (scrollWrites < 3 && performance.now() - lastWrite >= 320 && (rect.bottom <= viewport.top || rect.top >= viewport.bottom)) place(node);
@@ -234,7 +245,7 @@ export class DomAdapter implements NavigationAdapter {
     } while (performance.now() - settleStarted < 1800);
     if (!node?.isConnected) return false;
     if (signal.aborted || !node.isConnected || (expected && !this.canLocate(id)) ||
-      !readTurns().some(e => e.node === node && e.stableId === id && e.role === turn.role && e.text === turn.text)) return false;
+      !readTurns().some(stillMatches)) return false;
     const rect = node.getBoundingClientRect(), top = Math.max(0, this.top(node));
     const bottom = Math.min(innerHeight, this.scroller(node).getBoundingClientRect().bottom);
     if (rect.bottom <= top || rect.top >= bottom) return false;
