@@ -1,4 +1,4 @@
-name: Sync v0.3.6 r3 prompt fixes
+name: Sync v0.3.6 r4 collection fix
 on:
   push:
     branches: [chore/rollback-v035-20261015]
@@ -16,18 +16,15 @@ jobs:
           python3 - <<'PY'
           import os,json,pathlib,base64,hashlib,subprocess
           assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux'
-          def git(*a): return subprocess.check_output(['git',*a],text=True).strip()
-          head='e2798aca44d726c45fc31897e8fd39d4a2136683'
-          old='f5805b4ff8db39139b7d6b9927258a03143b9803'
-          ref='refs/heads/fix/auto-index-new-prompts'
-          raw=base64.b64decode(pathlib.Path('recovery/auto-index-v036-r3.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest()=='c26a1a981ce2955bf407ad71b3b84f479539be23b63b831bf09fc00af5504cea'
-          path=pathlib.Path('/tmp/auto-index-v036-r3.bundle');path.write_bytes(raw)
-          git('bundle','verify',str(path));git('fetch','--no-tags',str(path),ref+':refs/remotes/bundle/new-prompts')
-          assert git('rev-parse','refs/remotes/bundle/new-prompts')==head
-          assert git('rev-parse',head+'^')==old
-          p=json.loads(git('show',head+':package.json'))
-          assert p['version']=='0.3.6' and p['tocRevision']=='2026-11-17-v036-r3'
+          def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
+          head='ed24a453f06a99dc6c97a9a36a5961f80c3b2336';old='e2798aca44d726c45fc31897e8fd39d4a2136683';ref='refs/heads/fix/auto-index-new-prompts'
+          raw=base64.b64decode(pathlib.Path('recovery/auto-index-v036-r4.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='f6592c9552e70c1576124b1dd47c355092c84d19e84201bf6373db22d1207610'
+          p=pathlib.Path('/tmp/auto-index-r4.bundle');p.write_bytes(raw)
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/r4')
+          assert git('rev-parse','refs/remotes/bundle/r4')==head and git('rev-parse',head+'^')==old
+          pkg=json.loads(git('show',head+':package.json'))
+          assert pkg['version']=='0.3.6' and pkg['tocRevision']=='2026-11-17-v036-r4'
           assert git('ls-remote','origin',ref).split()[0] in (old,head)
           git('push','--atomic','origin',head+':'+ref)
           assert git('ls-remote','origin',ref).split()[0]==head
