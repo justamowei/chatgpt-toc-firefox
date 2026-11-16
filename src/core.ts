@@ -173,8 +173,9 @@ export class IndexStore {
       if (blocked) {
         generations.push({ ...generation, reason: snapshot.invalidated ? 'invalidated' : 'branch-change' }); return;
       }
+      // A unique live body refreshes the existing ID, keeping its order.
+      // Only simultaneous ambiguity or incompatible legacy witnesses isolate.
       const conflicts = generation.entries.filter(entry => ambiguous.has(entry.id) ||
-        current.has(entry.id) && current.get(entry.id) !== entry.text ||
         legacy && (legacyTexts.get(entry.id)!.size > 1 || active.has(entry.id) && active.get(entry.id)!.text !== entry.text));
       const disputedIds = new Set(conflicts.map(entry => entry.id));
       if (conflicts.length) generations.push({
@@ -208,9 +209,12 @@ export class IndexStore {
     // Exact current DOM observations replace identical search-only witnesses.
     // This keeps repeated F5 restores from duplicating the same prompt.
     const seen = new Map<string, Set<string>>();
+    const retainedById = new Map(this.entries.map(entry => [entry.id, entry]));
     for (const generation of generations) {
       const entries = generation.entries.filter(entry => {
-        if (!ambiguous.has(entry.id) && current.get(entry.id) === entry.text || this.entries.some(active => active.id === entry.id && active.text === entry.text)) return false;
+        const retained = retainedById.get(entry.id);
+        if (!blocked && generation.reason === 'text-change' && retained && !ambiguous.has(entry.id) && !snapshot.disputedUserIds?.has(entry.id)) return false;
+        if (!ambiguous.has(entry.id) && current.get(entry.id) === entry.text || retained?.text === entry.text) return false;
         const texts = seen.get(entry.id) ?? new Set<string>(); seen.set(entry.id, texts);
         if (texts.has(entry.text)) return false; texts.add(entry.text); return true;
       });
@@ -249,14 +253,17 @@ export class IndexStore {
       const retained = new Map(this.entries.map(entry => [entry.id, entry]));
       for (const item of items) if (item.stable && retained.get(item.id)?.text === item.text && this.recoveredIds.delete(item.id)) changed = true;
     }
-    // A later exact DOM witness promotes matching restored search-only data,
-    // without removing a conflicting body version from another generation.
+    // Remove legacy body copies superseded by an existing active ID. If a
+    // legacy row has no active counterpart, keep it until its body is witnessed.
     const currentTexts = new Map(items.filter(entry => entry.stable).map(entry => [entry.id, entry.text]));
+    const activeIds = new Set(this.entries.filter(entry => entry.stable && !snapshot.disputedUserIds?.has(entry.id) &&
+      !ambiguous.has(entry.id)).map(entry => entry.id));
     let promoted = false;
     this.quarantine = this.quarantine.flatMap(generation => {
       if (generation.reason !== 'restored-unverified' && generation.reason !== 'text-change') return [generation];
       const entries = generation.entries.filter(entry => {
-        if (currentTexts.get(entry.id) !== entry.text) return true;
+        const superseded = generation.reason === 'text-change' && !snapshot.invalidated && activeIds.has(entry.id);
+        if (!superseded && currentTexts.get(entry.id) !== entry.text) return true;
         this.count--; this.characters -= entry.text.length; changed = true; promoted = true; return false;
       });
       if (entries.length === generation.entries.length) return [generation];
@@ -301,7 +308,6 @@ export class IndexStore {
       this.isolate('invalidated');
       byId.clear(); reset = true; changed = true;
     }
-    const priorVersions: Entry[] = [];
     // Unstable IDs are useful for current mounts only; they never become historical identity.
     for (const [id, e] of byId) if (!e.stable) {
       byId.delete(id); this.count--; this.characters -= e.text.length; this.removeVertex(id); changed = true;
@@ -311,11 +317,10 @@ export class IndexStore {
       if (existing) {
         if (existing.stable && !item.stable) continue;
         const bodyChanged = existing.stable && item.stable && existing.text !== item.text;
-        const archive = bodyChanged && !this.quarantine.some(group => group.entries.some(old => old.id === item.id && old.text === existing.text));
-        const extra = item.text.length - existing.text.length + (archive ? existing.text.length : 0);
-        if (archive && this.count >= this.limits.entries) { changed = this.markLimit('entries') || changed; continue; }
+        // Each unambiguous message ID has one live directory entry. Retain the
+        // graph vertex and replace its body rather than archiving a duplicate.
+        const extra = item.text.length - existing.text.length;
         if (this.characters + extra > this.limits.characters) { changed = this.markLimit('characters') || changed; continue; }
-        if (archive) { this.count++; priorVersions.push(existing); }
         if (bodyChanged) this.recoveredIds.delete(item.id);
         if (existing.text !== item.text || existing.stable !== item.stable || existing.slot !== item.slot) {
           byId.set(item.id, item); this.characters += extra; changed = true;
@@ -329,10 +334,6 @@ export class IndexStore {
     }
     // DOM order is precedence evidence, even when a window skips unmounted messages.
     // Scroll direction, slot numbering and first-seen time are not ordering proof.
-    if (priorVersions.length) this.quarantine.push({
-      epoch: this.epoch, reason: 'text-change', entries: priorVersions,
-      segments: priorVersions.map(entry => ({ ids: [entry.id], ordered: true })), ordered: priorVersions.length === 1,
-    });
     // A virtualized window can present stale or pinned nodes in a different
     // order. Reject that order evidence only; keep the already indexed turns.
     const observedIds = orderChanged && !reset ? [] : items.map(e => e.id).filter(id => byId.has(id));

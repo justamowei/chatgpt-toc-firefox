@@ -79,10 +79,10 @@ try{
    await evaluate('window.anchorFixture.freeze(false);window.anchorFixture.edit(3);');
    await wait(async()=> (await state()).ids.length===30);
    await click('#toc-list button[data-entry-id="A:u-3"]');
-   await driver.wait(async()=> (await state()).archived>0&&(await state()).nav!=='loading',25000);
+   await driver.wait(async()=> (await state()).nav==='cancelled',25000);
    const s=await state();assert.notEqual(s.nav,'located');assert.ok(!s.highlight);
-   assert.equal(await evaluate(`return [...document.getElementById('chatgpt-toc-root').shadowRoot.querySelectorAll('.archived')].some(n=>n.textContent==='A 本機提問 3');`),true);
-   return {falseHighlight:false,oldVersionArchived:true,state:s.nav};
+   assert.equal(s.archived,0);assert.equal(s.ids.length,30);
+   return {falseHighlight:false,singleCurrentEntry:true,state:s.nav};
  });
 }catch(e){console.error(e);await session.screenshot('failure.png').catch(()=>{});process.exitCode=1;}
 finally{await writeFile(resolve(artifacts,'results.json'),JSON.stringify({date:new Date().toISOString(),source:'Native Firefox isolated addon, localhost virtual renderer with null branch, SPA routing and real extension storage; not ChatGPT LIVE',firefox:(await driver.getCapabilities()).get('browserVersion'),build:JSON.parse(await readFile('dist/fixture/build-info.json','utf8')),results},null,2));await session.close();}

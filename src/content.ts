@@ -163,7 +163,7 @@ function start(): Instance {
       const mountedOnlyText = new Set(entries.filter(entry => !entry.stable).map(entry => entry.text));
       const archived = store.quarantine.flatMap(group => group.entries.filter(entry => group.reason !== 'invalidated' ||
         !mountedOnlyText.has(entry.text))).filter(entry => !query || normalize(entry.text).includes(normalize(query)));
-      if (archived.length) rows.push(() => make('li', 'empty', '曾看過／分支未核對 · 僅供搜尋，不提供定位'));
+      if (archived.length) rows.push(() => make('li', 'empty', '身分未核對的舊紀錄 · 僅供搜尋'));
       for (const entry of archived) rows.push(() => { const row = make('li', 'archived'); row.textContent = entry.text.slice(0, 180); row.title = entry.text; return row; });
       if (!entries.length && !archived.length) rows.push(() => make('li', 'empty', query ? '沒有符合的已觀察提問。' : '尚未辨識到提問；可捲動對話讓網站掛載訊息。'));
       let cursor = 0;

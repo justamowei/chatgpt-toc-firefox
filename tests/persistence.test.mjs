@@ -8,7 +8,7 @@ for (const name of ['core', 'persistence']) {
   await writeFile(`artifacts/persistence/${name}.mjs`, result.code.replace("from \"./core\"", "from \"./core.mjs\""));
 }
 const { IndexStore, validStoredIndex } = await import('../artifacts/persistence/core.mjs');
-const { PersistentIndex, CacheBroker, CACHE_KEY, PROFILE_LIMITS, conversationContext } = await import('../artifacts/persistence/persistence.mjs');
+const { PersistentIndex, CacheBroker, mergeStoredIndices, CACHE_KEY, PROFILE_LIMITS, conversationContext } = await import('../artifacts/persistence/persistence.mjs');
 const context = 'https://chatgpt.com/c/synthetic';
 const entry = (id, text = id, stable = true) => ({ id, text, stable });
 const snapshot = (entries, branch = 'branch-a', route = context) => ({ entries, branch, context: route });
@@ -59,14 +59,14 @@ test('different conversation is rejected; different branch retires history; chan
   assert.equal(noOverlap.canSeek('a'), true); assert.equal(noOverlap.seekDirection('a'), null); assert.equal(noOverlap.ordered, false);
 });
 
-test('later DOM observations promote identical restored witnesses, but retain conflicting versions', () => {
+test('later DOM observations promote matching witnesses and replace a unique updated body', () => {
   const store = new IndexStore(); store.restoreState(state([entry('a'), entry('b'), entry('c')], null), snapshot([entry('c')], null));
   store.merge(snapshot([entry('a'), entry('b'), entry('c')], null));
   assert.deepEqual(ids(store), ['a', 'b', 'c']); assert.equal(store.quarantine.length, 0); assert.equal(store.retainedCount, 3);
   assert.equal(store.recoveredIds.size, 0); assert.equal(store.branchConfidence, 'unverified');
   const changed = new IndexStore(); changed.restoreState(state([entry('a', 'old'), entry('b')], null), snapshot([entry('b')], null));
   changed.merge(snapshot([entry('a', 'new'), entry('b')], null));
-  assert.equal(changed.quarantine[0].entries[0].text, 'old'); assert.equal(changed.retainedCount, 3);
+  assert.equal(changed.quarantine.length, 0); assert.equal(changed.retainedCount, 2);
 });
 
 test('restoring disconnected windows preserves uncertain order and ignores reversed mounted order', () => {
@@ -115,13 +115,13 @@ test('saved prompt body changes and reversed windows leave unrelated candidates 
     const store = new IndexStore(); store.restoreState(state([entry('a'), entry('b')], null), snapshot([entry('b')], null));
     const epoch = store.epoch; assert.equal(store.merge(snapshot(changed, null)), false); assert.equal(store.epoch, epoch);
     assert.deepEqual(ids(store), ['a','b']); assert.equal(store.canSeek('a'), true);
-    if (changed.length === 1) assert.deepEqual(store.quarantine[0].entries.map(entry => entry.id), ['b']);
-    else assert.equal(store.quarantine.length, 0);
+    assert.equal(store.quarantine.length, 0);
   }
   const onRestore = new IndexStore();
   onRestore.restoreState(state([entry('a'), entry('b')], null), snapshot([entry('b', 'new body')], null));
   assert.ok(onRestore.canSeek('a'));
-  assert.deepEqual(onRestore.quarantine.flatMap(group => group.entries).map(entry => entry.id), ['b']);
+  assert.deepEqual(onRestore.entries.map(entry => entry.text), ['a','new body']);
+  assert.equal(onRestore.quarantine.length, 0);
   const changed = new IndexStore(); changed.restoreState(state([entry('a'), entry('b')]), snapshot([entry('b')], 'branch-b'));
   assert.equal(changed.quarantine[0].reason, 'branch-change');
   const later = new IndexStore(); later.restoreState(changed.exportState(), snapshot([entry('b')], null));
@@ -139,7 +139,7 @@ test('null branch broker writes preserve seek hints through legacy migration, di
   await broker.save(state([entry('a', 'edited')], null)); saved = await broker.load(context);
   store = new IndexStore(); store.restoreState(saved, snapshot([entry('a', 'edited')], null));
   assert.equal(store.entries.find(entry => entry.id === 'a').text, 'edited');
-  assert.equal(store.quarantine.some(group => group.entries.some(entry => entry.id === 'a' && entry.text === 'a')), true);
+  assert.equal(store.quarantine.length, 0);
   assert.equal(validStoredIndex(saved), true);
 });
 
@@ -171,14 +171,27 @@ test('strict cache validation bounds stable entries, total archived characters, 
   assert.equal(validStoredIndex(oversized), false);
 });
 
-test('broker serializes simultaneous same-route writes, preserves disjoint histories, isolates body conflict', async () => {
+test('legacy body archive is removed only when its ID already has a live entry', async () => {
+  const saved = state(Array.from({length:53}, (_,i)=>entry('q'+i)), null);
+  saved.quarantine = [{reason:'text-change', entries:[entry('q52','older copy'),entry('unseen','unmatched historical row')],
+    segments:[{ids:['q52','unseen'],ordered:true}],ordered:true}];
+  const store = new IndexStore();
+  store.restoreState(saved, snapshot([entry('q52','newest body')],null));
+  assert.equal(store.entries.length,53); assert.equal(store.entries.at(-1).text,'newest body');
+  assert.deepEqual(store.quarantine.flatMap(group=>group.entries.map(entry=>entry.id)),['unseen']);
+  const merged=mergeStoredIndices(saved,store.exportState());
+  assert.equal(merged.entries.length,53);assert.equal(merged.entries.at(-1).text,'newest body');
+  assert.deepEqual(merged.quarantine.flatMap(group=>group.entries.map(entry=>entry.id)),['unseen']);
+});
+
+test('broker serializes simultaneous same-route writes, preserves disjoint histories and replaces a superseded body', async () => {
   const storage = memory(), broker = new CacheBroker(storage);
   await Promise.all([broker.save(state([entry('a'), entry('b')])), broker.save(state([entry('b'), entry('c')]))]);
   let loaded = await broker.load(context); assert.deepEqual(loaded.entries.map(entry => entry.id), ['a', 'b', 'c']);
   await broker.save(state([entry('b', 'edited'), entry('c')]));
   loaded = await broker.load(context);
   assert.equal(loaded.entries.find(entry => entry.id === 'b').text, 'edited');
-  assert.equal(loaded.quarantine.some(generation => generation.entries.some(entry => entry.id === 'b' && entry.text === 'b')), true);
+  assert.equal(loaded.quarantine.length, 0);
   assert.equal(validStoredIndex(loaded), true);
 });
 

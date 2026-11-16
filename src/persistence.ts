@@ -76,8 +76,15 @@ export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex)
     }
     texts.add(entry.text); retained++; retainedCharacters += entry.text.length;
   };
-  for (const entry of [...previous.entries, ...previous.quarantine.flatMap(generation => generation.entries),
-    ...active.entries, ...generations.flatMap(generation => generation.entries)]) consider(entry);
+  const activeById = new Map(active.entries.map(entry => [entry.id, entry]));
+  const keepArchived = (group: StoredGeneration, id: string): boolean =>
+    knownBranchChanged || group.reason !== 'text-change' || !activeById.has(id);
+  const historical = (groups: StoredGeneration[]) =>
+    groups.flatMap(group => group.entries.filter(entry => keepArchived(group, entry.id)));
+  // Reserving space for a replaced body and its replacement would count the
+  // same live message twice. Preserve previous IDs first, at current lengths.
+  for (const entry of [...previous.entries.map(entry => knownBranchChanged ? entry : activeById.get(entry.id) ?? entry),
+    ...historical(previous.quarantine), ...active.entries, ...historical(generations)]) consider(entry);
   active.entries = active.entries.filter(entry => allowed.get(entry.id)?.has(entry.text));
   const activeIds = new Set(active.entries.map(entry => entry.id));
   if (active.recovery) {
@@ -91,7 +98,7 @@ export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex)
   active.quarantine = [];
   for (const generation of generations) {
     const entries = generation.entries.filter(entry => {
-      if (!allowed.get(entry.id)?.has(entry.text)) return false;
+      if (!keepArchived(generation, entry.id) || !allowed.get(entry.id)?.has(entry.text)) return false;
       const texts = seen.get(entry.id) ?? new Set<string>(); seen.set(entry.id, texts);
       if (texts.has(entry.text)) return false;
       if (count >= CACHE_LIMITS.entries || characters + entry.text.length > CACHE_LIMITS.characters) {

@@ -51,12 +51,11 @@ test('CORE-03: branch, URL and explicit invalidation reset the navigation epoch'
     assert.deepEqual(ids(s), changed.entries.map(e => e.id));
   }
 });
-test('CORE-01: body updates preserve other prompts and archive only the previous body', () => {
+test('CORE-01: body updates keep one prompt, its place in the order and other prompts', () => {
   const s = new IndexStore(); s.merge(snap([entry('a'), entry('b', 'partial')]));
   assert.equal(s.merge(snap([entry('b', 'partial expanded')])), false);
   assert.deepEqual(ids(s), ['a','b']); assert.equal(s.entries[1].text, 'partial expanded');
-  assert.deepEqual(s.quarantine[0].entries.map(e => e.text), ['partial']);
-  assert.equal(s.quarantine[0].reason, 'text-change');
+  assert.equal(s.quarantine.length, 0); assert.equal(s.retainedCount, 2);
 });
 test('CORE-03: unknown branches retain stable history; transient IDs remain mounted-only', () => {
   const unknown = new IndexStore(); unknown.merge(snap([entry('a'), entry('b')], null)); unknown.merge(snap([entry('b'), entry('c')], null));
@@ -92,16 +91,16 @@ test('SEEN-02: reverse transient order does not override the earlier verified se
   assert.deepEqual(ids(s), ['a', 'b', 'c']); assert.equal(s.quarantine.length, 0); assert.equal(s.epoch, epoch);
 });
 
-test('SEEN-03: long-unmounted stable versions and explicit invalidation remain searchable in quarantine', () => {
+test('SEEN-03: long-unmounted body updates do not create duplicates; explicit invalidation still isolates', () => {
   const s = new IndexStore(); s.merge(snap([entry('a', 'original'), entry('b')], null));
   s.merge(snap([entry('x'), entry('y')], null)); s.merge(snap([], null));
   const epoch = s.epoch, revision = s.cacheRevision;
   assert.equal(s.merge(snap([entry('a', 'original appended')], null)), false);
-  assert.equal(s.quarantine[0].reason, 'text-change'); assert.equal(s.quarantine[0].entries.length, 1);
-  assert.equal(s.search('original').length, 1); assert.equal(s.searchObserved('original').length, 2);
+  assert.equal(s.quarantine.length, 0);
+  assert.equal(s.search('original').length, 1); assert.equal(s.searchObserved('original').length, 1);
   assert.equal(s.epoch, epoch); assert.ok(s.cacheRevision > revision);
   assert.equal(s.merge({ ...snap([], null), invalidated: true }), true);
-  assert.equal(s.entries.length, 0); assert.equal(s.quarantine.length, 2); assert.equal(s.searchObserved('').length, 5);
+  assert.equal(s.entries.length, 0); assert.equal(s.quarantine.length, 1); assert.equal(s.searchObserved('').length, 4);
   assert.equal(s.completeness, 'partial');
   s.merge(snap([entry('z')], 'branch-B'));
   assert.equal(s.quarantine.length, 0); assert.equal(s.retainedCount, 1);
@@ -121,7 +120,7 @@ test('SEEN-04: entry/character budgets include quarantined versions, stop collec
   assert.equal(s.entries.length, 3); assert.equal(s.searchObserved('').length, 3); assert.equal(s.retainedCount, 3);
   const chars = new IndexStore({ entries: 10, characters: 8 });
   chars.merge(snap([entry('a', '1234')], null));
-  chars.merge(snap([entry('a', '12345')], null));
+  chars.merge(snap([entry('a', '123456789')], null));
   assert.equal(chars.limitReason, 'characters'); assert.equal(chars.retainedCharacters, 4);
   assert.equal(chars.entries[0].text, '1234'); assert.equal(chars.quarantine.length, 0);
   chars.merge(snap([entry('tiny', 'x')], null)); assert.equal(chars.retainedCharacters, 4);
