@@ -222,6 +222,10 @@ export class DomAdapter implements NavigationAdapter {
   }
   get collectionFinished(): boolean { return this.collection?.stage === 'done'; }
   get collectionBlocked(): boolean { return this.collection?.stage === 'blocked'; }
+  get headQuietMs(): number {
+    return this.collection?.stage === 'head' && this.lastAttempt?.boundary?.physical
+      ? this.lastAttempt.boundary.stableMs : 0;
+  }
   diagnostic(): object {
     const root = this.scroller(this.nodes.values().next().value);
     return { scroll: { tag: root.tagName, marked: root.hasAttribute('data-scroll-root'), overflow: getComputedStyle(root).overflowY,
@@ -522,8 +526,8 @@ export class DomAdapter implements NavigationAdapter {
           }
           if (targetId !== null && this.mounted(targetId)) { this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return; }
           // A stalled middle window is not the start of a conversation. Probe
-          // the same direction and allow slow mounts; reverse only after a live
-          // physical boundary stays stable for six seconds and two clamp probes.
+          // the same direction and allow slow mounts. A physical clamp can be
+          // just the end of currently loaded data; keep observing late prepends.
           const repeatBoundaryProbe = collection?.boundary.shouldProbe(now) ?? false;
           if (currentSignature === beforeSignature && boundary?.node.isConnected && rect && ((collection ? !physical && currentRoot.scrollTop > 2 && elapsed - lastNudgeAt >= 640 : !nudged && elapsed >= 640) || repeatBoundaryProbe)) {
             nudged = true; lastNudgeAt = elapsed;

@@ -1,3 +1,5 @@
+export const HEAD_QUIET_MS = 30_000;
+
 export interface BoundaryObservation {
   now: number;
   physical: boolean;
@@ -19,7 +21,7 @@ export class CollectionBoundaryWitness {
   private probes = 0;
   private lastProbe = -Infinity;
   private status: BoundaryStatus = { physical: false, loading: false, rendering: false, stableMs: 0, probes: 0, confirmed: false };
-  constructor(private stableMs = 6000, private probeGapMs = 2400, private tolerance = 2) {}
+  constructor(private stableMs = HEAD_QUIET_MS, private probeGapMs = 2400, private tolerance = 2) {}
   reset(): void { this.witness = null; this.probes = 0; this.lastProbe = -Infinity; }
   observe(observation: BoundaryObservation): BoundaryStatus {
     const previous = this.witness;

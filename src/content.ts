@@ -1,5 +1,6 @@
 import { DEFAULT_SETTINGS, IndexStore, Navigator, normalize, validSettings, type NavState, type Position } from './core';
 import { DomAdapter } from './dom';
+import { HEAD_QUIET_MS } from './collection-policy';
 import { supported, BUILD_REVISION } from './config';
 import { styles } from './styles';
 import { cancelsNavigation } from './interaction';
@@ -59,10 +60,16 @@ function start(): Instance {
   const back = button('回到剛才位置', () => { void restore(); }); back.id = 'toc-back';
   const stop = button('停止', cancel); stop.id = 'toc-stop';
   const settings = button('設定', () => { void browser.runtime.sendMessage({ kind: 'options:open' }).catch(() => { if (alive) status.textContent = '無法開啟設定，請從 Firefox 附加元件頁開啟。'; }); });
+  const copyDirectory = button('複製目錄', () => { void copyThisDirectory(); }); copyDirectory.id = 'toc-copy';
+  copyDirectory.title = '複製此對話目前收錄的提問全文';
   const clearPage = button('清除本頁目錄', () => { void clearThisPage(); }); clearPage.id = 'toc-clear-page';
   clearPage.title = '清除目前對話的本機目錄後，重新收錄畫面上已掛載的提問';
   const disable = button('停用此頁', dispose); disable.id = 'toc-disable';
   const diagnosis = make('pre', 'diagnosis'); diagnosis.id = 'toc-diagnosis'; diagnosis.hidden = true;
+  const copyDiagnosis = button('複製診斷', () => {
+    const text = diagnosis.textContent;
+    if (text) void copyText(text, '已複製頁面診斷到剪貼簿。');
+  }); copyDiagnosis.id = 'toc-copy-diagnosis'; copyDiagnosis.hidden = true;
   diagnosis.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;user-select:text;max-height:150px;overflow:auto;margin:0 14px 12px';
   const diagnose = button('頁面診斷', () => {
     // Counts only; no conversation text, IDs, URLs, or account information.
@@ -71,11 +78,11 @@ function start(): Instance {
     diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, revision: BUILD_REVISION, collected: store.entries.length,
       observed: store.retainedCount, mounted: store.mounted.size, quarantined: store.quarantine.reduce((n, g) => n + g.entries.length, 0),
       limitReason: store.limitReason, quarantineReasons: [...new Set(store.quarantine.map(group => group.reason))],
-      navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false;
+      navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false; copyDiagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
-  footer.append(earlier, back, stop, clearPage, settings, disable, diagnose);
+  footer.append(earlier, back, stop, copyDirectory, clearPage, settings, disable, diagnose);
   const hint = make('div', 'hint', 'Shift＋O 開啟 · Esc 收合');
-  panel.append(header, searchWrap, scope, list, status, footer, diagnosis, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
+  panel.append(header, searchWrap, scope, list, status, footer, diagnosis, copyDiagnosis, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
   const adapter = new DomAdapter(store, refresh);
   const labels: Record<NavState, string> = { idle: '請選取已收錄的提問。', loading: '正在尋找訊息…', located: '已定位並高亮正確訊息。', cancelled: '已停止導航。', 'timed-out': '已達載入上限；可稍後重試。', unsupported: '目前頁面無法完成導航，請更新導航器。', 'not-found': '尚未找到這則訊息，可繼續載入。' };
   const navigator = new Navigator(adapter, state => {
@@ -124,6 +131,7 @@ function start(): Instance {
       (store.quarantine.length ? `另有 ${store.retainedCount - store.entries.length} 筆曾看過資料已隔離，僅供搜尋。` : '') +
       (store.limitReason ? `已達${store.limitReason === 'entries' ? '5000 筆記錄' : '500 萬字元'}保留上限，已停止新增；現有資料仍可搜尋。` : '') +
       ({ loading: ' 正在讀取本機目錄。', pending: ' 本機目錄儲存中。', saved: ' 已儲存於本機。', error: ' 本機儲存失敗，本頁資料仍保留。', off: '' }[persistence.status]);
+    copyDirectory.disabled = clearing || !store.entries.length;
     clearPage.disabled = clearing || conversationContext(store.context) !== store.context;
     back.disabled = !returnPosition || returnEpoch !== store.epoch;
     currentLocatable = adapter.locatableIds();
@@ -230,7 +238,9 @@ function start(): Instance {
     }
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
-      ? `${adapter.lastLoadReport.phase === 'head' ? '正在選取較早掛載訊息，逐段向前收集' : '正在選取較晚掛載訊息，補收後續對話'} · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可按停止。`
+      ? adapter.headQuietMs > 0
+        ? `已到目前載入範圍頂端，等待較早提問（${Math.floor(adapter.headQuietMs / 1000)}／${HEAD_QUIET_MS / 1000} 秒）…`
+        : `正在向上收集 · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可按停止。`
       : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
       : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
   }
@@ -286,9 +296,23 @@ function start(): Instance {
     if (id === null && result === 'idle') status.textContent = adapter.collectionBlocked
       ? '目前找不到可繼續捲動的對話區域；已收錄的目錄保留，尚未確認到頂。'
       : adapter.collectionFinished
-      ? `本次已向上收集，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；已確認穩定頂端捲動邊界。完整歷史尚未核對；可返回剛才位置。`
+      ? `本次已向上收集，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；目前載入範圍的頂端暫無較早提問；尚未確認整段歷史已收齊。可繼續收集或返回剛才位置。`
       : `本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集。`;
     updateCurrent();
+  }
+  async function copyThisDirectory(): Promise<void> {
+    if (!alive || clearing || !store.entries.length) return;
+    const text = store.entries.map((entry, index) => `${index + 1}. ${entry.text}`).join('\n\n');
+    await copyText(text, `已複製 ${store.entries.length} 則提問到剪貼簿。`);
+  }
+  async function copyText(text: string, success: string): Promise<void> {
+    const context = store.context;
+    try {
+      await window.navigator.clipboard.writeText(text);
+      if (alive && context === store.context) status.textContent = success;
+    } catch {
+      if (alive && context === store.context) status.textContent = '無法寫入剪貼簿，請重試。';
+    }
   }
   async function clearThisPage(): Promise<void> {
     const context = store.context, branch = store.branch;
