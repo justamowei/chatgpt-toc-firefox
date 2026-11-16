@@ -1,4 +1,4 @@
-name: Sync v0.3.6 r4 collection fix
+name: Deliver v0.3.6 r4
 on:
   push:
     branches: [chore/rollback-v035-20261015]
@@ -11,21 +11,28 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Sync exact source commit
+      - name: Verify and sync original commits
         run: |
           python3 - <<'PY'
           import os,json,pathlib,base64,hashlib,subprocess
           assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux'
           def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
-          head='ed24a453f06a99dc6c97a9a36a5961f80c3b2336';old='e2798aca44d726c45fc31897e8fd39d4a2136683';ref='refs/heads/fix/auto-index-new-prompts'
-          raw=base64.b64decode(pathlib.Path('recovery/auto-index-v036-r4.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest()=='f6592c9552e70c1576124b1dd47c355092c84d19e84201bf6373db22d1207610'
-          p=pathlib.Path('/tmp/auto-index-r4.bundle');p.write_bytes(raw)
-          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/r4')
-          assert git('rev-parse','refs/remotes/bundle/r4')==head and git('rev-parse',head+'^')==old
+          head='d5f85b5bb946f31b610d87aaf0655f90df97704e';tag='8d9e701080b45e67b1fe6c53394fb76d0c2b7e4d';work='refs/heads/fix/auto-index-new-prompts';release='refs/heads/release/v0.3';t='refs/tags/v0.3.6'
+          raw=base64.b64decode(pathlib.Path('recovery/delivery-v036-r4.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='18d617d0ef371757820a84dffc502c2a9b585e32f0ca191dad74491932747d8e'
+          p=pathlib.Path('/tmp/v036-r4.bundle');p.write_bytes(raw)
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),work+':refs/remotes/bundle/v036',t+':'+t)
+          assert git('rev-parse','refs/remotes/bundle/v036')==head
+          assert git('rev-parse',t)==tag and git('rev-parse',t+'^{}')=='f0c0870c8ddf37ab30b5f214a417bf587fb73e5d'
+          def refs():return {r:s for s,r in (line.split() for line in git('ls-remote','origin').splitlines())}
+          before=refs()
+          assert before[work] in ('ed24a453f06a99dc6c97a9a36a5961f80c3b2336',head)
+          assert before[release] in ('33647255042b7cff3525548bad7bd69cd55791e1',head)
+          assert before.get(t) in (None,tag)
           pkg=json.loads(git('show',head+':package.json'))
           assert pkg['version']=='0.3.6' and pkg['tocRevision']=='2026-11-17-v036-r4'
-          assert git('ls-remote','origin',ref).split()[0] in (old,head)
-          git('push','--atomic','origin',head+':'+ref)
-          assert git('ls-remote','origin',ref).split()[0]==head
+          git('push','--atomic','origin',head+':'+work,head+':'+release,t+':'+t)
+          after=refs()
+          assert after[work]==after[release]==head and after[t]==tag
+          assert all(after[r]==s for r,s in before.items() if r.startswith('refs/tags/'))
           PY
