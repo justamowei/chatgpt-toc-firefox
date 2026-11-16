@@ -4,6 +4,7 @@ import { readTurns } from './turns';
 import { HeightLedger } from './geometry';
 import { CollectionBoundaryWitness } from './collection-policy';
 type Direction = 'older' | 'newer';
+const promptText = (value: string): string => value.normalize('NFC').replace(/\s+/g, ' ').trim();
 export interface LoadReport { phase: 'scan' | 'answer' | 'jump' | 'refine' | 'head' | 'sweep'; added: number; steps: number; }
 type Attempt = { method: string; before: number; requested: number; after: number; heightBefore: number; heightAfter: number; scrollEvents: number; replaced: boolean;
   boundary?: { physical: boolean; stableMs: number; probes: number; loading: boolean; rendering: boolean; confirmed: boolean } };
@@ -12,6 +13,8 @@ export class DomAdapter implements NavigationAdapter {
   private transient = new WeakMap<HTMLElement, string>();
   private serial = 0;
   private lastContext = '';
+  private submission: { context: string; epoch: number; tail: string; text: string; until: number } | null = null;
+  private observedScroll: HTMLElement | null = null;
   private disputedUserIds = new Set<string>();
   private rawUserIds = new WeakMap<HTMLElement, string>();
   private promptRecognition = { parsed: 0, disputed: 0, stable: 0, mountedOnly: 0 };
@@ -35,7 +38,9 @@ export class DomAdapter implements NavigationAdapter {
     // part of the new chat. Only a previous conversation can leave stale turns.
     if (this.lastContext && context !== this.lastContext && /\/c\/[^/]+/.test(new URL(this.lastContext).pathname))
       for (const [id, node] of this.nodes) this.routeStale.set(node, this.rawUserIds.get(node) ?? id);
-    if (context !== this.lastContext) this.disputedUserIds.clear();
+    if (context !== this.lastContext) {
+      this.disputedUserIds.clear(); this.submission = null; this.observedScroll = null;
+    }
     this.lastContext = context;
     const entries: Entry[] = [], nodes = new Map<string, HTMLElement>();
     const main = document.querySelector('main') ?? document.body;
@@ -79,7 +84,16 @@ export class DomAdapter implements NavigationAdapter {
     const branch = FIXTURE ? main.getAttribute('data-fixture-branch') : null;
     this.promptRecognition = { parsed, disputed: disputed.size,
       stable: entries.filter(entry => entry.stable).length, mountedOnly: entries.filter(entry => !entry.stable).length };
-    return { entries, context, branch, disputedUserIds: new Set(this.disputedUserIds) };
+    let submittedAppend: Snapshot['submittedAppend'];
+    const pending = this.submission, newest = entries[entries.length - 1];
+    if (pending && (pending.epoch !== this.store.epoch || pending.context !== context ||
+      branch !== this.store.branch || performance.now() > pending.until)) this.submission = null;
+    else if (pending && newest?.stable && !this.store.canSeek(newest.id) && promptText(newest.text) === pending.text) {
+      submittedAppend = { epoch: pending.epoch, after: pending.tail, id: newest.id };
+      // Do not consume on read alone: a persistence probe may read without merging.
+    } else if (pending && newest && newest.id !== pending.tail && newest.stable &&
+      this.store.canSeek(newest.id) && promptText(newest.text) === pending.text) this.submission = null;
+    return { entries, context, branch, disputedUserIds: new Set(this.disputedUserIds), submittedAppend };
   }
   readRemoved(records: MutationRecord[]): Entry[][] {
     const groups: Entry[][] = [];
@@ -97,6 +111,24 @@ export class DomAdapter implements NavigationAdapter {
       }
     }
     return groups;
+  }
+  noteSubmission(text: string): void {
+    this.submission = null;
+    const context = location.origin + location.pathname;
+    const tail = this.store.knownStableTail(), normalized = promptText(text);
+    if (!tail || !normalized || normalized.length > 100_000 || this.store.context !== context ||
+      !this.canLocate(tail)) return;
+    const lastMountedUser = [...this.nodes.keys()].reverse().find(id => this.store.mounted.has(id));
+    if (lastMountedUser !== tail) return;
+    this.submission = { context, epoch: this.store.epoch, tail, text: normalized, until: performance.now() + 30_000 };
+  }
+  notePageScroll(target: EventTarget | null): void {
+    if (!(target instanceof HTMLElement) || !target.isConnected ||
+      target.closest('aside, nav, form, #chatgpt-toc-root') ||
+      target.scrollHeight <= target.clientHeight + 2 || target.clientHeight <= 100 ||
+      ![...this.nodes.values()].some(node => node !== target && target.contains(node))) return;
+    // The actual moving ancestor is better evidence than CSS or a global main.
+    this.observedScroll = target;
   }
   currentDirection(): Direction | undefined { return this.loadSignal && !this.loadSignal.aborted ? this.loadDirection ?? undefined : undefined; }
   mounted(id: string): boolean { return this.store.context === location.origin + location.pathname && !!this.nodes.get(id)?.isConnected; }
@@ -126,7 +158,11 @@ export class DomAdapter implements NavigationAdapter {
     // the nearest live, scrollable ancestor of actual turns before global roots.
     // A turn ancestor with overflow:hidden can also be a programmatic viewport.
     const candidates = new Set<HTMLElement>();
-    const anchors = [node, ...this.nodes.values(), ...document.querySelectorAll<HTMLElement>('main')];
+    const turnNodes = [...this.nodes.values()].filter(turn => turn.isConnected);
+    const observed = this.observedScroll;
+    if (observed?.isConnected && observed.scrollHeight > observed.clientHeight + 2 &&
+      (node?.isConnected ? observed.contains(node) : turnNodes.some(turn => observed.contains(turn)))) return observed;
+    const anchors = [node, ...turnNodes, ...document.querySelectorAll<HTMLElement>('main')];
     for (const anchor of anchors) if (anchor?.isConnected) for (let current: HTMLElement | null = anchor; current; current = current.parentElement) candidates.add(current);
     for (const root of document.querySelectorAll<HTMLElement>('[data-scroll-root]'))
       if (root.querySelector('main') || root.closest('main')) candidates.add(root);
@@ -140,13 +176,17 @@ export class DomAdapter implements NavigationAdapter {
         if (overflow !== 'hidden' || current.hasAttribute('data-scroll-root')) scrollable.push(current);
         else if (current !== document.body && current !== document.documentElement &&
           !current.closest('aside, nav, form, [data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]') &&
-          [...this.nodes.values()].some(turn => turn !== current && current.contains(turn))) hidden.push(current);
+          turnNodes.some(turn => turn !== current && current.contains(turn))) hidden.push(current);
       }
       if (current.hasAttribute('data-scroll-root')) stationary ??= current;
     }
-    return scrollable.find(root => root.hasAttribute('data-scroll-root')) ??
-      scrollable.find(root => !root.closest('[data-testid^="conversation-turn-"], [data-turn-id][data-turn]')) ??
-      hidden[0] ?? stationary ?? document.scrollingElement as HTMLElement ?? document.documentElement;
+    const ownsTurn = (root: HTMLElement) => (node?.isConnected ? root.contains(node) : turnNodes.some(turn => root.contains(turn)));
+    const outsideTurn = (root: HTMLElement) => !root.closest('[data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]');
+    return scrollable.find(root => root.hasAttribute('data-scroll-root') && ownsTurn(root)) ??
+      scrollable.find(root => outsideTurn(root) && ownsTurn(root)) ??
+      hidden.find(ownsTurn) ??
+      (!turnNodes.length ? scrollable.find(outsideTurn) : undefined) ??
+      stationary ?? document.scrollingElement as HTMLElement ?? document.documentElement;
   }
   // Height measurements remain diagnostic; anchor walking never navigates
   // using stale absolute positions in ChatGPT's changing virtual height model.
@@ -424,7 +464,12 @@ export class DomAdapter implements NavigationAdapter {
     // only; scroll pixels and events never prove a new mounted window.
     document.addEventListener('scroll', observeScroll, { capture: true, passive: true });
     try {
-      if (edge?.node.isConnected && !signal.aborted && (!collection?.anchor || collection.anchor.root !== root || collection.anchor.signature !== beforeSignature)) {
+      const edgeRect = edge?.node.getBoundingClientRect(), startViewport = this.viewport(root);
+      // Do not undo a previous batch's directional nudge by aligning a
+      // now-trailing edge in the opposite direction.
+      const movesTowardTarget = edgeRect && (direction === 'older'
+        ? edgeRect.top < startViewport.top - 2 : edgeRect.bottom > startViewport.bottom + 2);
+      if (movesTowardTarget && edge?.node.isConnected && !signal.aborted && (!collection?.anchor || collection.anchor.root !== root || collection.anchor.signature !== beforeSignature)) {
         edge.node.scrollIntoView({ block: direction === 'older' ? 'start' : 'end', inline: 'nearest', behavior: 'instant' });
         attempt.requested = root.scrollTop;
         if (collection) collection.anchor = { root, signature: beforeSignature };
@@ -473,7 +518,7 @@ export class DomAdapter implements NavigationAdapter {
             // same shell between batches. A real head probe stays clamped at zero.
             const step = Math.max(80, currentRoot.clientHeight * .45);
             const top = direction === 'older' ? (physical ? -step : currentRoot.scrollTop - step)
-              : currentRoot.scrollTop + rect.bottom - viewport.bottom + step;
+              : currentRoot.scrollTop + Math.max(0, rect.bottom - viewport.bottom) + step;
             currentRoot.scrollTo({ top, behavior: 'instant' }); attempt.requested = top;
             collection?.boundary.recordProbe(now, physical && !loading && Math.abs(currentRoot.scrollTop - attempt.after) <= 2);
           }

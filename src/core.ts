@@ -1,6 +1,6 @@
 export type Completeness = 'unknown' | 'partial' | 'verified-complete';
 export interface Entry { id: string; text: string; stable: boolean; slot?: string; }
-export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; disputedUserIds?: ReadonlySet<string>; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
+export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; disputedUserIds?: ReadonlySet<string>; submittedAppend?: { epoch: number; after: string; id: string }; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
 export interface CompleteProof { source: 'conversation-structure'; branch: string; exhausted: boolean; orderedIds: string[]; }
 export interface Settings { auto: boolean; expanded: boolean; collectionMinutes: number; }
 export const DEFAULT_SETTINGS: Settings = { auto: true, expanded: false, collectionMinutes: 10 };
@@ -125,6 +125,10 @@ export class IndexStore {
   get retainedCount(): number { return this.count; }
   get retainedCharacters(): number { return this.characters; }
   canSeek(id: string): boolean { return this.seekableIds.has(id); }
+  knownStableTail(): string | undefined {
+    if (!this.ordered) return undefined;
+    for (let i = this.entries.length - 1; i >= 0; i--) if (this.entries[i].stable) return this.entries[i].id;
+  }
   seekDirection(id: string, anchorIds: Iterable<string> = this.mounted): 'older' | 'newer' | null {
     const target = this.entries.findIndex(entry => entry.id === id);
     if (target < 0 || !this.canSeek(id)) return null;
@@ -274,6 +278,16 @@ export class IndexStore {
     for (const e of items) if (!candidate.has(e.id)) candidate.set(e.id, new Set());
     for (let i = 1; i < items.length; i++) candidate.get(items[i - 1].id)!.add(items[i].id);
     const orderChanged = orderedGraph(candidate).cycle;
+    const append = snapshot.submittedAppend;
+    // A locally submitted prompt may replace the old tail before both can
+    // coexist. Only an unseen stable ID with a retained predecessor can bridge.
+    let appendEdge = false;
+    if (!reset && !snapshot.invalidated && !textChanged && !orderChanged && append?.epoch === this.epoch &&
+      byId.get(append.after)?.stable && !byId.has(append.id) &&
+      items.at(-1)?.id === append.id && items.at(-1)?.stable) {
+      candidate.get(append.after)!.add(append.id);
+      appendEdge = !orderedGraph(candidate).cycle;
+    }
     if (!reset && (snapshot.invalidated || textChanged || orderChanged)) {
       this.isolate(snapshot.invalidated ? 'invalidated' : textChanged ? 'text-change' : 'order-conflict');
       if (hadRecoveredCandidates && textChanged && !snapshot.invalidated) {
@@ -316,6 +330,10 @@ export class IndexStore {
     for (let i = 1; i < observedIds.length; i++) {
       const edges = this.graph.get(observedIds[i - 1])!;
       if (!edges.has(observedIds[i])) { edges.add(observedIds[i]); changed = true; }
+    }
+    if (appendEdge && append && byId.has(append.after) && byId.has(append.id)) {
+      this.graph.get(append.after)!.add(append.id);
+      changed = true;
     }
     this.entries = [...byId.values()];
     if (changed) this.reorder();

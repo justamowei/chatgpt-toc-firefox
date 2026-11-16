@@ -66,7 +66,7 @@ function start(): Instance {
     for (const [label, selector] of Object.entries({ main: 'main', legacyRole: '[data-message-author-role]', turnShell: '[data-testid^="conversation-turn-"][data-turn]', turnKey: '[data-turn-key]', userBubble: '[data-user-message-bubble]', conversationRole: '[data-conversation-role]', agentStart: '[data-chatgpt-agent-turn-start]' })) counts[label] = document.querySelectorAll(selector).length;
     diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, revision: BUILD_REVISION, collected: store.entries.length,
       observed: store.retainedCount, mounted: store.mounted.size, quarantined: store.quarantine.reduce((n, g) => n + g.entries.length, 0),
-      limitReason: store.limitReason, quarantineReasons: [...new Set(store.quarantine.map(group => group.reason))],
+      groups: store.segments.length, limitReason: store.limitReason, quarantineReasons: [...new Set(store.quarantine.map(group => group.reason))],
       navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
   footer.append(earlier, back, stop, settings, disable, diagnose);
@@ -315,8 +315,31 @@ function start(): Instance {
   window.addEventListener('pageshow', () => { if (alive) refresh(); }, { signal: events.signal });
   document.addEventListener('scroll', event => {
     if (event.composedPath().includes(host)) return;
+    adapter.notePageScroll(event.target);
     if (currentFrame === undefined) currentFrame = requestAnimationFrame(() => { currentFrame = undefined; queue(); updateCurrent(); });
   }, { capture: true, passive: true, signal: events.signal });
+  const composer = '#prompt-textarea';
+  const sendButton = '[data-testid="send-button"], #composer-submit-button[type="submit"]';
+  const recordSubmission = (input: HTMLElement): void => {
+    // The text only confirms the next mounted bubble. Drafts are not indexed,
+    // exported or written to storage.
+    adapter.noteSubmission(input instanceof HTMLTextAreaElement ? input.value : input.innerText);
+  };
+  document.addEventListener('click', event => {
+    if (!event.isTrusted || !(event.target instanceof Element)) return;
+    const button = event.target.closest<HTMLButtonElement>(sendButton);
+    if (!button || button.disabled || button.getAttribute('aria-disabled') === 'true' ||
+      button.matches('[data-testid="stop-button"]')) return;
+    const editor = (button.form ?? button.closest('form'))?.querySelector<HTMLElement>(composer)
+      ?? document.querySelector<HTMLElement>(composer);
+    if (editor) recordSubmission(editor);
+  }, { capture: true, signal: events.signal });
+  document.addEventListener('keydown', event => {
+    if (!event.isTrusted || event.key !== 'Enter' || event.isComposing || event.keyCode === 229 ||
+      event.defaultPrevented || event.repeat || event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) return;
+    const editor = event.target instanceof Element ? event.target.closest<HTMLElement>(composer) : null;
+    if (editor) recordSubmission(editor);
+  }, { capture: true, signal: events.signal });
   for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown', 'input']) document.addEventListener(type, event => {
     if (type === 'keydown' && !cancelsNavigation(event as KeyboardEvent)) return;
     if ((navigationPending || navigator.state === 'loading') && event.isTrusted && !event.composedPath().includes(host)) cancel();

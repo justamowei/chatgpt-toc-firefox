@@ -347,5 +347,13 @@
       "date": "2026-11-17",
       "selection": "Current user-approved r4. Previously removed implementation remains withdrawn."
     }
+  },
+  "workingCandidate": {
+    "version": "0.3.7",
+    "revision": "2026-11-17-v037",
+    "branch": "fix/prompt-group-navigation",
+    "status": "test-candidate",
+    "liveStatus": "PENDING",
+    "report": "prompt-group-navigation.md"
   }
 }
