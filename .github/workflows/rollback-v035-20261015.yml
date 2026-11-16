@@ -1,4 +1,4 @@
-name: Sync lookup and directory clear v0.3.7 r3
+name: Sync collection consistency v0.3.7 r4
 on:
   push:
     branches: [chore/rollback-v035-20261015]
@@ -17,14 +17,14 @@ jobs:
           import os,json,pathlib,base64,hashlib,subprocess
           assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux'
           def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
-          head='b740f8101fdcefd67ec46c47eec2e1ae4fd52c59';old='75f2f682191a5fe5d0aa2308ca02fb701b7ad274';ref='refs/heads/fix/prompt-group-navigation'
-          raw=base64.b64decode(pathlib.Path('recovery/highlight-clear-v037-r3.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest()=='84bdd7c1797ab6c3700cdc6bf2d67d438bea88afb014a37e8414d810c7435bc2'
-          p=pathlib.Path('/tmp/highlight-clear-v037-r3.bundle');p.write_bytes(raw)
-          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/r3037')
-          assert git('rev-parse','refs/remotes/bundle/r3037')==head and git('rev-parse',head+'^')==old
+          head='2ee60777b17501461602022f41f40ec01a9b9030';old='b740f8101fdcefd67ec46c47eec2e1ae4fd52c59';ref='refs/heads/fix/prompt-group-navigation'
+          raw=base64.b64decode(pathlib.Path('recovery/collection-consistency-v037-r4.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='7d6b7f57f682335f5a516a785d2d9c3a4f4b0d6190f9fe2a34a8bead04bf21ad'
+          p=pathlib.Path('/tmp/collection-consistency-v037-r4.bundle');p.write_bytes(raw)
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/r4037')
+          assert git('rev-parse','refs/remotes/bundle/r4037')==head and git('rev-parse',head+'^')==old
           p=json.loads(git('show',head+':package.json'))
-          assert p['version']=='0.3.7' and p['tocRevision']=='2026-11-17-v037-r3'
+          assert p['version']=='0.3.7' and p['tocRevision']=='2026-11-17-v037-r4'
           assert git('ls-remote','origin',ref).split()[0] in (old,head)
           git('push','--atomic','origin',head+':'+ref)
           assert git('ls-remote','origin',ref).split()[0]==head
