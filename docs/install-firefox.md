@@ -1,3 +1,7 @@
+# Firefox 目前安裝：v0.3.6 r4
+
+在 about:debugging#/runtime/this-firefox 暫時載入 outputs/Firefox-測試版-v0.3.6/manifest.json。重整 ChatGPT，「頁面診斷」版本為 0.3.6，revision 為 2026-11-17-v036-r4。見 [v0.3.6 交付](release-v0.3.6.md)。下方保留原版紀錄。
+
 # Firefox v0.3.5 更新與使用
 
 正式manifest：outputs/Firefox-測試版-v0.3.5/manifest.json；version0.3.5／revision2026-10-10-v035。
