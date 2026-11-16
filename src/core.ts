@@ -170,17 +170,26 @@ export class IndexStore {
       const texts = legacyTexts.get(entry.id) ?? new Set<string>(); texts.add(entry.text); legacyTexts.set(entry.id, texts);
     }
     const ingest = (generation: StoredGeneration, legacy: boolean): void => {
-      const conflict = generation.entries.some(entry => ambiguous.has(entry.id) || current.has(entry.id) && current.get(entry.id) !== entry.text ||
-        legacy && (legacyTexts.get(entry.id)!.size > 1 || active.has(entry.id) && active.get(entry.id)!.text !== entry.text));
-      if (blocked || conflict) {
-        generations.push({ ...generation, reason: snapshot.invalidated ? 'invalidated' : branchChanged ? 'branch-change' : 'text-change' }); return;
+      if (blocked) {
+        generations.push({ ...generation, reason: snapshot.invalidated ? 'invalidated' : 'branch-change' }); return;
       }
+      const conflicts = generation.entries.filter(entry => ambiguous.has(entry.id) ||
+        current.has(entry.id) && current.get(entry.id) !== entry.text ||
+        legacy && (legacyTexts.get(entry.id)!.size > 1 || active.has(entry.id) && active.get(entry.id)!.text !== entry.text));
+      const disputedIds = new Set(conflicts.map(entry => entry.id));
+      if (conflicts.length) generations.push({
+        entries: conflicts, reason: 'text-change', ordered: conflicts.length === 1,
+        segments: conflicts.map(entry => ({ ids: [entry.id], ordered: true })),
+      });
       const existing = new Map(this.entries.map(entry => [entry.id, entry]));
-      for (const entry of generation.entries) if (!existing.has(entry.id)) {
+      for (const entry of generation.entries) if (!existing.has(entry.id) && !disputedIds.has(entry.id)) {
         this.entries.push(entry); existing.set(entry.id, entry); this.graph.set(entry.id, new Set());
         if (legacy || !trusted || state.recovery?.candidateIds.includes(entry.id)) this.recoveredIds.add(entry.id);
       }
-      for (const segment of generation.segments) if (segment.ordered) for (let i = 1; i < segment.ids.length; i++) this.graph.get(segment.ids[i - 1])!.add(segment.ids[i]);
+      for (const segment of generation.segments) if (segment.ordered) {
+        const ids = segment.ids.filter(id => !disputedIds.has(id));
+        for (let i = 1; i < ids.length; i++) this.graph.get(ids[i - 1])!.add(ids[i]);
+      }
     };
     // v032 put the unmounted prefix in restored-unverified quarantine. Recover
     // those exact IDs before the current tail, keeping each segment's hint.
@@ -245,7 +254,7 @@ export class IndexStore {
     const currentTexts = new Map(items.filter(entry => entry.stable).map(entry => [entry.id, entry.text]));
     let promoted = false;
     this.quarantine = this.quarantine.flatMap(generation => {
-      if (generation.reason !== 'restored-unverified') return [generation];
+      if (generation.reason !== 'restored-unverified' && generation.reason !== 'text-change') return [generation];
       const entries = generation.entries.filter(entry => {
         if (currentTexts.get(entry.id) !== entry.text) return true;
         this.count--; this.characters -= entry.text.length; changed = true; promoted = true; return false;
@@ -267,7 +276,7 @@ export class IndexStore {
         this.removeVertex(entry.id);
         this.recoveredIds.delete(entry.id);
       }
-      this.quarantine.push({ epoch: this.epoch++, reason: 'invalidated', entries: disputed,
+      this.quarantine.push({ epoch: this.epoch, reason: 'invalidated', entries: disputed,
         segments: disputed.map(entry => ({ ids: [entry.id], ordered: true })), ordered: disputed.length === 1 });
       changed = true;
     }
@@ -288,22 +297,11 @@ export class IndexStore {
       candidate.get(append.after)!.add(append.id);
       appendEdge = !orderedGraph(candidate).cycle;
     }
-    if (!reset && (snapshot.invalidated || textChanged || orderChanged)) {
-      this.isolate(snapshot.invalidated ? 'invalidated' : textChanged ? 'text-change' : 'order-conflict');
-      if (hadRecoveredCandidates && textChanged && !snapshot.invalidated) {
-        const generation = this.quarantine.at(-1);
-        if (generation) {
-          generation.entries = generation.entries.filter(entry => {
-            if (currentTexts.get(entry.id) !== entry.text) return true;
-            this.count--; this.characters -= entry.text.length; return false;
-          });
-          const ids = new Set(generation.entries.map(entry => entry.id));
-          generation.segments = generation.segments.map(segment => ({ ...segment, ids: segment.ids.filter(id => ids.has(id)) })).filter(segment => segment.ids.length);
-          if (!generation.entries.length) this.quarantine.pop();
-        }
-      }
+    if (!reset && snapshot.invalidated) {
+      this.isolate('invalidated');
       byId.clear(); reset = true; changed = true;
     }
+    const priorVersions: Entry[] = [];
     // Unstable IDs are useful for current mounts only; they never become historical identity.
     for (const [id, e] of byId) if (!e.stable) {
       byId.delete(id); this.count--; this.characters -= e.text.length; this.removeVertex(id); changed = true;
@@ -312,8 +310,13 @@ export class IndexStore {
       const existing = byId.get(item.id);
       if (existing) {
         if (existing.stable && !item.stable) continue;
-        const extra = item.text.length - existing.text.length;
+        const bodyChanged = existing.stable && item.stable && existing.text !== item.text;
+        const archive = bodyChanged && !this.quarantine.some(group => group.entries.some(old => old.id === item.id && old.text === existing.text));
+        const extra = item.text.length - existing.text.length + (archive ? existing.text.length : 0);
+        if (archive && this.count >= this.limits.entries) { changed = this.markLimit('entries') || changed; continue; }
         if (this.characters + extra > this.limits.characters) { changed = this.markLimit('characters') || changed; continue; }
+        if (archive) { this.count++; priorVersions.push(existing); }
+        if (bodyChanged) this.recoveredIds.delete(item.id);
         if (existing.text !== item.text || existing.stable !== item.stable || existing.slot !== item.slot) {
           byId.set(item.id, item); this.characters += extra; changed = true;
         }
@@ -326,7 +329,13 @@ export class IndexStore {
     }
     // DOM order is precedence evidence, even when a window skips unmounted messages.
     // Scroll direction, slot numbering and first-seen time are not ordering proof.
-    const observedIds = items.map(e => e.id).filter(id => byId.has(id));
+    if (priorVersions.length) this.quarantine.push({
+      epoch: this.epoch, reason: 'text-change', entries: priorVersions,
+      segments: priorVersions.map(entry => ({ ids: [entry.id], ordered: true })), ordered: priorVersions.length === 1,
+    });
+    // A virtualized window can present stale or pinned nodes in a different
+    // order. Reject that order evidence only; keep the already indexed turns.
+    const observedIds = orderChanged && !reset ? [] : items.map(e => e.id).filter(id => byId.has(id));
     for (let i = 1; i < observedIds.length; i++) {
       const edges = this.graph.get(observedIds[i - 1])!;
       if (!edges.has(observedIds[i])) { edges.add(observedIds[i]); changed = true; }
@@ -340,7 +349,7 @@ export class IndexStore {
     const previousCompleteness = this.completeness;
     this.completeness = this.entries.some(e => e.stable) || this.quarantine.length ? 'partial' : 'unknown';
     if (changed || previousCompleteness !== this.completeness) this.cacheRevision++;
-    return !!reset || disputed.length > 0;
+    return !!reset;
   }
   private markLimit(reason: 'entries' | 'characters'): boolean {
     if (this.limitReason !== null) return false;
@@ -405,6 +414,7 @@ export type NavState = 'idle' | 'loading' | 'located' | 'cancelled' | 'timed-out
 export interface Position { id: string; offset: number; role?: 'user' | 'assistant'; version?: string; anchorId?: string; }
 export interface NavigationAdapter {
   readonly collectionFinished?: boolean;
+  readonly collectionBlocked?: boolean;
   mounted(id: string): boolean;
   locate(id: string, signal: AbortSignal): boolean | Promise<boolean>;
   load(direction: 'older' | 'newer', signal: AbortSignal, timeout: number, targetId?: string | null): Promise<boolean>;
@@ -460,6 +470,7 @@ export class Navigator {
         // Check after locating the previous batch's result so the final stalled
         // or permitted load still gets one chance to verify its exact target.
         if (id === null && this.adapter.collectionFinished === true) return this.finish('idle', generation, 'boundary');
+        if (id === null && this.adapter.collectionBlocked === true) return this.finish('idle', generation, 'stalled');
         // An empty collection batch can be a slow mount, streamed answer or a
         // retryable middle stall. Only physical end proof finishes collection;
         // the total/batch bounds still stop unknown or broken renderers.

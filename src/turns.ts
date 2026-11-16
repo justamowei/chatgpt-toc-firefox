@@ -2,7 +2,7 @@
 const shellSelector = '[data-testid^="conversation-turn-"], [data-turn-id][data-turn]';
 const selector = '[data-message-author-role], [data-conversation-role], [data-user-message-bubble], [data-chatgpt-agent-turn-start], [data-testid^="conversation-turn-"][data-turn], [data-turn-id][data-turn]';
 const bubbleSelector = '[data-user-message-bubble]';
-const excluded = 'aside, nav, form, [role="textbox"], [contenteditable="true"], #chatgpt-toc-root';
+const excluded = 'aside, nav, form, [hidden], [inert], [aria-hidden="true"], [role="textbox"], [contenteditable="true"], #chatgpt-toc-root';
 const assistantContainer = '[data-message-author-role="assistant"], [data-conversation-role="assistant"], [data-turn="assistant"]';
 const userMarker = '[data-user-message-bubble], [data-message-author-role="user"], [data-conversation-role="user"], [data-turn="user"]';
 type Role = 'user' | 'assistant';
@@ -26,7 +26,10 @@ function textOf(node: HTMLElement, user = false): string {
 export function readTurns(roots?: ParentNode[]): Turn[] {
   const turns: Turn[] = [], seen = new Set<HTMLElement>();
   const mains = [...document.querySelectorAll('main')];
-  for (const root of roots ?? (mains.length ? mains : [document.body])) {
+  const liveMains = mains.filter(main => !main.closest('[hidden], [inert], [aria-hidden="true"]') &&
+    (main.getClientRects().length || getComputedStyle(main).display === 'contents') &&
+    getComputedStyle(main).visibility !== 'hidden');
+  for (const root of roots ?? (mains.length ? liveMains : [document.body])) {
     const candidates = [
       ...(root.nodeType === 1 && (root as HTMLElement).matches(selector) ? [root as HTMLElement] : []),
       ...root.querySelectorAll<HTMLElement>(selector),

@@ -12,6 +12,7 @@ if (window === window.top && !browser.extension.inIncognitoContext && supported(
 }
 function start(): Instance {
   let alive = true, expanded = false, query = '', railKey = '', navigationToken = 0, uiRevision = 0;
+  let targetWitness: { id: string; text: string } | null = null;
   let locatedPrompt: string | null = null, clearing = false;
   let currentPrompt: string | undefined, listGeneration = 0, listQuery = '';
   let renderedEntries: typeof store.entries = [], renderedQuarantine: typeof store.quarantine = [];
@@ -95,7 +96,7 @@ function start(): Instance {
     if (sender.id === browser.runtime.id && isDispose(message)) dispose();
   };
   browser.runtime.onMessage.addListener(runtimeListener);
-  function cancel(): void { navigationToken++; navigationPending = false; operation?.abort(); operation = null; navigator.cancel(); }
+  function cancel(): void { targetWitness = null; navigationToken++; navigationPending = false; operation?.abort(); operation = null; navigator.cancel(); }
   function setExpanded(value: boolean, focus = true, persist = true): void {
     if (!alive) return;
     expanded = value; panel.hidden = !expanded; toggle.setAttribute('aria-expanded', String(expanded));
@@ -206,9 +207,15 @@ function start(): Instance {
       reset = store.merge({ ...snapshot, entries }) || reset;
     }
     reset = store.merge(snapshot, direction ?? adapter.currentDirection() ?? 'observe') || reset;
+    const target = targetWitness;
+    if (target && (snapshot.disputedUserIds?.has(target.id) || store.mounted.has(target.id) &&
+      store.entries.find(entry => entry.id === target.id)?.text !== target.text)) {
+      cancel(); adapter.clearHighlight();
+      status.textContent = '這則提問的內容已變更，請重新點選。';
+    }
     adapter.remember();
     if (reset) { cancel(); locatedPrompt = null; adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
-      status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
+      status.textContent = store.quarantine.length ? '已重建當前對話目錄；未核對的舊版本仍可搜尋。' : '已切換對話，開始收集本頁提問。'; }
     if (restoredContext !== snapshot.context) {
       restoredContext = snapshot.context; const token = ++restoreToken, context = snapshot.context;
       pendingRestore = persistence.restore(context, () => adapter.read()).then(restored => {
@@ -270,11 +277,15 @@ function start(): Instance {
     returnPosition = position; returnEpoch = epoch; render();
     delete host.dataset.restored;
     adapter.begin(id === null);
+    targetWitness = entry ? { id: entry.id, text: entry.text } : null;
     const result = await navigator.run(id, id === null ? collectionMinutes * 60_000 : undefined, entry?.stable === false);
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
+    targetWitness = null;
     if (id !== null && result === 'located') locatedPrompt = id;
-    if (id === null && result === 'idle') status.textContent = adapter.collectionFinished
+    if (id === null && result === 'idle') status.textContent = adapter.collectionBlocked
+      ? '目前找不到可繼續捲動的對話區域；已收錄的目錄保留，尚未確認到頂。'
+      : adapter.collectionFinished
       ? `本次已向上收集，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；已確認穩定頂端捲動邊界。完整歷史尚未核對；可返回剛才位置。`
       : `本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集。`;
     updateCurrent();

@@ -63,9 +63,9 @@ try {
     await wait(async () => (await state()).scope.includes('目前掛載 5 則'));
     const id = evidence.expectedPrompts[0].id, text = evidence.expectedPrompts[0].text;
     await evaluate(`document.querySelector('[data-message-id="'+arguments[0]+'"]').textContent=arguments[1];`, id, text + ' 追加編輯版本');
-    await wait(async () => (await state()).archived.length === 13);
-    const s = await state(); assert.ok(s.archived.includes(text)); assert.ok(s.items.some(e => e.id === id && e.text.endsWith('追加編輯版本'))); assert.equal(s.back, false);
-    return { historicalVersions: 13, editedCurrent: true, oldTextSearchable: true, staleReturnDisabled: true };
+    await wait(async () => (await state()).archived.length === 1);
+    const s = await state(); assert.ok(s.archived.includes(text)); assert.ok(s.items.some(e => e.id === id && e.text.endsWith('追加編輯版本'))); assert.equal(s.items.length, 13);
+    return { historicalVersions: 1, editedCurrent: true, oldTextSearchable: true, unaffectedPromptsPreserved: true };
   });
   await test('CACHE-05: SPA URL transitions exclude old DOM and late removed old-route prompts', async () => {
     await evaluate(`history.pushState({},'', '/c/cache-other');`);

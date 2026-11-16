@@ -47,13 +47,13 @@ test('null branch F5 restores exact seek candidates and original order without g
   }
 });
 
-test('different conversation is rejected; different branch or changed body cannot restore historical navigation', () => {
+test('different conversation is rejected; different branch retires history; changed body retires only one version', () => {
   const saved = state([entry('a'), entry('b')]);
   const other = new IndexStore(); assert.equal(other.restoreState(saved, snapshot([entry('b')], 'branch-a', 'https://chatgpt.com/c/other')), false);
   const branch = new IndexStore(); branch.restoreState(saved, snapshot([entry('b', 'edited')], 'branch-b'));
   assert.deepEqual(ids(branch), ['b']); assert.equal(branch.entries[0].text, 'edited'); assert.equal(branch.quarantine[0].entries[1].text, 'b');
   const conflict = new IndexStore(); conflict.restoreState(saved, snapshot([entry('b', 'edited')]));
-  assert.deepEqual(ids(conflict), ['b']); assert.equal(conflict.searchObserved('a').length, 1);
+  assert.deepEqual(ids(conflict), ['a','b']); assert.equal(conflict.searchObserved('a').length, 1);
   const noOverlap = new IndexStore(); noOverlap.restoreState(saved, snapshot([entry('new')]));
   assert.deepEqual(ids(noOverlap), ['a', 'b', 'new']); assert.equal(noOverlap.quarantine.length, 0);
   assert.equal(noOverlap.canSeek('a'), true); assert.equal(noOverlap.seekDirection('a'), null); assert.equal(noOverlap.ordered, false);
@@ -69,12 +69,12 @@ test('later DOM observations promote identical restored witnesses, but retain co
   assert.equal(changed.quarantine[0].entries[0].text, 'old'); assert.equal(changed.retainedCount, 3);
 });
 
-test('restoring disconnected windows preserves uncertain order and conflicting mounted order is isolated', () => {
+test('restoring disconnected windows preserves uncertain order and ignores reversed mounted order', () => {
   const before = new IndexStore(); before.merge(snapshot([entry('a'), entry('b')])); before.merge(snapshot([entry('x'), entry('y')]));
   const after = new IndexStore(); after.restoreState(before.exportState(), snapshot([entry('b')]));
   assert.equal(after.ordered, false); assert.equal(after.segments.length, 2);
   const reversed = new IndexStore(); reversed.restoreState(state([entry('a'), entry('b')]), snapshot([entry('b'), entry('a')]));
-  assert.deepEqual(ids(reversed), ['b', 'a']); assert.equal(reversed.quarantine[0].reason, 'order-conflict');
+  assert.deepEqual(ids(reversed), ['a','b']); assert.equal(reversed.quarantine.length, 0);
 });
 
 test('v032 search-only prefix migrates before the live tail, with no invented bridge direction', () => {
@@ -110,13 +110,18 @@ test('legacy duplicate versions or body contradictions remain quarantined and ne
   assert.equal(order.quarantine[0].reason, 'order-conflict'); assert.equal(validStoredIndex(order.exportState()), true);
 });
 
-test('cached candidate body/order contradictions invalidate the navigation epoch, and known branch archives never migrate', () => {
+test('saved prompt body changes and reversed windows leave unrelated candidates available', () => {
   for (const changed of [[entry('b', 'edited')], [entry('b'), entry('a')]]) {
     const store = new IndexStore(); store.restoreState(state([entry('a'), entry('b')], null), snapshot([entry('b')], null));
-    const epoch = store.epoch; assert.equal(store.merge(snapshot(changed, null)), true); assert.ok(store.epoch > epoch);
-    assert.deepEqual(ids(store), changed.map(entry => entry.id)); assert.equal(store.recoveredIds.size, 0);
-    assert.equal(store.quarantine[0].reason, changed.length === 1 ? 'text-change' : 'order-conflict');
+    const epoch = store.epoch; assert.equal(store.merge(snapshot(changed, null)), false); assert.equal(store.epoch, epoch);
+    assert.deepEqual(ids(store), ['a','b']); assert.equal(store.canSeek('a'), true);
+    if (changed.length === 1) assert.deepEqual(store.quarantine[0].entries.map(entry => entry.id), ['b']);
+    else assert.equal(store.quarantine.length, 0);
   }
+  const onRestore = new IndexStore();
+  onRestore.restoreState(state([entry('a'), entry('b')], null), snapshot([entry('b', 'new body')], null));
+  assert.ok(onRestore.canSeek('a'));
+  assert.deepEqual(onRestore.quarantine.flatMap(group => group.entries).map(entry => entry.id), ['b']);
   const changed = new IndexStore(); changed.restoreState(state([entry('a'), entry('b')]), snapshot([entry('b')], 'branch-b'));
   assert.equal(changed.quarantine[0].reason, 'branch-change');
   const later = new IndexStore(); later.restoreState(changed.exportState(), snapshot([entry('b')], null));

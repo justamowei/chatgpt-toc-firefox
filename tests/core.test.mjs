@@ -44,18 +44,18 @@ test('CORE-02: only exact structural branch proof marks complete; new IDs revoke
   const empty = new IndexStore(); empty.merge(snap([]));
   assert.equal(empty.verifyComplete({ ...proof, orderedIds: [] }), false);
 });
-test('CORE-03: branch/URL/explicit edit/order changes invalidate navigation epoch', () => {
-  for (const changed of [snap([entry('a')], 'branch-B'), snap([entry('a')], 'branch-A', '/c/other'), { ...snap([entry('a', 'edited')]), invalidated: true }, snap([entry('b'), entry('a')])]) {
+test('CORE-03: branch, URL and explicit invalidation reset the navigation epoch', () => {
+  for (const changed of [snap([entry('a')], 'branch-B'), snap([entry('a')], 'branch-A', '/c/other'), { ...snap([entry('a', 'edited')]), invalidated: true }]) {
     const s = new IndexStore(); s.merge(snap([{ ...entry('a'), slot: 'turn-0' }, entry('b')]));
     const epoch = s.epoch; assert.equal(s.merge(changed), true); assert.ok(s.epoch > epoch);
     assert.deepEqual(ids(s), changed.entries.map(e => e.id));
   }
 });
-test('CORE-01: prefix appends are version contradictions and quarantine previous prompts', () => {
+test('CORE-01: body updates preserve other prompts and archive only the previous body', () => {
   const s = new IndexStore(); s.merge(snap([entry('a'), entry('b', 'partial')]));
-  assert.equal(s.merge(snap([entry('b', 'partial expanded')])), true);
-  assert.deepEqual(ids(s), ['b']); assert.equal(s.entries[0].text, 'partial expanded');
-  assert.deepEqual(s.quarantine[0].entries.map(e => e.text), ['a', 'partial']);
+  assert.equal(s.merge(snap([entry('b', 'partial expanded')])), false);
+  assert.deepEqual(ids(s), ['a','b']); assert.equal(s.entries[1].text, 'partial expanded');
+  assert.deepEqual(s.quarantine[0].entries.map(e => e.text), ['partial']);
   assert.equal(s.quarantine[0].reason, 'text-change');
 });
 test('CORE-03: unknown branches retain stable history; transient IDs remain mounted-only', () => {
@@ -82,25 +82,24 @@ test('SEEN-01: null-branch empty mounts, slot reuse and disconnected observation
   assert.equal(s.cacheRevision, currentRevision);
 });
 
-test('SEEN-02: connected precedence ambiguity stays unconfirmed, and transitive contradiction quarantines it', () => {
+test('SEEN-02: reverse transient order does not override the earlier verified sequence', () => {
   const s = new IndexStore(); s.merge(snap([entry('a'), entry('c')], null));
   s.merge(snap([entry('b'), entry('c')], null));
   assert.equal(s.segments.length, 1); assert.equal(s.segments[0].ordered, false); assert.equal(s.ordered, false);
   const epoch = s.epoch;
   s.merge(snap([entry('a'), entry('b'), entry('c')], null)); assert.equal(s.ordered, true); assert.equal(s.epoch, epoch);
-  assert.equal(s.merge(snap([entry('c'), entry('a')], null)), true);
-  assert.deepEqual(ids(s), ['c', 'a']); assert.deepEqual(s.quarantine[0].entries.map(e => e.id), ['a', 'b', 'c']);
-  assert.equal(s.quarantine[0].reason, 'order-conflict'); assert.ok(s.epoch > epoch);
+  assert.equal(s.merge(snap([entry('c'), entry('a')], null)), false);
+  assert.deepEqual(ids(s), ['a', 'b', 'c']); assert.equal(s.quarantine.length, 0); assert.equal(s.epoch, epoch);
 });
 
 test('SEEN-03: long-unmounted stable versions and explicit invalidation remain searchable in quarantine', () => {
   const s = new IndexStore(); s.merge(snap([entry('a', 'original'), entry('b')], null));
   s.merge(snap([entry('x'), entry('y')], null)); s.merge(snap([], null));
   const epoch = s.epoch, revision = s.cacheRevision;
-  assert.equal(s.merge(snap([entry('a', 'original appended')], null)), true);
-  assert.equal(s.quarantine[0].reason, 'text-change'); assert.equal(s.quarantine[0].entries.length, 4);
+  assert.equal(s.merge(snap([entry('a', 'original appended')], null)), false);
+  assert.equal(s.quarantine[0].reason, 'text-change'); assert.equal(s.quarantine[0].entries.length, 1);
   assert.equal(s.search('original').length, 1); assert.equal(s.searchObserved('original').length, 2);
-  assert.equal(s.epoch, epoch + 1); assert.ok(s.cacheRevision > revision);
+  assert.equal(s.epoch, epoch); assert.ok(s.cacheRevision > revision);
   assert.equal(s.merge({ ...snap([], null), invalidated: true }), true);
   assert.equal(s.entries.length, 0); assert.equal(s.quarantine.length, 2); assert.equal(s.searchObserved('').length, 5);
   assert.equal(s.completeness, 'partial');
@@ -118,13 +117,13 @@ test('SEEN-04: entry/character budgets include quarantined versions, stop collec
   assert.equal(s.retainedCount, 3); assert.deepEqual([...s.mounted], ['c', 'd']);
   const revision = s.cacheRevision;
   s.merge(snap([entry('d')], null)); assert.equal(s.searchObserved('').length, 3); assert.ok(s.cacheRevision > revision);
-  assert.equal(s.merge(snap([entry('a', 'edit')], null)), true);
-  assert.equal(s.entries.length, 0); assert.equal(s.searchObserved('').length, 3); assert.equal(s.retainedCount, 3);
+  assert.equal(s.merge(snap([entry('a', 'edit')], null)), false);
+  assert.equal(s.entries.length, 3); assert.equal(s.searchObserved('').length, 3); assert.equal(s.retainedCount, 3);
   const chars = new IndexStore({ entries: 10, characters: 8 });
   chars.merge(snap([entry('a', '1234')], null));
   chars.merge(snap([entry('a', '12345')], null));
   assert.equal(chars.limitReason, 'characters'); assert.equal(chars.retainedCharacters, 4);
-  assert.equal(chars.quarantine[0].entries[0].text, '1234');
+  assert.equal(chars.entries[0].text, '1234'); assert.equal(chars.quarantine.length, 0);
   chars.merge(snap([entry('tiny', 'x')], null)); assert.equal(chars.retainedCharacters, 4);
   chars.reset(); assert.equal(chars.limitReason, null); assert.equal(chars.retainedCount, 0); assert.equal(chars.retainedCharacters, 0);
   chars.merge(snap([entry('tiny', 'x')], null)); assert.equal(chars.retainedCharacters, 1);

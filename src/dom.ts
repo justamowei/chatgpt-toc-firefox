@@ -28,7 +28,7 @@ export class DomAdapter implements NavigationAdapter {
   private hintEpoch = -1;
   private geometry = new HeightLedger();
   private adjacent = new Map<string, string>();
-  private collection: { stage: 'head' | 'done'; boundary: CollectionBoundaryWitness; lastRenderActivity: number; anchor?: { root: HTMLElement; signature: string } } | null = null;
+  private collection: { stage: 'head' | 'done' | 'blocked'; boundary: CollectionBoundaryWitness; lastRenderActivity: number; anchor?: { root: HTMLElement; signature: string } } | null = null;
   private lastAttempt: Attempt | null = null;
   lastLoadReport: LoadReport = { phase: 'scan', added: 0, steps: 0 };
   constructor(private store: IndexStore, private refresh: (direction?: Direction) => void) {}
@@ -221,6 +221,7 @@ export class DomAdapter implements NavigationAdapter {
     this.collection = collect ? { stage: 'head', boundary: new CollectionBoundaryWitness(), lastRenderActivity: -Infinity } : null;
   }
   get collectionFinished(): boolean { return this.collection?.stage === 'done'; }
+  get collectionBlocked(): boolean { return this.collection?.stage === 'blocked'; }
   diagnostic(): object {
     const root = this.scroller(this.nodes.values().next().value);
     return { scroll: { tag: root.tagName, marked: root.hasAttribute('data-scroll-root'), overflow: getComputedStyle(root).overflowY,
@@ -506,7 +507,8 @@ export class DomAdapter implements NavigationAdapter {
           const boundary = direction === 'older' ? current[0] : current.at(-1);
           const viewport = this.viewport(currentRoot), rect = boundary?.node.getBoundingClientRect();
           const loading = this.boundaryLoading(currentRoot, viewport);
-          const physical = !!rect && (direction === 'older'
+          const noDocumentRange = currentRoot === document.scrollingElement && currentRoot.scrollHeight <= currentRoot.clientHeight + 2;
+          const physical = !noDocumentRange && !!rect && (direction === 'older'
             ? currentRoot.scrollTop <= 2 && rect.top >= viewport.top - 2 && rect.top < viewport.bottom
             : currentRoot.scrollTop + currentRoot.clientHeight >= currentRoot.scrollHeight - 2 && rect.bottom <= viewport.bottom + 2 && rect.bottom > viewport.top);
           const boundaryStatus = collection?.boundary.observe({ now, physical, loading,
@@ -532,6 +534,11 @@ export class DomAdapter implements NavigationAdapter {
               : currentRoot.scrollTop + Math.max(0, rect.bottom - viewport.bottom) + step;
             currentRoot.scrollTo({ top, behavior: 'instant' }); attempt.requested = top;
             collection?.boundary.recordProbe(now, physical && !loading && Math.abs(currentRoot.scrollTop - attempt.after) <= 2);
+          }
+          if (collection && this.collection === collection && noDocumentRange && !loading &&
+            !attempt.scrollEvents && currentSignature === beforeSignature && !added && elapsed >= 6400 &&
+            now - collection.lastRenderActivity >= 320) {
+            collection.stage = 'blocked'; finish(false); return;
           }
           if (collection && this.collection === collection && boundaryStatus?.confirmed) {
             collection.stage = 'done'; collection.boundary.reset();
