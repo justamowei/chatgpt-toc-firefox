@@ -1,6 +1,6 @@
 export type Completeness = 'unknown' | 'partial' | 'verified-complete';
 export interface Entry { id: string; text: string; stable: boolean; slot?: string; }
-export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
+export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; disputedUserIds?: ReadonlySet<string>; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
 export interface CompleteProof { source: 'conversation-structure'; branch: string; exhausted: boolean; orderedIds: string[]; }
 export interface Settings { auto: boolean; expanded: boolean; collectionMinutes: number; }
 export const DEFAULT_SETTINGS: Settings = { auto: true, expanded: false, collectionMinutes: 10 };
@@ -254,6 +254,19 @@ export class IndexStore {
     });
     if (promoted && this.limitReason && this.count < this.limits.entries && this.characters < this.limits.characters) this.limitReason = null;
     const byId = new Map(this.entries.map(e => [e.id, e]));
+    // One shared identity is not a new branch. Retire only that identity,
+    // preserving unrelated prompts and letting live bodies show separately.
+    const disputed = this.entries.filter(e => e.stable && snapshot.disputedUserIds?.has(e.id));
+    if (disputed.length) {
+      for (const entry of disputed) {
+        byId.delete(entry.id);
+        this.removeVertex(entry.id);
+        this.recoveredIds.delete(entry.id);
+      }
+      this.quarantine.push({ epoch: this.epoch++, reason: 'invalidated', entries: disputed,
+        segments: disputed.map(entry => ({ ids: [entry.id], ordered: true })), ordered: disputed.length === 1 });
+      changed = true;
+    }
     // Keep version witnesses for every retained stable ID, including long-unmounted prompts.
     const textChanged = [...ambiguous].some(id => byId.get(id)?.stable) || items.some(e => e.stable && byId.get(e.id)?.stable && byId.get(e.id)!.text !== e.text);
     const candidate = new Map([...this.graph].map(([id, edges]) => [id, new Set(edges)]));
@@ -309,7 +322,7 @@ export class IndexStore {
     const previousCompleteness = this.completeness;
     this.completeness = this.entries.some(e => e.stable) || this.quarantine.length ? 'partial' : 'unknown';
     if (changed || previousCompleteness !== this.completeness) this.cacheRevision++;
-    return !!reset;
+    return !!reset || disputed.length > 0;
   }
   private markLimit(reason: 'entries' | 'characters'): boolean {
     if (this.limitReason !== null) return false;

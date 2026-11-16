@@ -12,6 +12,9 @@ export class DomAdapter implements NavigationAdapter {
   private transient = new WeakMap<HTMLElement, string>();
   private serial = 0;
   private lastContext = '';
+  private disputedUserIds = new Set<string>();
+  private rawUserIds = new WeakMap<HTMLElement, string>();
+  private promptRecognition = { parsed: 0, disputed: 0, stable: 0, mountedOnly: 0 };
   private routeStale = new WeakMap<HTMLElement, string>();
   private highlightCleanup: (() => void) | null = null;
   private returnWitness: Position | null = null;
@@ -31,23 +34,38 @@ export class DomAdapter implements NavigationAdapter {
     // A fresh chat receives /c/id after its first prompt; those same nodes are
     // part of the new chat. Only a previous conversation can leave stale turns.
     if (this.lastContext && context !== this.lastContext && /\/c\/[^/]+/.test(new URL(this.lastContext).pathname))
-      for (const [id, node] of this.nodes) this.routeStale.set(node, id);
+      for (const [id, node] of this.nodes) this.routeStale.set(node, this.rawUserIds.get(node) ?? id);
+    if (context !== this.lastContext) this.disputedUserIds.clear();
     this.lastContext = context;
     const entries: Entry[] = [], nodes = new Map<string, HTMLElement>();
     const main = document.querySelector('main') ?? document.body;
-    for (const { node, role, stableId, slot, text } of readTurns()) {
+    const turns = readTurns().filter(turn => {
+      const stale = this.routeStale.get(turn.node);
+      return stale === undefined || stale !== (turn.stableId ?? this.transient.get(turn.node));
+    });
+    const usersByIdentity = new Map<string, string>();
+    for (const turn of turns) if (turn.role === 'user' && turn.stableId) {
+      const previous = usersByIdentity.get(turn.stableId);
+      if (previous !== undefined && previous !== turn.text) this.disputedUserIds.add(turn.stableId);
+      usersByIdentity.set(turn.stableId, turn.text);
+    }
+    const disputed = new Set<string>();
+    let parsed = 0;
+    for (const { node, role, stableId: rawId, slot, text } of turns) {
+      const conflict = role === 'user' && !!rawId && this.disputedUserIds.has(rawId);
+      if (role === 'user') {
+        parsed++;
+        if (rawId) this.rawUserIds.set(node, rawId);
+        else this.rawUserIds.delete(node);
+      }
+      if (conflict) disputed.add(rawId!);
+      const stableId = conflict ? null : rawId;
       let id = stableId;
       if (!id) { id = this.transient.get(node) ?? `transient-${++this.serial}`; this.transient.set(node, id); }
-      // SPA URL changes can precede replacing the old conversation DOM.
-      if (this.routeStale.get(node) === id) continue;
       this.routeStale.delete(node);
-      if (nodes.has(id)) {
-        // Expose contradictory copies to IndexStore instead of silently choosing
-        // one same-ID body during a renderer transition.
-        if (role === 'user' && entries.some(entry => entry.id === id && entry.text !== text))
-          entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}) });
-        continue;
-      }
+      // Keep identical renderer copies as one row. If an assistant briefly
+      // carries the same ID, prefer the user node for the prompt directory.
+      if (nodes.has(id) && (role !== 'user' || entries.some(entry => entry.id === id))) continue;
       nodes.set(id, node);
       if (role === 'user') {
         entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}) });
@@ -59,7 +77,9 @@ export class DomAdapter implements NavigationAdapter {
     this.nodes = nodes;
     // Only the compiled localhost fixture has a trusted synthetic branch identity.
     const branch = FIXTURE ? main.getAttribute('data-fixture-branch') : null;
-    return { entries, context, branch };
+    this.promptRecognition = { parsed, disputed: disputed.size,
+      stable: entries.filter(entry => entry.stable).length, mountedOnly: entries.filter(entry => !entry.stable).length };
+    return { entries, context, branch, disputedUserIds: new Set(this.disputedUserIds) };
   }
   readRemoved(records: MutationRecord[]): Entry[][] {
     const groups: Entry[][] = [];
@@ -69,7 +89,7 @@ export class DomAdapter implements NavigationAdapter {
       for (const root of record.removedNodes) {
         if (!(root instanceof HTMLElement) || root.matches('aside, nav, form, [role="textbox"], [contenteditable="true"]')) continue;
         const entries = readTurns([root]).filter(e => e.role === 'user' && e.stableId &&
-          this.routeStale.get(e.node) !== e.stableId &&
+          this.routeStale.get(e.node) !== e.stableId && !this.disputedUserIds.has(e.stableId) &&
           !this.store.entries.some(known => known.id === e.stableId) &&
           !this.store.quarantine.some(group => group.entries.some(known => known.id === e.stableId)))
           .map(e => ({ id: e.stableId!, text: e.text, stable: true, ...(e.slot ? { slot: e.slot } : {}) }));
@@ -143,7 +163,7 @@ export class DomAdapter implements NavigationAdapter {
     const root = this.scroller(this.nodes.values().next().value);
     return { scroll: { tag: root.tagName, marked: root.hasAttribute('data-scroll-root'), overflow: getComputedStyle(root).overflowY,
       client: root.clientHeight, width: root.clientWidth, height: root.scrollHeight, top: root.scrollTop, connected: root.isConnected },
-      geometry: this.geometry.diagnostic(), adjacentWitnesses: this.adjacent.size, collection: this.collection?.stage ?? null, lastAttempt: this.lastAttempt };
+      prompts: { ...this.promptRecognition }, geometry: this.geometry.diagnostic(), adjacentWitnesses: this.adjacent.size, collection: this.collection?.stage ?? null, lastAttempt: this.lastAttempt };
   }
   private top(node: HTMLElement): number {
     const scroller = this.scroller(node);
