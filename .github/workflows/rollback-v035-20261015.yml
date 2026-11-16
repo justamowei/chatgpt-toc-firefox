@@ -1,4 +1,4 @@
-name: Sync v0.3.7 group navigation candidate
+name: Sync flat prompt directory v0.3.7 r2
 on:
   push:
     branches: [chore/rollback-v035-20261015]
@@ -17,18 +17,15 @@ jobs:
           import os,json,pathlib,base64,hashlib,subprocess
           assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux'
           def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
-          head='3367d57fbaedcae31dbdee8b788b910dfb48dc83';old='d5f85b5bb946f31b610d87aaf0655f90df97704e';ref='refs/heads/fix/prompt-group-navigation'
-          raw=base64.b64decode(pathlib.Path('recovery/candidate-group-v037.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest()=='6fa7244d8c92e5e7625d17763701c82ea20b66ef43f20c7f7dcfdc7ecd73438a'
-          p=pathlib.Path('/tmp/candidate-group-v037.bundle');p.write_bytes(raw)
-          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/group037')
-          assert git('rev-parse','refs/remotes/bundle/group037')==head and git('rev-parse',head+'^')==old
+          head='75f2f682191a5fe5d0aa2308ca02fb701b7ad274';old='3367d57fbaedcae31dbdee8b788b910dfb48dc83';ref='refs/heads/fix/prompt-group-navigation'
+          raw=base64.b64decode(pathlib.Path('recovery/flat-toc-v037-r2.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='f5b5fda81198d03695052883d630ab47d27209a7c5709b2d471fa1dc40a01b6c'
+          p=pathlib.Path('/tmp/flat-toc-v037-r2.bundle');p.write_bytes(raw)
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/flat037')
+          assert git('rev-parse','refs/remotes/bundle/flat037')==head and git('rev-parse',head+'^')==old
           p=json.loads(git('show',head+':package.json'))
-          assert p['version']=='0.3.7'
-          before=git('ls-remote','origin',ref)
-          assert not before or before.split()[0]==head
-          assert git('ls-remote','origin','refs/heads/release/v0.3').split()[0]==old
-          assert git('ls-remote','origin','refs/tags/v0.3.6').split()[0]=='8d9e701080b45e67b1fe6c53394fb76d0c2b7e4d'
+          assert p['version']=='0.3.7' and p['tocRevision']=='2026-11-17-v037-r2'
+          assert git('ls-remote','origin',ref).split()[0] in (old,head)
           git('push','--atomic','origin',head+':'+ref)
           assert git('ls-remote','origin',ref).split()[0]==head
           PY
