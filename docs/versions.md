@@ -1,6 +1,6 @@
 # 版本目錄
 
-目前開發版本為 **v0.3.5**／revision 2026-10-10-v035，來源 release/v0.3 與 fix/rollback-v035-20261015。v0.4.0 和未建立 tag 的 v0.4.1 診斷候選已依使用者指示撤回；相關分支記錄回退，停止作現行 0.4 開發線。十個歷史 tags 原身份保持不變。詳見 [回退紀錄](rollback-v04-2026-10-15.md)。
+目前已選定交付 **v0.3.6 r4**，維護線 release/v0.3。使用者已核對整段收集與作者標籤；待修分群及導航留到下一版。v0.4.0／v0.4.1 仍撤回，既有 tag 不動。
 
 | tag | 交付快照 | runtime | 狀態 |
 | --- | --- | --- | --- |
@@ -14,6 +14,7 @@
 | v0.3.4 | [25b46d4](https://github.com/justamowei/chatgpt-toc-firefox/commit/25b46d412e6aa7af451eb7a507b47c291a9ade66) | a1ff15a | 實驗版／LIVE PENDING |
 | v0.3.5 | [58cdfd6](https://github.com/justamowei/chatgpt-toc-firefox/commit/58cdfd67e5631cbb464e2a2724ce2fc0c925359c) | f3cc436 | 實驗版／LIVE PENDING |
 | v0.4.0 | [7cfe8c3](https://github.com/justamowei/chatgpt-toc-firefox/commit/7cfe8c3fbec7b2b68eb6b9bb6c9bc8652fe32892) | c1e0186 | 已撤回（2026-10-15）；歷史驗收保留 |
+| v0.3.6 | f0c0870 | ed24a45 | r4；使用者確認收集與標籤修復 |
 
 v0.3.1 固定首次交付，r2–r5 歷史修訂保留來源，不移動原 tag。v0.2.0 實際使用失敗後撤回。詳細來源與驗收連結見 [機器可讀目錄](version-catalog.json)。目前完整來源已回到 release/v0.3；原 0.4 分支只記錄撤回，不再是有效候選。所有版本仍未完成正式簽章及整體 Firefox ChatGPT LIVE 驗收。
 

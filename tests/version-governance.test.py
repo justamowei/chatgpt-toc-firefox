@@ -38,7 +38,7 @@ class Governance(unittest.TestCase):
             self.assertTrue(candidate["branch"].startswith("fix/"))
             self.assertNotIn("v" + source_version, [v["tag"] for v in current_catalog["versions"]])
         self.assertEqual(source_version, json.loads(Path("package.json").read_text(encoding="utf-8"))["version"])
-        self.assertEqual([v["tag"] for v in current_catalog["versions"]], list(tags) + ["v0.3.4", "v0.3.5", "v0.4.0"])
+        self.assertEqual([v["tag"] for v in current_catalog["versions"]], list(tags) + ["v0.3.4", "v0.3.5", "v0.4.0", "v0.3.6"])
         for name, original in {"v0.3.4": "1cdc2d3e4aa1f7059115a20e6a1ecccafac29e6c", "v0.3.5": "3245ec5e68f5fb45bda22b96daa41ea466621e4b", "v0.4.0": "f64d4454b80935866081ab30210b1f7ebc951f6d"}.items():
             self.assertEqual(next(v["tagObject"] for v in current_catalog["versions"] if v["tag"] == name), original)
         self.assertEqual(current_catalog["maintenanceBranch"], "release/v0.3")
@@ -53,6 +53,8 @@ class Governance(unittest.TestCase):
         for tag in current_catalog["removal"]["removedTags"]:
             if tag == "v0.3.5" and current_catalog.get("versionCorrection", {}).get("reissuedVersion") == "0.3.5":
                 continue  # Explicit user renumbering; prior removed implementation is not restored.
+            if tag == "v0.3.6" and "0.3.6" in current_catalog.get("reissuedVersions", {}):
+                continue  # r4 selected by the user; the previous implementation stays withdrawn.
             self.assertNotEqual(local_git("show-ref", "--verify", "refs/tags/" + tag, check=False), 0)
 
     def test_entrypoint_refuses_local_execution_before_network_or_git(self):

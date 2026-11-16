@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "policy": "version-policy.md",
   "backfilledAt": "2026-10-07",
-  "currentVersion": "0.3.5",
+  "currentVersion": "0.3.6",
   "maintenanceBranch": "release/v0.3",
   "tagSemantics": "annotated immutable original delivery commit; historical annotation created now",
   "versions": [
@@ -151,6 +151,19 @@
       "revision": "2026-10-14-v040",
       "withdrawnAt": "2026-10-15",
       "withdrawalReason": "User requested rollback of all v0.4 development to v0.3.5"
+    },
+    {
+      "version": "0.3.6",
+      "tag": "v0.3.6",
+      "tagObject": "8d9e701080b45e67b1fe6c53394fb76d0c2b7e4d",
+      "deliveryCommit": "f0c0870c8ddf37ab30b5f214a417bf587fb73e5d",
+      "runtimeCommit": "ed24a453f06a99dc6c97a9a36a5961f80c3b2336",
+      "status": "selected-test-release",
+      "liveStatus": "PASS: user verified whole-chat collection and author-label fix only; grouping navigation deferred",
+      "acceptance": [
+        "docs/release-v0.3.6.md",
+        "docs/auto-index-new-prompts.md"
+      ]
     }
   ],
   "legacyRevisions": [
@@ -268,8 +281,8 @@
     "preserveHistoricalPass": true,
     "restoreTagToOlderRuntime": false
   },
-  "updatedAt": "2026-10-15",
-  "currentRevision": "2026-10-10-v035",
+  "updatedAt": "2026-11-17",
+  "currentRevision": "2026-11-17-v036-r4",
   "sameVersionRevisions": [],
   "removal": {
     "requestedAt": "2026-10-10",
@@ -329,12 +342,10 @@
     "report": "rollback-v04-2026-10-15.md",
     "firefoxRuntimeReplacement": "Not performed; manual reload of restored v0.3.5 manifest required"
   },
-  "workingCandidate": {
-    "version": "0.3.6",
-    "revision": "2026-11-17-v036-r4",
-    "branch": "fix/auto-index-new-prompts",
-    "status": "test-candidate",
-    "liveStatus": "PENDING",
-    "report": "auto-index-new-prompts.md"
+  "reissuedVersions": {
+    "0.3.6": {
+      "date": "2026-11-17",
+      "selection": "Current user-approved r4. Previously removed implementation remains withdrawn."
+    }
   }
 }
