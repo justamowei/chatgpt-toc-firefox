@@ -22,7 +22,8 @@ function start(): Instance {
   let collecting = false, collectionStart = 0, collectionMinutes = DEFAULT_SETTINGS.collectionMinutes;
   const events = new AbortController();
   const store = new IndexStore();
-  let restoredContext = '', restoreToken = 0;
+  let restoredContext = '', restoreToken = 0, navigationRequest = 0;
+  let pendingRestore: Promise<void> | null = null;
   const persistence = new PersistentIndex(runtimeIndexBackend(), store, {
     incognito: browser.extension.inIncognitoContext, onStatus: () => { if (alive) render(); },
   });
@@ -213,11 +214,12 @@ function start(): Instance {
       status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
     if (restoredContext !== snapshot.context) {
       restoredContext = snapshot.context; const token = ++restoreToken, context = snapshot.context;
-      void persistence.restore(context, () => adapter.read()).then(restored => {
+      pendingRestore = persistence.restore(context, () => adapter.read()).then(restored => {
         if (!alive || token !== restoreToken || store.context !== context) return;
         if (restored) { cancel(); adapter.remember(); render(); }
         persistence.schedule();
-      }).catch(() => { if (alive && token === restoreToken) persistence.schedule(); });
+      }).catch(() => { if (alive && token === restoreToken) persistence.schedule(); })
+        .finally(() => { if (token === restoreToken) pendingRestore = null; });
     } else persistence.schedule();
     if (collecting && store.limitReason && (navigationPending || navigator.state === 'loading')) {
       cancel(); status.textContent = '已達本機保留上限，收集已停止；已收錄資料仍可搜尋。';
@@ -243,6 +245,13 @@ function start(): Instance {
   async function navigate(id: string | null): Promise<void> {
     if (!alive) return;
     refresh();
+    const request = ++navigationRequest, context = store.context;
+    if (id === null && pendingRestore) {
+      // Restoring the stored index changes its epoch. Start collecting after
+      // that initial restore instead of letting it cancel a just-started walk.
+      await pendingRestore;
+      if (!alive || request !== navigationRequest || context !== location.origin + location.pathname) return;
+    }
     const entry = id === null ? undefined : store.entries.find(candidate => candidate.id === id);
     if (id !== null && (!entry ||
       (!adapter.canLocate(id) && (!entry.stable || !store.canSeek(id) || store.mounted.has(id))))) {

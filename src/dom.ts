@@ -124,24 +124,29 @@ export class DomAdapter implements NavigationAdapter {
   private scroller(node?: HTMLElement): HTMLElement {
     // A marker can be an outer shell rather than the moving viewport. Resolve
     // the nearest live, scrollable ancestor of actual turns before global roots.
-    // overflow:hidden permits programmatic scrolling on a marked viewport.
+    // A turn ancestor with overflow:hidden can also be a programmatic viewport.
     const candidates = new Set<HTMLElement>();
     const anchors = [node, ...this.nodes.values(), ...document.querySelectorAll<HTMLElement>('main')];
     for (const anchor of anchors) if (anchor?.isConnected) for (let current: HTMLElement | null = anchor; current; current = current.parentElement) candidates.add(current);
     for (const root of document.querySelectorAll<HTMLElement>('[data-scroll-root]'))
       if (root.querySelector('main') || root.closest('main')) candidates.add(root);
     let stationary: HTMLElement | null = null;
-    const scrollable: HTMLElement[] = [];
+    const scrollable: HTMLElement[] = [], hidden: HTMLElement[] = [];
     for (const current of candidates) {
       const rect = current.getBoundingClientRect(), overflow = getComputedStyle(current).overflowY;
       if (current.clientHeight <= 100 || rect.height <= 100 || rect.bottom <= 0 || rect.top >= innerHeight ||
-        !(/auto|scroll/.test(overflow) || (overflow === 'hidden' && current.hasAttribute('data-scroll-root')))) continue;
-      if (current.scrollHeight > current.clientHeight + 2) scrollable.push(current);
+        !(/auto|scroll/.test(overflow) || overflow === 'hidden')) continue;
+      if (current.scrollHeight > current.clientHeight + 2) {
+        if (overflow !== 'hidden' || current.hasAttribute('data-scroll-root')) scrollable.push(current);
+        else if (current !== document.body && current !== document.documentElement &&
+          !current.closest('aside, nav, form, [data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]') &&
+          [...this.nodes.values()].some(turn => turn !== current && current.contains(turn))) hidden.push(current);
+      }
       if (current.hasAttribute('data-scroll-root')) stationary ??= current;
     }
     return scrollable.find(root => root.hasAttribute('data-scroll-root')) ??
       scrollable.find(root => !root.closest('[data-testid^="conversation-turn-"], [data-turn-id][data-turn]')) ??
-      stationary ?? document.scrollingElement as HTMLElement ?? document.documentElement;
+      hidden[0] ?? stationary ?? document.scrollingElement as HTMLElement ?? document.documentElement;
   }
   // Height measurements remain diagnostic; anchor walking never navigates
   // using stale absolute positions in ChatGPT's changing virtual height model.

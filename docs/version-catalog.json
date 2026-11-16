@@ -331,7 +331,7 @@
   },
   "workingCandidate": {
     "version": "0.3.6",
-    "revision": "2026-11-17-v036-r3",
+    "revision": "2026-11-17-v036-r4",
     "branch": "fix/auto-index-new-prompts",
     "status": "test-candidate",
     "liveStatus": "PENDING",

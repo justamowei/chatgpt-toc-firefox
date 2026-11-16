@@ -1,6 +1,9 @@
 // Explicit role markers only: never infer a speaker from text or turn order.
 const shellSelector = '[data-testid^="conversation-turn-"], [data-turn-id][data-turn]';
 const selector = '[data-message-author-role], [data-conversation-role], [data-user-message-bubble], [data-chatgpt-agent-turn-start], [data-testid^="conversation-turn-"][data-turn], [data-turn-id][data-turn]';
+const bubbleSelector = '[data-user-message-bubble]';
+const excluded = 'aside, nav, form, [role="textbox"], [contenteditable="true"], #chatgpt-toc-root';
+const assistantContainer = '[data-message-author-role="assistant"], [data-conversation-role="assistant"], [data-turn="assistant"]';
 const userMarker = '[data-user-message-bubble], [data-message-author-role="user"], [data-conversation-role="user"], [data-turn="user"]';
 type Role = 'user' | 'assistant';
 export interface Turn { node: HTMLElement; role: Role; stableId: string | null; slot: string | null; text: string; }
@@ -23,47 +26,61 @@ function textOf(node: HTMLElement, user = false): string {
 export function readTurns(roots?: ParentNode[]): Turn[] {
   const turns: Turn[] = [], seen = new Set<HTMLElement>();
   const mains = [...document.querySelectorAll('main')];
-  for (const root of roots ?? (mains.length ? mains : [document.body])) for (const candidate of [
-    ...(root.nodeType === 1 && (root as HTMLElement).matches(selector) ? [root as HTMLElement] : []), ...root.querySelectorAll<HTMLElement>(selector),
-  ]) {
-    if (candidate.closest('aside, nav, form, [role="textbox"], [contenteditable="true"], #chatgpt-toc-root')) continue;
-    const shell = candidate.closest<HTMLElement>(shellSelector), group = candidate.closest<HTMLElement>('[data-turn-key]');
-    const explicit = candidate.getAttribute('data-message-author-role') ?? candidate.getAttribute('data-conversation-role') ?? candidate.getAttribute('data-turn');
-    const bubble = candidate.hasAttribute('data-user-message-bubble');
-    const sentinel = candidate.hasAttribute('data-chatgpt-agent-turn-start');
-    const role: Role | null = explicit === 'user' || explicit === 'assistant' ? explicit : bubble ? 'user' : sentinel ? 'assistant' : null;
-    // A sent prompt can appear as a bare bubble before ChatGPT attaches its turn shell
-    // or message ID. The bubble itself is an explicit user marker. Unidentified bubbles
-    // are mounted-only until the renderer supplies stable identity.
-    const liveUserBubble = role === 'user' && bubble && !!candidate.closest('main');
-    if (!role || ((bubble || sentinel || candidate.hasAttribute('data-conversation-role')) && !group && !shell &&
-      !liveUserBubble && !(candidate.hasAttribute('data-message-id') && explicit === role))) continue;
-    if (role === 'user' && candidate.parentElement?.closest('[data-message-author-role="assistant"], [data-conversation-role="assistant"], [data-turn="assistant"]')) continue;
-    let node = candidate;
-    if (candidate === shell) node = candidate.querySelector<HTMLElement>(role === 'user'
-      ? '[data-message-author-role="user"], [data-conversation-role="user"], [data-user-message-bubble]'
-      : '[data-message-author-role="assistant"], [data-conversation-role="assistant"]') ?? candidate;
-    if (role === 'user') node = node.querySelector<HTMLElement>('[data-user-message-bubble]') ?? node;
-    if (role === 'user' && node.parentElement?.closest('[data-message-author-role="assistant"], [data-conversation-role="assistant"], [data-turn="assistant"]')) continue;
-    if (sentinel) {
-      const content = candidate.closest<HTMLElement>('[data-conversation-role="assistant"], [data-message-author-role="assistant"]') ?? candidate.parentElement;
-      // Empty sentinels and a shared user/assistant group are not return anchors.
-      if (!content || content === group || !textOf(content) || content.matches(userMarker) || content.querySelector(userMarker)) continue;
-      node = content;
+  for (const root of roots ?? (mains.length ? mains : [document.body])) {
+    const candidates = [
+      ...(root.nodeType === 1 && (root as HTMLElement).matches(selector) ? [root as HTMLElement] : []),
+      ...root.querySelectorAll<HTMLElement>(selector),
+    ];
+    const owner = (node: HTMLElement) => node.closest(shellSelector) ?? node.closest('[data-turn-key]');
+    const explicitBubbleOwners = new Set<Element>();
+    for (const candidate of candidates) {
+      if (!candidate.matches(bubbleSelector) || candidate.closest(excluded) || candidate.closest(assistantContainer)) continue;
+      const scope = owner(candidate);
+      if (scope) explicitBubbleOwners.add(scope);
     }
-    if (seen.has(node)) continue;
-    const text = textOf(node, role === 'user');
-    if (role === 'assistant' && !text) continue;
-    // A stable empty user placeholder is hydration, not evidence of an attachment.
-    if (role === 'user' && !text && !node.querySelector('img, video, audio')) continue;
-    if (node === shell && !text && !node.querySelector('img, video, audio, [data-user-message-bubble]')) continue;
-    seen.add(node);
-    const message = node.closest('[data-message-id]'), messageId = identity(message, 'data-message-id');
-    const messageRole = message?.getAttribute('data-message-author-role') ?? message?.getAttribute('data-conversation-role') ?? message?.getAttribute('data-turn');
-    const ownedMessage = message === node || messageRole === role || (role === 'user' && !!message?.hasAttribute('data-user-message-bubble'));
-    const turnKey = identity(group, 'data-turn-key'), turnId = identity(shell, 'data-turn-id');
-    const stableId = messageId && ownedMessage ? messageId : turnKey ? `turn-key:${role}:${turnKey}` : turnId ? `turn:${role}:${turnId}` : messageId ? `message:${role}:${messageId}` : null;
-    turns.push({ node, role, stableId, slot: identity(shell, 'data-testid'), text: text || '〔附件或非文字提問〕' });
+    for (const candidate of candidates) {
+      if (candidate.closest(excluded)) continue;
+      const shell = candidate.closest<HTMLElement>(shellSelector), group = candidate.closest<HTMLElement>('[data-turn-key]');
+      const explicit = candidate.getAttribute('data-message-author-role') ?? candidate.getAttribute('data-conversation-role') ?? candidate.getAttribute('data-turn');
+      const bubble = candidate.hasAttribute('data-user-message-bubble');
+      const sentinel = candidate.hasAttribute('data-chatgpt-agent-turn-start');
+      const role: Role | null = explicit === 'user' || explicit === 'assistant' ? explicit : bubble ? 'user' : sentinel ? 'assistant' : null;
+      // A sent prompt can appear as a bare bubble before ChatGPT attaches its turn shell
+      // or message ID. The bubble itself is an explicit user marker. Unidentified bubbles
+      // are mounted-only until the renderer supplies stable identity.
+      const liveUserBubble = role === 'user' && bubble && !!candidate.closest('main');
+      if (!role || ((bubble || sentinel || candidate.hasAttribute('data-conversation-role')) && !group && !shell &&
+        !liveUserBubble && !(candidate.hasAttribute('data-message-id') && explicit === role))) continue;
+      if (role === 'user' && candidate.closest(assistantContainer)) continue;
+      // The role marker may be the sibling author label, not a second prompt.
+      // When the turn has a real user bubble, extract only from that element.
+      if (role === 'user' && !bubble && explicitBubbleOwners.has(owner(candidate)!)) continue;
+      let node = candidate;
+      if (candidate === shell) node = candidate.querySelector<HTMLElement>(role === 'user'
+        ? '[data-message-author-role="user"], [data-conversation-role="user"], [data-user-message-bubble]'
+        : '[data-message-author-role="assistant"], [data-conversation-role="assistant"]') ?? candidate;
+      if (role === 'user') node = node.querySelector<HTMLElement>('[data-user-message-bubble]') ?? node;
+      if (role === 'user' && node.parentElement?.closest('[data-message-author-role="assistant"], [data-conversation-role="assistant"], [data-turn="assistant"]')) continue;
+      if (sentinel) {
+        const content = candidate.closest<HTMLElement>('[data-conversation-role="assistant"], [data-message-author-role="assistant"]') ?? candidate.parentElement;
+        // Empty sentinels and a shared user/assistant group are not return anchors.
+        if (!content || content === group || !textOf(content) || content.matches(userMarker) || content.querySelector(userMarker)) continue;
+        node = content;
+      }
+      if (seen.has(node)) continue;
+      const text = textOf(node, role === 'user');
+      if (role === 'assistant' && !text) continue;
+      // A stable empty user placeholder is hydration, not evidence of an attachment.
+      if (role === 'user' && !text && !node.querySelector('img, video, audio')) continue;
+      if (node === shell && !text && !node.querySelector('img, video, audio, [data-user-message-bubble]')) continue;
+      seen.add(node);
+      const message = node.closest('[data-message-id]'), messageId = identity(message, 'data-message-id');
+      const messageRole = message?.getAttribute('data-message-author-role') ?? message?.getAttribute('data-conversation-role') ?? message?.getAttribute('data-turn');
+      const ownedMessage = message === node || messageRole === role || (role === 'user' && !!message?.hasAttribute('data-user-message-bubble'));
+      const turnKey = identity(group, 'data-turn-key'), turnId = identity(shell, 'data-turn-id');
+      const stableId = messageId && ownedMessage ? messageId : turnKey ? `turn-key:${role}:${turnKey}` : turnId ? `turn:${role}:${turnId}` : messageId ? `message:${role}:${messageId}` : null;
+      turns.push({ node, role, stableId, slot: identity(shell, 'data-testid'), text: text || '〔附件或非文字提問〕' });
+    }
   }
   return turns;
 }
