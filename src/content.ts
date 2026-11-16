@@ -3,7 +3,7 @@ import { DomAdapter } from './dom';
 import { supported, BUILD_REVISION } from './config';
 import { styles } from './styles';
 import { cancelsNavigation } from './interaction';
-import { PersistentIndex, runtimeIndexBackend } from './persistence';
+import { conversationContext, PersistentIndex, runtimeIndexBackend } from './persistence';
 type Instance = { show(): void; dispose(): void };
 const world = globalThis as typeof globalThis & { __chatgptToc?: Instance };
 if (window === window.top && !browser.extension.inIncognitoContext && supported(location.href)) {
@@ -12,6 +12,7 @@ if (window === window.top && !browser.extension.inIncognitoContext && supported(
 }
 function start(): Instance {
   let alive = true, expanded = false, query = '', railKey = '', navigationToken = 0, uiRevision = 0;
+  let locatedPrompt: string | null = null, clearing = false;
   let currentPrompt: string | undefined, listGeneration = 0, listQuery = '';
   let renderedEntries: typeof store.entries = [], renderedQuarantine: typeof store.quarantine = [];
   const listButtons = new Map<string, HTMLButtonElement>(), railButtons = new Map<string, HTMLButtonElement>();
@@ -57,6 +58,8 @@ function start(): Instance {
   const back = button('回到剛才位置', () => { void restore(); }); back.id = 'toc-back';
   const stop = button('停止', cancel); stop.id = 'toc-stop';
   const settings = button('設定', () => { void browser.runtime.sendMessage({ kind: 'options:open' }).catch(() => { if (alive) status.textContent = '無法開啟設定，請從 Firefox 附加元件頁開啟。'; }); });
+  const clearPage = button('清除本頁目錄', () => { void clearThisPage(); }); clearPage.id = 'toc-clear-page';
+  clearPage.title = '清除目前對話的本機目錄後，重新收錄畫面上已掛載的提問';
   const disable = button('停用此頁', dispose); disable.id = 'toc-disable';
   const diagnosis = make('pre', 'diagnosis'); diagnosis.id = 'toc-diagnosis'; diagnosis.hidden = true;
   diagnosis.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;user-select:text;max-height:150px;overflow:auto;margin:0 14px 12px';
@@ -69,7 +72,7 @@ function start(): Instance {
       limitReason: store.limitReason, quarantineReasons: [...new Set(store.quarantine.map(group => group.reason))],
       navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
-  footer.append(earlier, back, stop, settings, disable, diagnose);
+  footer.append(earlier, back, stop, clearPage, settings, disable, diagnose);
   const hint = make('div', 'hint', 'Shift＋O 開啟 · Esc 收合');
   panel.append(header, searchWrap, scope, list, status, footer, diagnosis, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
   const adapter = new DomAdapter(store, refresh);
@@ -102,12 +105,9 @@ function start(): Instance {
     if (persist) void browser.runtime.sendMessage({ kind: 'settings:set', expanded }).catch(() => {});
   }
   function updateCurrent(): void {
-    if (!alive) return;
-    let prompt: string | undefined, distance = Infinity;
-    for (const [id, node] of adapter.nodes) if (store.mounted.has(id) && node.isConnected) {
-      const next = Math.abs(node.getBoundingClientRect().top - 90);
-      if (next < distance) { distance = next; prompt = id; }
-    }
+    if (!alive || navigationPending) return;
+    const prompt = locatedPrompt && store.mounted.has(locatedPrompt) && adapter.mounted(locatedPrompt)
+      ? locatedPrompt : adapter.nearestVisiblePrompt();
     if (currentPrompt !== prompt) {
       for (const buttons of [listButtons, railButtons]) {
         if (currentPrompt) buttons.get(currentPrompt)?.setAttribute('aria-current', 'false');
@@ -123,6 +123,7 @@ function start(): Instance {
       (store.quarantine.length ? `另有 ${store.retainedCount - store.entries.length} 筆曾看過資料已隔離，僅供搜尋。` : '') +
       (store.limitReason ? `已達${store.limitReason === 'entries' ? '5000 筆記錄' : '500 萬字元'}保留上限，已停止新增；現有資料仍可搜尋。` : '') +
       ({ loading: ' 正在讀取本機目錄。', pending: ' 本機目錄儲存中。', saved: ' 已儲存於本機。', error: ' 本機儲存失敗，本頁資料仍保留。', off: '' }[persistence.status]);
+    clearPage.disabled = clearing || conversationContext(store.context) !== store.context;
     back.disabled = !returnPosition || returnEpoch !== store.epoch;
     currentLocatable = adapter.locatableIds();
     const selectable = (id: string, stable: boolean) =>
@@ -206,7 +207,7 @@ function start(): Instance {
     }
     reset = store.merge(snapshot, direction ?? adapter.currentDirection() ?? 'observe') || reset;
     adapter.remember();
-    if (reset) { cancel(); adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
+    if (reset) { cancel(); locatedPrompt = null; adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
       status.textContent = store.quarantine.length ? '觀察到正文或順序矛盾，舊資料已隔離供搜尋。' : '已切換對話，開始收集本頁提問。'; }
     if (restoredContext !== snapshot.context) {
       restoredContext = snapshot.context; const token = ++restoreToken, context = snapshot.context;
@@ -239,7 +240,7 @@ function start(): Instance {
     if (refreshTimer === undefined) refreshTimer = setTimeout(() => { refreshTimer = undefined; collect(); render(); }, 120);
   }
   async function navigate(id: string | null): Promise<void> {
-    if (!alive) return;
+    if (!alive || clearing) return;
     refresh();
     const request = ++navigationRequest, context = store.context;
     if (id === null && pendingRestore) {
@@ -253,7 +254,7 @@ function start(): Instance {
       (!adapter.canLocate(id) && (!entry.stable || !store.canSeek(id) || store.mounted.has(id))))) {
       status.textContent = '此目標的順序、正文或目前分支尚未核對；請先手動捲動至該則提問。'; return;
     }
-    cancel(); const token = ++navigationToken, epoch = store.epoch;
+    cancel(); locatedPrompt = null; const token = ++navigationToken, epoch = store.epoch;
     collecting = id === null; collectionStart = store.entries.length;
     operation = new AbortController(); navigationPending = true;
     if (collecting) {
@@ -272,21 +273,43 @@ function start(): Instance {
     const result = await navigator.run(id, id === null ? collectionMinutes * 60_000 : undefined, entry?.stable === false);
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
+    if (id !== null && result === 'located') locatedPrompt = id;
     if (id === null && result === 'idle') status.textContent = adapter.collectionFinished
       ? `本次已向上收集，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；已確認穩定頂端捲動邊界。完整歷史尚未核對；可返回剛才位置。`
       : `本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集。`;
     updateCurrent();
   }
+  async function clearThisPage(): Promise<void> {
+    const context = store.context, branch = store.branch;
+    if (!alive || clearing || conversationContext(context) !== context) return;
+    clearing = true; clearPage.disabled = true; navigationRequest++; restoreToken++; pendingRestore = null;
+    cancel(); adapter.clearHighlight(); adapter.clearReturnWitness(); returnPosition = null; returnEpoch = -1;
+    locatedPrompt = null;
+    status.textContent = '正在清除這個對話的本機目錄…';
+    try {
+      await persistence.clearPage(context);
+      if (!alive || store.context !== context || context !== location.origin + location.pathname) return;
+      query = ''; input.value = '';
+      store.reset(context, branch);
+      refresh();
+      status.textContent = '已清除本頁目錄，並重新收錄目前畫面上的提問。';
+    } catch {
+      if (alive && store.context === context) status.textContent = '清除未完成，請重試。';
+    } finally {
+      clearing = false;
+      if (alive) render();
+    }
+  }
   async function restore(): Promise<void> {
     const position = returnPosition, epoch = returnEpoch;
-    if (!alive || !position || epoch !== store.epoch) { status.textContent = '原閱讀位置已失效，無法恢復。'; return; }
+    if (!alive || clearing || !position || epoch !== store.epoch) { status.textContent = '原閱讀位置已失效，無法恢復。'; return; }
     if (!adapter.mounted(position.id) && !store.canSeek(position.anchorId ?? position.id)) {
       status.textContent = '原閱讀位置的順序尚未核對，請先手動捲動至原提問附近。'; return;
     }
     if (!adapter.mounted(position.id) && position.role === 'assistant' && !position.anchorId) {
       status.textContent = '原答案缺少可核對的提問錨點，請先手動捲動至原答案附近。'; return;
     }
-    cancel(); const token = ++navigationToken;
+    cancel(); locatedPrompt = null; const token = ++navigationToken;
     collecting = false;
     operation = new AbortController(); navigationPending = true;
     delete host.dataset.restored;
@@ -338,7 +361,9 @@ function start(): Instance {
   }, { capture: true, signal: events.signal });
   for (const type of ['wheel', 'touchstart', 'pointerdown', 'keydown', 'input']) document.addEventListener(type, event => {
     if (type === 'keydown' && !cancelsNavigation(event as KeyboardEvent)) return;
-    if ((navigationPending || navigator.state === 'loading') && event.isTrusted && !event.composedPath().includes(host)) cancel();
+    if (!event.isTrusted || event.composedPath().includes(host)) return;
+    locatedPrompt = null;
+    if (navigationPending || navigator.state === 'loading') cancel();
   }, { capture: true, passive: true, signal: events.signal });
   input.addEventListener('input', () => { query = input.value; render(); }, { signal: events.signal });
   document.addEventListener('keydown', event => {

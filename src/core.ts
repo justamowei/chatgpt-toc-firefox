@@ -509,12 +509,12 @@ async function boundedLoad(load: () => Promise<boolean>, controller: AbortContro
 }
 
 export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean } | { kind: 'collection:set'; minutes: number } | { kind: 'options:open' } |
-  { kind: 'cache:get'; context: string } | { kind: 'cache:set'; state: StoredIndex } | { kind: 'cache:clear' };
+  { kind: 'cache:get' | 'cache:clear-page'; context: string } | { kind: 'cache:set'; state: StoredIndex } | { kind: 'cache:clear' };
 export function validMessage(value: unknown): value is RuntimeMessage {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const v = value as Record<string, unknown>, keys = Object.keys(v);
   if (v.kind === 'settings:get' || v.kind === 'options:open' || v.kind === 'cache:clear') return keys.length === 1;
-  if (v.kind === 'cache:get') return keys.length === 2 && typeof v.context === 'string' && v.context.length <= 2048;
+  if (v.kind === 'cache:get' || v.kind === 'cache:clear-page') return keys.length === 2 && typeof v.context === 'string' && v.context.length <= 2048;
   if (v.kind === 'cache:set') return keys.length === 2 && validStoredIndex(v.state);
   if (v.kind === 'settings:set') return keys.length === 2 && typeof v.expanded === 'boolean';
   if (v.kind === 'auto:set') return keys.length === 2 && typeof v.enabled === 'boolean';

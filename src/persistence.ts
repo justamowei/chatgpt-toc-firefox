@@ -2,7 +2,7 @@ import { CACHE_LIMITS, IndexStore, validStoredIndex, type Snapshot, type StoredG
 
 export const CACHE_KEY = 'toc-index-v1';
 export const PROFILE_LIMITS = { conversations: 12, characters: 6_000_000 };
-export interface IndexBackend { load(context: string): Promise<unknown>; save(state: StoredIndex): Promise<void>; }
+export interface IndexBackend { load(context: string): Promise<unknown>; save(state: StoredIndex): Promise<void>; clearPage?(context: string): Promise<void>; }
 export type PersistenceStatus = 'loading' | 'pending' | 'saved' | 'error' | 'off';
 interface LocalStorage {
   get(key: string): Promise<Record<string, unknown>>;
@@ -147,6 +147,14 @@ export class CacheBroker implements IndexBackend {
       await this.storage.set({ [CACHE_KEY]: bounded });
     });
   }
+  clearPage(context: string): Promise<void> {
+    if (conversationContext(context) !== context) return Promise.reject(new Error('Invalid conversation cache'));
+    return this.serial(async () => {
+      const profile = await this.profile();
+      const records = profile.records.filter(record => record.state.context !== context);
+      if (records.length !== profile.records.length) await this.storage.set({ [CACHE_KEY]: { version: 1, records } });
+    });
+  }
   clear(): Promise<void> { return this.serial(() => this.storage.remove(CACHE_KEY)); }
 }
 
@@ -154,6 +162,8 @@ export function runtimeIndexBackend(send: (message: unknown) => Promise<unknown>
   return { load: context => send({ kind: 'cache:get', context }), save: async state => {
     const result = await send({ kind: 'cache:set', state });
     if (result !== true) throw new Error('Cache write rejected');
+  }, clearPage: async context => {
+    if (await send({ kind: 'cache:clear-page', context }) !== true) throw new Error('Cache clear rejected');
   } };
 }
 
@@ -169,6 +179,7 @@ export class PersistentIndex {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private queue: Promise<void> = Promise.resolve();
   private closed = false;
+  private clearingContext: string | null = null;
   private currentStatus: PersistenceStatus = 'off';
   get status(): PersistenceStatus { return this.currentStatus; }
   private setStatus(status: PersistenceStatus): void {
@@ -207,6 +218,7 @@ export class PersistentIndex {
     }
   }
   schedule(context = this.store.context): void {
+    if (this.clearingContext === context) return;
     if (this.closed || this.options.incognito || conversationContext(context) !== context || this.store.context !== context) { this.setStatus('off'); return; }
     // Flush the old route before its store is reset; callers should invoke
     // flush before route reset. Scheduling never captures unrelated routes.
@@ -221,6 +233,7 @@ export class PersistentIndex {
     this.timer = setTimeout(() => { this.timer = undefined; void this.flush().catch(() => {}); }, this.options.debounceMs ?? 400);
   }
   flush(): Promise<void> {
+    if (this.clearingContext === this.store.context) return this.queue;
     clearTimeout(this.timer); this.timer = undefined; this.writeGeneration++;
     if (this.closed || this.options.incognito || conversationContext(this.store.context) !== this.store.context) { this.setStatus('off'); return this.queue; }
     const state = this.store.exportState(), key = fingerprint(state);
@@ -239,6 +252,21 @@ export class PersistentIndex {
       if (!this.closed && generation === this.generation && state.context === this.store.context) this.setStatus('error');
     });
     return task;
+  }
+  async clearPage(context: string): Promise<void> {
+    if (this.closed || this.clearingContext !== null || this.store.context !== context ||
+      conversationContext(context) !== context || !this.backend.clearPage) throw new Error('Cannot clear this page');
+    this.clearingContext = context;
+    this.generation++; this.writeGeneration++;
+    this.loading = false; this.pendingSchedule = false; this.scheduledRevision = -1;
+    clearTimeout(this.timer); this.timer = undefined;
+    try {
+      // Older writes in this tab must finish before the serialized deletion;
+      // no new writes may start for this context until deletion completes.
+      await this.queue;
+      await this.backend.clearPage(context);
+      if (this.context === context) { this.lastState = ''; this.savedState = ''; }
+    } finally { this.clearingContext = null; }
   }
   dispose(): void { clearTimeout(this.timer); this.closed = true; this.generation++; this.setStatus('off'); }
 }

@@ -153,6 +153,17 @@ export class DomAdapter implements NavigationAdapter {
     }
     return ids;
   }
+  nearestVisiblePrompt(): string | undefined {
+    const root = this.scroller(this.nodes.values().next().value), viewport = this.viewport(root);
+    let choice: string | undefined, distance = Infinity;
+    for (const [id, node] of this.nodes) if (this.store.mounted.has(id) && node.isConnected && root.contains(node)) {
+      const rect = node.getBoundingClientRect();
+      if (rect.height <= 0 || rect.bottom <= viewport.top || rect.top >= viewport.bottom) continue;
+      const next = Math.abs(rect.top - viewport.top);
+      if (next < distance) { distance = next; choice = id; }
+    }
+    return choice;
+  }
   private scroller(node?: HTMLElement): HTMLElement {
     // A marker can be an outer shell rather than the moving viewport. Resolve
     // the nearest live, scrollable ancestor of actual turns before global roots.
@@ -269,7 +280,7 @@ export class DomAdapter implements NavigationAdapter {
     const place = (current: HTMLElement): void => {
       // Let the browser resolve all scrolling ancestors and lazy turn shells,
       // just as selecting an already mounted message does.
-      const anchor = expected?.stable === false ? current : this.shell(current);
+      const anchor = turn.role === 'user' ? current : this.shell(current);
       anchor.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
       lastWrite = performance.now(); scrollWrites++;
     };

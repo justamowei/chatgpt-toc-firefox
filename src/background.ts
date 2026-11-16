@@ -71,13 +71,15 @@ browser.runtime.onMessage.addListener((message: unknown, sender) => {
   const page = contentSender(sender), options = optionsSender(sender);
   if (!page && !options) return undefined;
   if (message.kind === 'settings:get') return settings();
-  if (message.kind === 'cache:get' && page && sender.tab!.id !== undefined) {
+  if ((message.kind === 'cache:get' || message.kind === 'cache:clear-page') && page && sender.tab!.id !== undefined) {
     return (async () => {
       // Firefox can retain the original document URL in MessageSender after
       // an SPA route change. Check the live top-level tab before reading.
       let tab: browser.tabs.Tab;
       try { tab = await browser.tabs.get(sender.tab!.id!); } catch { return undefined; }
-      if (tab.incognito || !supported(tab.url) || conversationContext(tab.url!) !== message.context) return undefined;
+      if (tab.incognito || !supported(tab.url) || conversationContext(tab.url!) !== message.context ||
+        new URL(sender.url!).origin !== new URL(message.context).origin) return undefined;
+      if (message.kind === 'cache:clear-page') { await cache.clearPage(message.context); return true; }
       return cache.load(message.context);
     })();
   }
