@@ -1,4 +1,4 @@
-name: Sync 20-minute collection limit v0.3.8
+name: Sync speaker-label and cache fixes v0.3.8 r2
 on:
   push:
     branches: [chore/rollback-v035-20261015]
@@ -17,14 +17,14 @@ jobs:
           import os,json,pathlib,base64,hashlib,subprocess
           assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux'
           def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
-          head='e752b06cadaa270d41cb57a6a5838c58afe4ae57';old='caad4735ef7b1f270f897bd019840110b0e872b5';ref='refs/heads/fix/prompt-group-navigation'
-          raw=base64.b64decode(pathlib.Path('recovery/collection-limit-v038.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest()=='f0830461c587c664bde5f25ddb8bb33f9aca15ecd495879908a458a3aa1219e9'
-          p=pathlib.Path('/tmp/collection-limit-v038.bundle');p.write_bytes(raw)
-          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/v038')
-          assert git('rev-parse','refs/remotes/bundle/v038')==head and git('rev-parse',head+'^')==old
+          head='ad98b849fd72b2e4127b8d17a0541dea32a70133';old='e752b06cadaa270d41cb57a6a5838c58afe4ae57';ref='refs/heads/fix/prompt-group-navigation'
+          raw=base64.b64decode(pathlib.Path('recovery/speaker-label-v038-r2.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='4da51542534154fbe3787b69fd97e56e39bb7aa87ac6d6b10d2a6aa5ba2c0bb9'
+          p=pathlib.Path('/tmp/speaker-label-v038-r2.bundle');p.write_bytes(raw)
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/v038-r2')
+          assert git('rev-parse','refs/remotes/bundle/v038-r2')==head and git('rev-parse',head+'^')==old
           p=json.loads(git('show',head+':package.json'))
-          assert p['version']=='0.3.8' and p['tocRevision']=='2026-11-18-v038'
+          assert p['version']=='0.3.8' and p['tocRevision']=='2026-11-18-v038-r2'
           assert git('ls-remote','origin',ref).split()[0] in (old,head)
           git('push','--atomic','origin',head+':'+ref)
           assert git('ls-remote','origin',ref).split()[0]==head
