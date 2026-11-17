@@ -5,14 +5,20 @@ export interface CompleteProof { source: 'conversation-structure'; branch: strin
 export interface Settings { auto: boolean; expanded: boolean; collectionMinutes: number; collectionWaitMinutes: number; }
 export const DEFAULT_SETTINGS: Settings = { auto: true, expanded: false, collectionMinutes: 10, collectionWaitMinutes: 1 };
 
+const MAX_COLLECTION_MINUTES = 20;
+
 export function validCollectionMinutes(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 10;
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= MAX_COLLECTION_MINUTES;
+}
+
+export function validCollectionWaitMinutes(value: unknown): boolean {
+  return validCollectionMinutes(value) && value <= 10;
 }
 
 export function validSettings(value: unknown): value is Settings {
   return exactKeys(value, ['auto', 'expanded', 'collectionMinutes', 'collectionWaitMinutes']) &&
     typeof value.auto === 'boolean' && typeof value.expanded === 'boolean' &&
-    validCollectionMinutes(value.collectionMinutes) && validCollectionMinutes(value.collectionWaitMinutes);
+    validCollectionMinutes(value.collectionMinutes) && validCollectionWaitMinutes(value.collectionWaitMinutes);
 }
 export function normalizeSettings(value: unknown): Settings {
   if (validSettings(value)) return { ...value };
@@ -469,7 +475,7 @@ export class Navigator {
     const live = () => generation === this.generation && !controller.signal.aborted;
     const started = performance.now();
     const override = typeof collectionTotalMs === 'number' && Number.isFinite(collectionTotalMs) && collectionTotalMs > 0
-      ? Math.min(600_000, collectionTotalMs) : undefined;
+      ? Math.min(MAX_COLLECTION_MINUTES * 60_000, collectionTotalMs) : undefined;
     const totalMs = id === null ? override ?? this.limits.collectionTotalMs ?? this.limits.totalMs : this.limits.totalMs;
     this.lastStopReason = 'none'; this.setState('loading');
     let totalExpired = false;
@@ -558,6 +564,6 @@ export function validMessage(value: unknown): value is RuntimeMessage {
   if (v.kind === 'settings:set') return keys.length === 2 && typeof v.expanded === 'boolean';
   if (v.kind === 'auto:set') return keys.length === 2 && typeof v.enabled === 'boolean';
   if (v.kind === 'collection:set') return validCollectionMinutes(v.minutes) &&
-    (Object.hasOwn(v, 'waitMinutes') ? exactKeys(v, ['kind', 'minutes', 'waitMinutes']) && validCollectionMinutes(v.waitMinutes) : exactKeys(v, ['kind', 'minutes']));
+    (Object.hasOwn(v, 'waitMinutes') ? exactKeys(v, ['kind', 'minutes', 'waitMinutes']) && validCollectionWaitMinutes(v.waitMinutes) : exactKeys(v, ['kind', 'minutes']));
   return false;
 }

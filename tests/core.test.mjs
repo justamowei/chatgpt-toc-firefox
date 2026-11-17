@@ -346,6 +346,22 @@ test('collection deadline override bounds a run without changing target navigati
  for(const target of [null,'target']){const begin=performance.now();assert.equal(await nav.run(target,35),'timed-out');assert.equal(nav.lastStopReason,'time-limit');assert.equal(signal.aborted,true);assert.ok(performance.now()-begin<140);}
 });
 
+test('a 20-minute collection override survives the prior 10-minute cutoff', async ({ mock }) => {
+  mock.timers.enable({ apis: ['setTimeout'] });
+  let signal;
+  const adapter = { mounted: () => false, locate: () => false, direction: () => 'older',
+    load: (_direction, activeSignal) => { signal = activeSignal; return new Promise(() => {}); } };
+  const nav = new Navigator(adapter, () => {}, { ...NAV_LIMITS, batchMs: 1_200_000 });
+  const collection = nav.run(null, 1_200_000);
+  await Promise.resolve();
+  mock.timers.tick(600_000);
+  assert.equal(signal.aborted, false);
+  assert.equal(nav.state, 'loading');
+  mock.timers.tick(600_000);
+  assert.equal(await collection, 'timed-out');
+  assert.equal(nav.lastStopReason, 'time-limit');
+});
+
 test('unconfirmed seeking can reverse once after stalls, with the same deadline and no infinite retry',async()=>{
  for(const found of [true,false]){let reversed=false,loads=[],mounted=false;const nav=new Navigator({mounted:()=>mounted,locate:()=>mounted,direction:()=>reversed?'newer':'older',reverseUnconfirmed:()=>{if(reversed)return false;reversed=true;return true;},load:async d=>{loads.push(d);if(reversed&&found)mounted=true;return false;}},()=>{},{totalMs:200,batches:12,batchMs:100,noProgress:3});assert.equal(await nav.run('target'),found?'located':'not-found');assert.deepEqual(loads,found?['older','older','older','newer']:['older','older','older','newer','newer','newer']);}
 });

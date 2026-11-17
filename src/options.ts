@@ -1,11 +1,11 @@
-import { validCollectionMinutes, validSettings } from './core';
+import { validCollectionMinutes, validCollectionWaitMinutes, validSettings } from './core';
 import { HOSTS } from './config';
 const enable = document.querySelector<HTMLButtonElement>('#enable')!;
 const disable = document.querySelector<HTMLButtonElement>('#disable')!;
 const clear = document.querySelector<HTMLButtonElement>('#clear')!;
 const status = document.querySelector<HTMLElement>('#status')!;
 const collectionForm = document.querySelector<HTMLFormElement>('#collection-form')!;
-const collectionMinutes = document.querySelector<HTMLSelectElement>('#collection-minutes')!;
+const collectionMinutes = document.querySelector<HTMLInputElement>('#collection-minutes')!;
 const collectionWaitMinutes = document.querySelector<HTMLInputElement>('#collection-wait-minutes')!;
 const collectionSave = document.querySelector<HTMLButtonElement>('#collection-save')!;
 const collectionStatus = document.querySelector<HTMLElement>('#collection-status')!;
@@ -21,9 +21,9 @@ async function refresh(): Promise<void> {
 
 collectionForm.addEventListener('submit', event => {
   event.preventDefault();
-  const minutes = Number(collectionMinutes.value);
+  const minutes = collectionMinutes.valueAsNumber;
   const waitMinutes = collectionWaitMinutes.valueAsNumber;
-  if (!validCollectionMinutes(minutes) || !validCollectionMinutes(waitMinutes)) { collectionStatus.textContent = '請選擇 1 至 10 分鐘的整數。'; return; }
+  if (!validCollectionMinutes(minutes) || !validCollectionWaitMinutes(waitMinutes)) { collectionStatus.textContent = '總收集時間請輸入 1 至 20，停止等待時間請輸入 1 至 10 分鐘。'; return; }
   collectionSave.disabled = true;
   void browser.runtime.sendMessage({ kind: 'collection:set', minutes, waitMinutes }).then((result: unknown) => {
     if (!validSettings(result) || result.collectionMinutes !== minutes || result.collectionWaitMinutes !== waitMinutes) { collectionStatus.textContent = '收集時間未儲存，請重新嘗試。'; return; }

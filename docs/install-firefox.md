@@ -10,6 +10,16 @@
 
 [Mozilla 送簽流程](https://extensionworkshop.com/documentation/publish/submitting-an-add-on/#self-distribution) · [自行散布與安裝](https://extensionworkshop.com/documentation/publish/self-distribution/)
 
+## 已簽章版本如何更新
+
+每次送簽都在 AMO Developer Hub 打開原本的附加元件，選擇上傳新版本。新套件必須保留原附加元件 ID，並使用比上次上傳更高的 manifest.version。像 r9 這樣的 build revision 只供識別，不是 Firefox 比較的版本號。若上一版已是 0.3.7，本次用 0.3.8。
+
+- 自行散布且沒有 update_url 時，下載新版本的簽章 XPI，在 about:addons 透過「從檔案安裝附加元件」覆蓋舊版。直接更新同一個安裝，可沿用原設定與本機目錄。
+- 已公開上架 AMO 時，在原項目發布新版，Firefox 依附加元件的自動更新設定安裝新版本。
+- 自行散布若需自動更新，須在已安裝版本中設定 HTTPS update_url，並在該網址提供更新清單與可下載的已簽章 XPI。
+
+[Mozilla 送簽與升版](https://extensionworkshop.com/documentation/publish/submitting-an-add-on/) · [自行散布的更新方式](https://extensionworkshop.com/documentation/publish/self-distribution/)
+
 ## 歷史測試版安裝說明
 
 # Firefox 目前安裝：v0.3.6 r4
