@@ -1,6 +1,5 @@
 import { DEFAULT_SETTINGS, IndexStore, Navigator, normalize, validSettings, type NavState, type Position } from './core';
 import { DomAdapter } from './dom';
-import { HEAD_QUIET_MS } from './collection-policy';
 import { supported, BUILD_REVISION } from './config';
 import { styles } from './styles';
 import { cancelsNavigation } from './interaction';
@@ -239,7 +238,7 @@ function start(): Instance {
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
       ? adapter.headQuietMs > 0
-        ? `已到目前載入範圍頂端，等待較早提問（${Math.floor(adapter.headQuietMs / 1000)}／${HEAD_QUIET_MS / 1000} 秒）…`
+        ? `已到目前載入範圍頂端，等待較早提問。新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可隨時停止。`
         : `正在向上收集 · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可按停止。`
       : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
       : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
@@ -293,11 +292,6 @@ function start(): Instance {
     navigationPending = false;
     targetWitness = null;
     if (id !== null && result === 'located') locatedPrompt = id;
-    if (id === null && result === 'idle') status.textContent = adapter.collectionBlocked
-      ? '目前找不到可繼續捲動的對話區域；已收錄的目錄保留，尚未確認到頂。'
-      : adapter.collectionFinished
-      ? `本次已向上收集，新增 ${Math.max(0, store.entries.length - collectionStart)} 則；目前載入範圍的頂端暫無較早提問；尚未確認整段歷史已收齊。可繼續收集或返回剛才位置。`
-      : `本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。完整歷史尚未核對；可繼續收集。`;
     updateCurrent();
   }
   async function copyThisDirectory(): Promise<void> {

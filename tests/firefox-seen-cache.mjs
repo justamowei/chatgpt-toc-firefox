@@ -93,13 +93,13 @@ try {
     await evaluate(`history.pushState({},'', '/c/virtual-collection');window.fixture.mode('virtual');`);
     await wait(async () => (await state()).items.length === 10 && (await state()).items[0].id === 'branch-A:u-10');
     await click('#toc-earlier');
-    await driver.wait(async () => (await state()).nav === 'idle', 65000);
+    await driver.wait(async () => { const s = await state(); return s.nav === 'loading' && s.items.length === 20; }, 65000);
     assert.equal((await state()).items.length, 20);
     assert.match((await state()).scope, /目前掛載 10 則/);
     // This older fixture replaces two disjoint ten-turn windows. Collection
     // preserves both, but scroll direction alone is not an ordering witness.
     assert.match((await state()).scope, /順序待核對/);
-    // Head + forward sweep now ends near the original mounted reading anchor.
+    await click('#toc-stop');
     // Move to the other real fixture window before checking offscreen refusal.
     await evaluate(`document.querySelector('main').scrollTop=0`);
     await wait(async () => await evaluate(`return !!document.querySelector('[data-message-id="branch-A:u-0"]') && !document.querySelector('[data-message-id="branch-A:u-10"]')`));

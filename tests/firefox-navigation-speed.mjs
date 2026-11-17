@@ -33,15 +33,14 @@ try {
     const initial = (await state()).ids.length;
     await evaluate(`window.speedFixture.resetCommands()`);
     const started = performance.now(); await click('#toc-earlier');
-    // Collection now proves each physical endpoint for six seconds. Keep a
-    // bounded regression budget while preserving exact coverage and giant-answer skipping.
-    await wait(async () => { const s=await state(); return s.nav === 'idle' && s.ids.length === 40 && !s.scope.includes('順序待核對'); }, 90000);
+    // Exact fixture coverage is observable while collection is still waiting at the loaded edge.
+    await wait(async () => { const s=await state(); return s.nav === 'loading' && s.ids.length === 40 && !s.scope.includes('順序待核對'); }, 90000);
     const elapsed = performance.now() - started;
     const s = await state(); assert.deepEqual(s.ids, Array.from({length:40},(_,i)=>'speed:u-'+i));
     assert.ok(!s.scope.includes('順序待核對'));
     const commands = await evaluate(`return window.speedFixture.commands`);
-    assert.ok(commands.some(c => c.to - c.from > 50000), 'The forward sweep skips a mounted long answer interior after the head jump');
-    assert.ok(elapsed < 90000); await session.screenshot('collected-40.png');
+    assert.ok(commands.some(c => c.from - c.to > 50000), 'Upward collection skips the interior of a mounted long answer');
+    assert.ok(elapsed < 90000); await click('#toc-stop'); await session.screenshot('collected-40.png');
     return { initial, collected:40, elapsedMs:Math.round(elapsed), steps:commands.length, longAnswerJump:true, emptyHydrationMs:500, exactOrder:true };
   });
   await test('SPEED-02: offscreen known prompt walks mounted anchors and verifies remounted identity', async () => {

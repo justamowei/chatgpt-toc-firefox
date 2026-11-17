@@ -1,5 +1,3 @@
-export const HEAD_QUIET_MS = 30_000;
-
 export interface BoundaryObservation {
   now: number;
   physical: boolean;
@@ -11,18 +9,15 @@ export interface BoundaryObservation {
   geometry: number[];
   aborted?: boolean;
 }
-export interface BoundaryStatus { physical: boolean; loading: boolean; rendering: boolean; stableMs: number; probes: number; confirmed: boolean; }
+export interface BoundaryStatus { physical: boolean; loading: boolean; rendering: boolean; stableMs: number; }
 
 // This witness belongs to a collection direction, not to one bounded load.
 // Compare geometry against the original witness: subpixel jitter is harmless,
-// but accumulated drift, a remount, loading or streamed text needs new proof.
+// but accumulated drift, a remount, loading or streamed text resets the timer.
 export class CollectionBoundaryWitness {
   private witness: BoundaryObservation | null = null;
-  private probes = 0;
-  private lastProbe = -Infinity;
-  private status: BoundaryStatus = { physical: false, loading: false, rendering: false, stableMs: 0, probes: 0, confirmed: false };
-  constructor(private stableMs = HEAD_QUIET_MS, private probeGapMs = 2400, private tolerance = 2) {}
-  reset(): void { this.witness = null; this.probes = 0; this.lastProbe = -Infinity; }
+  constructor(private tolerance = 2) {}
+  reset(): void { this.witness = null; }
   observe(observation: BoundaryObservation): BoundaryStatus {
     const previous = this.witness;
     const eligible = !observation.aborted && observation.physical && !observation.loading && !observation.rendering &&
@@ -34,16 +29,6 @@ export class CollectionBoundaryWitness {
       if (eligible) this.witness = { ...observation, geometry: [...observation.geometry] };
     }
     const stableMs = this.witness ? Math.max(0, observation.now - this.witness.now) : 0;
-    this.status = { physical: observation.physical, loading: observation.loading, rendering: observation.rendering,
-      stableMs, probes: this.probes, confirmed: !!this.witness && stableMs >= this.stableMs && this.probes >= 2 };
-    return { ...this.status };
-  }
-  shouldProbe(now: number): boolean {
-    return !!this.witness && this.probes < 2 && now - this.witness.now >= this.probeGapMs && now - this.lastProbe >= this.probeGapMs;
-  }
-  recordProbe(now: number, clamped: boolean): void {
-    if (!this.shouldProbe(now)) return;
-    this.lastProbe = now;
-    if (clamped) this.probes++;
+    return { physical: observation.physical, loading: observation.loading, rendering: observation.rendering, stableMs };
   }
 }

@@ -437,7 +437,6 @@ export type NavState = 'idle' | 'loading' | 'located' | 'cancelled' | 'timed-out
 export interface Position { id: string; offset: number; role?: 'user' | 'assistant'; version?: string; anchorId?: string; }
 export interface NavigationAdapter {
   readonly collectionFinished?: boolean;
-  readonly collectionBlocked?: boolean;
   mounted(id: string): boolean;
   locate(id: string, signal: AbortSignal): boolean | Promise<boolean>;
   load(direction: 'older' | 'newer', signal: AbortSignal, timeout: number, targetId?: string | null): Promise<boolean>;
@@ -493,9 +492,8 @@ export class Navigator {
         // Check after locating the previous batch's result so the final stalled
         // or permitted load still gets one chance to verify its exact target.
         if (id === null && this.adapter.collectionFinished === true) return this.finish('idle', generation, 'boundary');
-        if (id === null && this.adapter.collectionBlocked === true) return this.finish('idle', generation, 'stalled');
         // An empty collection batch can be a slow mount, streamed answer or a
-        // retryable middle stall. Only physical end proof finishes collection;
+        // retryable middle stall. Only explicit history proof finishes collection;
         // the total/batch bounds still stop unknown or broken renderers.
         if (id !== null && stalls >= this.limits.noProgress) {
           if (this.adapter.reverseUnconfirmed?.(id)) stalls = 0;

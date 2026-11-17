@@ -94,15 +94,19 @@ async function setup(mode) {
   if (!(await state()).expanded) await click('.toggle');
   await driver.wait(async () => (await state())?.ids.length === 7, 10000);
 }
-async function finish(ms = 70000) { await driver.wait(async () => (await state()).nav === 'loading', 10000); await driver.wait(async () => (await state()).nav !== 'loading', ms); }
+async function waitForHead(count, changes = 0, ms = 70000) {
+  await driver.wait(async () => {
+    const s = await state(), f = await stats();
+    return s.nav === 'loading' && s.ids.length === count && f.start === 0 && f.top <= 2 && f.changes.length >= changes;
+  }, ms);
+}
 function verifyHead(fixture) {
  const head=fixture.mounts.find(m=>m.start===0),clamp=fixture.headClamps.find(c=>head&&c.at>=head.at);
  assert.ok(head,'Window zero must actually mount');assert.ok(clamp,'The actual conversation root must reach head');
- assert.ok(fixture.observedAt-clamp.at>=5900,'Completion requires stable head proof');
  assert.equal(fixture.top,0);assert.equal(fixture.arrivals.filter(a=>a.direction==='newer').length,0,'Never reverse after head');
  assert.equal(fixture.arrivals.filter(a=>a.pinned).length,0,'Do not skip unknown middle through pinned tail');
  for(let i=1;i<fixture.mounts.length;i++)assert.ok(Math.abs(fixture.mounts[i].start-fixture.mounts[i-1].start)<=4);
- return {firstHeadAt:Math.round(head.at),firstClampAt:Math.round(clamp.at),finishedAt:Math.round(fixture.observedAt),noReverse:true};
+ return {firstHeadAt:Math.round(head.at),firstClampAt:Math.round(clamp.at),observedAt:Math.round(fixture.observedAt),noReverse:true};
 }
 async function test(name, run) {
   const began=Date.now();
@@ -112,12 +116,12 @@ async function test(name, run) {
 try {
   await driver.get(session.optionsUrl);
   await driver.wait(()=>evaluate("return (async()=> (await browser.scripting.getRegisteredContentScripts({ids:['chatgpt-toc']})).length===1)();"),10000);
-  await test('BOUNDARY-01: second older request waits five seconds and fills all thirty and ends at head', async()=>{
-    await setup('delay');await click('#toc-earlier');await finish();const s=await state(),f=await stats();
-    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expected);
+  await test('BOUNDARY-01: second older request waits five seconds and fills all thirty and waits at the loaded edge', async()=>{
+    await setup('delay');await click('#toc-earlier');await waitForHead(30);const s=await state(),f=await stats();
+    assert.equal(s.nav,'loading');assert.deepEqual(s.ids,expected);
     const delayed=f.requests.filter(r=>r.direction==='older')[1];assert.equal(delayed.delay,5000);assert.ok(delayed.committedAt-delayed.at>=4950);
     const proof=verifyHead(f);await session.screenshot('delayed-older-thirty.png');
-    return {collected:30,exactOrder:true,delayedMountMs:Math.round(delayed.committedAt-delayed.at),stoppedAtHead:true,...proof};
+    return {collected:30,exactOrder:true,delayedMountMs:Math.round(delayed.committedAt-delayed.at),waitingAtHead:true,...proof};
   });
   await test('BOUNDARY-02: frozen middle remains retryable beyond three empty batches until explicit stop', async()=>{
     await setup('freeze');const began=Date.now();await click('#toc-earlier');await driver.sleep(22000);const pending=await state(),f=await stats();
@@ -126,14 +130,12 @@ try {
     await click('#toc-stop');await driver.wait(async()=> (await state()).nav==='cancelled',6000);const s=await state();
     return {collected:7,remainingOlderPixels:Math.round(f.top),newerArrivals:0,retryableBeforeStop:true,elapsedMs:Date.now()-began,status:s.status};
   });
-  await test('BOUNDARY-03: placeholder, slots, root, height and viewport shifts reset head evidence', async()=>{
-    await setup('boundary-reset');await click('#toc-earlier');await finish();const s=await state(),f=await stats();
-    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expectedHead);const proof=verifyHead(f);
+  await test('BOUNDARY-03: placeholder, slots, root, height and viewport shifts keep the loaded edge unverified', async()=>{
+    await setup('boundary-reset');await click('#toc-earlier');await waitForHead(7,8);const s=await state(),f=await stats();
+    assert.equal(s.nav,'loading');assert.deepEqual(s.ids,expectedHead);const proof=verifyHead(f);
     assert.deepEqual(f.changes.map(c=>c.kind),['loading-start','slot-renumber','root-replaced','height-expanded','height-restored','loading-finished','viewport-shift','viewport-restored']);
-    const settled=f.changes.at(-1),finishedAt=f.observedAt;
-    assert.ok(finishedAt-settled.at>=5900,'No boundary proof survives loading, changed root/extent or viewport geometry');
     assert.ok(s.ids.every(id=>id.startsWith('boundary:u-')),'Unidentified loading nodes cannot become prompts');
-    return {collected:7,exactOrder:true,changes:f.changes.map(c=>c.kind),stableAfterLastChangeMs:Math.round(finishedAt-settled.at),...proof};
+    return {collected:7,exactOrder:true,changes:f.changes.map(c=>c.kind),...proof};
   });
   await test('BOUNDARY-04: cancellation during five-second pending mount has no late root movement or highlight', async()=>{
     await setup('cancel');await click('#toc-earlier');await driver.wait(async()=> (await stats()).pending?.delay===5000,10000);
@@ -143,17 +145,15 @@ try {
     assert.ok(after.requests.some(r=>r.delay===5000&&r.committedAt!==null),'The previously issued renderer response must actually arrive after cancellation');
     return {state:s.nav,lateRootScrollEvents:0,lateEdgeArrivals:0,lateHighlight:false,retained:s.ids.length,rendererCompleted:true};
   });
-  await test('BOUNDARY-05: isolated viewport movement invalidates six-second proof with unchanged IDs and extent', async()=>{
-    await setup('geometry-only');await click('#toc-earlier');await finish();const s=await state(),f=await stats();
-    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expectedHead);const proof=verifyHead(f);
+  await test('BOUNDARY-05: viewport movement preserves collection with unchanged IDs and extent', async()=>{
+    await setup('geometry-only');await click('#toc-earlier');await waitForHead(7,2);const s=await state(),f=await stats();
+    assert.equal(s.nav,'loading');assert.deepEqual(s.ids,expectedHead);const proof=verifyHead(f);
     assert.deepEqual(f.changes.map(c=>c.kind),['viewport-shift','viewport-restored']);
-    const restored=f.changes.at(-1),finishedAt=f.observedAt;
-    assert.ok(finishedAt-restored.at>=5900,'Viewport movement alone must reset proof before the first batch could declare its head');
-    return {collected:7,exactOrder:true,stableAfterGeometryRestoreMs:Math.round(finishedAt-restored.at),...proof};
+    return {collected:7,exactOrder:true,...proof};
   });
   await test('BOUNDARY-06: a 25-second middle mount survives repeated empty batches without early completion', async()=>{
-    await setup('slow-mount');await click('#toc-earlier');await finish(100000);const s=await state(),f=await stats();
-    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,expected);
+    await setup('slow-mount');await click('#toc-earlier');await waitForHead(30,0,100000);const s=await state(),f=await stats();
+    assert.equal(s.nav,'loading');assert.deepEqual(s.ids,expected);
     const delayed=f.requests.filter(r=>r.direction==='older')[1];assert.equal(delayed.delay,25000);assert.ok(delayed.committedAt-delayed.at>=24900);
     const proof=verifyHead(f);return {collected:30,exactOrder:true,delayedMountMs:Math.round(delayed.committedAt-delayed.at),...proof};
   });

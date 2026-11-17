@@ -39,9 +39,10 @@ try {
     await driver.wait(async()=>(await state()).ids.some(id=>id==='mechanism:u-0'),10000);
     const stats=await evaluate(`return window.mechanism.stats()`);assert.ok(stats.unmounts>0);return stats;
   });
-  await test('MECH-02: head collection sweeps unseen middle instead of declaring a head jump complete',async()=>{
-    await driver.wait(async()=>(await state()).ids.length===18&&(await state()).nav==='idle',55000);
+  await test('MECH-02: upward collection indexes unseen middle and waits at the loaded edge',async()=>{
+    await driver.wait(async()=>(await state()).ids.length===18&&(await state()).nav==='loading',55000);
     const s=await state();assert.deepEqual(s.ids,Array.from({length:18},(_,i)=>'mechanism:u-'+i));assert.ok(s.scope.includes('歷史尚未完整'));assert.ok(!s.scope.includes('順序待核對'));
+    await click('#toc-stop');
     await session.screenshot('collected-18-nested.png');return {collected:18,exactOrder:true,scope:s.scope,stats:await evaluate(`return window.mechanism.stats()`)};
   });
   await test('MECH-ANCHOR: warm offscreen target is reached through live mounted turn anchors',async()=>{

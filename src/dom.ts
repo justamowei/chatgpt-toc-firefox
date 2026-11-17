@@ -2,12 +2,12 @@ import { IndexStore, type Entry, type NavigationAdapter, type Position, type Sna
 import { FIXTURE } from './config';
 import { readTurns } from './turns';
 import { HeightLedger } from './geometry';
-import { CollectionBoundaryWitness } from './collection-policy';
+import { CollectionBoundaryWitness, type BoundaryStatus } from './collection-policy';
 type Direction = 'older' | 'newer';
 const promptText = (value: string): string => value.normalize('NFC').replace(/\s+/g, ' ').trim();
 export interface LoadReport { phase: 'scan' | 'answer' | 'jump' | 'refine' | 'head' | 'sweep'; added: number; steps: number; }
 type Attempt = { method: string; before: number; requested: number; after: number; heightBefore: number; heightAfter: number; scrollEvents: number; replaced: boolean;
-  boundary?: { physical: boolean; stableMs: number; probes: number; loading: boolean; rendering: boolean; confirmed: boolean } };
+  boundary?: BoundaryStatus };
 export class DomAdapter implements NavigationAdapter {
   nodes = new Map<string, HTMLElement>();
   private transient = new WeakMap<HTMLElement, string>();
@@ -28,7 +28,7 @@ export class DomAdapter implements NavigationAdapter {
   private hintEpoch = -1;
   private geometry = new HeightLedger();
   private adjacent = new Map<string, string>();
-  private collection: { stage: 'head' | 'done' | 'blocked'; boundary: CollectionBoundaryWitness; lastRenderActivity: number; anchor?: { root: HTMLElement; signature: string } } | null = null;
+  private collection: { boundary: CollectionBoundaryWitness; lastRenderActivity: number; anchor?: { root: HTMLElement; signature: string } } | null = null;
   private lastAttempt: Attempt | null = null;
   lastLoadReport: LoadReport = { phase: 'scan', added: 0, steps: 0 };
   constructor(private store: IndexStore, private refresh: (direction?: Direction) => void) {}
@@ -228,19 +228,17 @@ export class DomAdapter implements NavigationAdapter {
   begin(collect = false): void {
     this.unconfirmedDirection = 'older'; this.reversedUnconfirmed = false;
     this.lastAttempt = null; this.lastLoadReport = { phase: collect ? 'head' : 'scan', added: 0, steps: 0 };
-    this.collection = collect ? { stage: 'head', boundary: new CollectionBoundaryWitness(), lastRenderActivity: -Infinity } : null;
+    this.collection = collect ? { boundary: new CollectionBoundaryWitness(), lastRenderActivity: -Infinity } : null;
   }
-  get collectionFinished(): boolean { return this.collection?.stage === 'done'; }
-  get collectionBlocked(): boolean { return this.collection?.stage === 'blocked'; }
   get headQuietMs(): number {
-    return this.collection?.stage === 'head' && this.lastAttempt?.boundary?.physical
+    return this.collection && this.lastAttempt?.boundary?.physical
       ? this.lastAttempt.boundary.stableMs : 0;
   }
   diagnostic(): object {
     const root = this.scroller(this.nodes.values().next().value);
     return { scroll: { tag: root.tagName, marked: root.hasAttribute('data-scroll-root'), overflow: getComputedStyle(root).overflowY,
       client: root.clientHeight, width: root.clientWidth, height: root.scrollHeight, top: root.scrollTop, connected: root.isConnected },
-      prompts: { ...this.promptRecognition }, geometry: this.geometry.diagnostic(), adjacentWitnesses: this.adjacent.size, collection: this.collection?.stage ?? null, lastAttempt: this.lastAttempt };
+      prompts: { ...this.promptRecognition }, geometry: this.geometry.diagnostic(), adjacentWitnesses: this.adjacent.size, collection: this.collection ? 'head' : null, lastAttempt: this.lastAttempt };
   }
   private top(node: HTMLElement): number {
     const scroller = this.scroller(node);
@@ -455,7 +453,6 @@ export class DomAdapter implements NavigationAdapter {
     if (signal.aborted) return false;
     const epoch = this.store.epoch, context = location.origin + location.pathname;
     if (this.store.context !== context) throw new Error('Conversation changed');
-    if (targetId === null && this.collection?.stage === 'done') return false;
     if (targetId === null && this.collection) direction = 'older';
     const root = this.scroller(this.nodes.values().next().value);
     const window = this.frontier(root), edge = direction === 'older' ? window[0] : window.at(-1);
@@ -501,7 +498,7 @@ export class DomAdapter implements NavigationAdapter {
         if (collection) collection.anchor = { root, signature: beforeSignature };
       }
       return await new Promise<boolean>(resolve => {
-        const started = performance.now();
+        const started = performance.now(), batchEnd = Math.max(0, timeout - 200);
         let timer: ReturnType<typeof setTimeout>, nudged = false, finished = false, lastNudgeAt = 0;
         let changedSince = started, last = beforeSignature;
         const finish = (progress: boolean) => {
@@ -521,8 +518,8 @@ export class DomAdapter implements NavigationAdapter {
           const boundary = direction === 'older' ? current[0] : current.at(-1);
           const viewport = this.viewport(currentRoot), rect = boundary?.node.getBoundingClientRect();
           const loading = this.boundaryLoading(currentRoot, viewport);
-          const noDocumentRange = currentRoot === document.scrollingElement && currentRoot.scrollHeight <= currentRoot.clientHeight + 2;
-          const physical = !noDocumentRange && !!rect && (direction === 'older'
+          const hasScrollRange = currentRoot.scrollHeight > currentRoot.clientHeight + 2;
+          const physical = hasScrollRange && !!rect && (direction === 'older'
             ? currentRoot.scrollTop <= 2 && rect.top >= viewport.top - 2 && rect.top < viewport.bottom
             : currentRoot.scrollTop + currentRoot.clientHeight >= currentRoot.scrollHeight - 2 && rect.bottom <= viewport.bottom + 2 && rect.bottom > viewport.top);
           const boundaryStatus = collection?.boundary.observe({ now, physical, loading,
@@ -535,35 +532,26 @@ export class DomAdapter implements NavigationAdapter {
             finish(true); return;
           }
           if (targetId !== null && this.mounted(targetId)) { this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return; }
-          // A stalled middle window is not the start of a conversation. Probe
-          // the same direction and allow slow mounts. A physical clamp can be
-          // just the end of currently loaded data; keep observing late prepends.
-          const repeatBoundaryProbe = collection?.boundary.shouldProbe(now) ?? false;
-          if (currentSignature === beforeSignature && boundary?.node.isConnected && rect && ((collection ? !physical && currentRoot.scrollTop > 2 && elapsed - lastNudgeAt >= 640 : !nudged && elapsed >= 640) || repeatBoundaryProbe)) {
+          // At a loaded edge, a negative scroll request clamps to the same
+          // position. Stay there and let the renderer prepend without treating
+          // silence as the end of history.
+          const canNudge = collection ? !physical && currentRoot.scrollTop > 2 && elapsed - lastNudgeAt >= 640 : !nudged && elapsed >= 640;
+          if (canNudge && currentSignature === beforeSignature && boundary?.node.isConnected && rect) {
             nudged = true; lastNudgeAt = elapsed;
             // Once anchored, continue from the current position; never re-align the
-            // same shell between batches. A real head probe stays clamped at zero.
+            // same shell between batches.
             const step = Math.max(80, currentRoot.clientHeight * .45);
             const top = direction === 'older' ? (physical ? -step : currentRoot.scrollTop - step)
               : currentRoot.scrollTop + Math.max(0, rect.bottom - viewport.bottom) + step;
             currentRoot.scrollTo({ top, behavior: 'instant' }); attempt.requested = top;
-            collection?.boundary.recordProbe(now, physical && !loading && Math.abs(currentRoot.scrollTop - attempt.after) <= 2);
           }
-          if (collection && this.collection === collection && noDocumentRange && !loading &&
-            !attempt.scrollEvents && currentSignature === beforeSignature && !added && elapsed >= 6400 &&
-            now - collection.lastRenderActivity >= 320) {
-            collection.stage = 'blocked'; finish(false); return;
-          }
-          if (collection && this.collection === collection && boundaryStatus?.confirmed) {
-            collection.stage = 'done'; collection.boundary.reset();
-            this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return;
-          }
-          if (elapsed >= Math.min(targetId === null ? 6500 : 1600, Math.max(0, timeout - 200)) && current.length) {
+          if (elapsed >= Math.min(targetId === null ? 6500 : 1600, batchEnd) && current.length) {
             this.lastLoadReport.added += added;
             finish(added > 0 || currentSignature !== beforeSignature); return;
           }
-          if (elapsed >= Math.max(0, timeout - 200)) { finish(false); return; }
-          timer = setTimeout(poll, 80);
+          if (elapsed >= batchEnd) { finish(false); return; }
+          const interval = collection && (physical || !hasScrollRange) ? 500 : 80;
+          timer = setTimeout(poll, Math.min(interval, batchEnd - elapsed));
         };
         signal.addEventListener('abort', aborted, { once: true }); timer = setTimeout(poll, 80);
       });

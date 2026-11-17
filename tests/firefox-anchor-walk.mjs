@@ -69,11 +69,11 @@ async function setup(start = 23) {
   if (!(await state()).expanded) await click('.toggle');
   await driver.wait(async () => (await state())?.ids.length === 7, 10000);
 }
-async function waitFinished(ms = 65000) {
-  // settings:get and capture are asynchronous before navigation enters loading.
-  // Waiting only for non-loading can return on the initial idle state.
-  await driver.wait(async () => (await state()).nav === 'loading', 6000);
-  await driver.wait(async () => (await state()).nav !== 'loading', ms);
+async function waitForCollectedHead() {
+  await driver.wait(async () => {
+    const s = await state(), f = await stats();
+    return s.nav === 'loading' && s.ids.length === 30 && f.start === 0 && f.top <= 2;
+  }, 65000);
 }
 function contiguousMounts(actual) {
   for(let i=1;i<actual.mounts.length;i++)assert.ok(Math.abs(actual.mounts[i].start-actual.mounts[i-1].start)<=4,'Adjacent windows must overlap; unknown middle cannot be skipped');
@@ -87,10 +87,11 @@ async function test(name, run) {
 try {
   await test('ANCHOR-01: cold seven-message tail traverses native outer shells and collects all thirty exactly', async()=>{
     await setup();const cold=await state();assert.deepEqual(cold.ids,Array.from({length:7},(_,i)=>'anchor:u-'+(23+i)));
-    await click('#toc-earlier');await waitFinished();const s=await state(),f=await stats();
-    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,Array.from({length:30},(_,i)=>'anchor:u-'+i));
+    await click('#toc-earlier');await waitForCollectedHead();const s=await state(),f=await stats();
+    assert.equal(s.nav,'loading');assert.deepEqual(s.ids,Array.from({length:30},(_,i)=>'anchor:u-'+i));
     assert.ok(f.mounts.some(m=>m.start===0),'Actual first window must have mounted');assert.ok(f.calls.some(c=>c.outer&&c.direction==='older'),'Native edge jump must move the real root');
     assert.equal(f.contentVisibility,'auto');assert.equal(f.outerHeight,f.outerClient,'Outer marker is a decoy');contiguousMounts(f);
+    await click('#toc-stop');
     await session.screenshot('anchor-collected-thirty.png');return {cold:7,collected:30,orderExact:true,windows:f.mounts.map(m=>m.start),nativeShellCalls:f.calls.length};
   });
   await test('ANCHOR-02: observed offscreen targets remount by adjacent windows and highlight exact IDs', async()=>{
@@ -106,8 +107,8 @@ try {
     return observed;
   });
   await test('ANCHOR-03: cold middle retains pinned tail and fills every unknown intervening prompt', async()=>{
-    await setup(12);await click('#toc-earlier');await waitFinished();const s=await state(),f=await stats();
-    assert.equal(s.nav,'idle');assert.deepEqual(s.ids,Array.from({length:30},(_,i)=>'anchor:u-'+i));
+    await setup(12);await click('#toc-earlier');await waitForCollectedHead();const s=await state(),f=await stats();
+    assert.equal(s.nav,'loading');assert.deepEqual(s.ids,Array.from({length:30},(_,i)=>'anchor:u-'+i));
     assert.ok(f.mounts.some(m=>m.start===0));contiguousMounts(f);
     return {collected:30,pinnedTailRetained:2,unknownMiddleActuallyMounted:true,windows:f.mounts.map(m=>m.start)};
   });
