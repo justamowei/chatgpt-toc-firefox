@@ -1,4 +1,4 @@
-name: Sync directory head ordering v0.3.7 r7
+name: Sync delayed history collection v0.3.7 r8
 on:
   push:
     branches: [chore/rollback-v035-20261015]
@@ -17,14 +17,14 @@ jobs:
           import os,json,pathlib,base64,hashlib,subprocess
           assert os.environ.get('GITHUB_ACTIONS')=='true' and os.environ.get('RUNNER_OS')=='Linux'
           def git(*a):return subprocess.check_output(['git',*a],text=True).strip()
-          head='10fccf6f3956a17e6bc62d698e52fd9cd05b8325';old='91da8bb5ebd94d9f5e2de963fa4eb8594562ec12';ref='refs/heads/fix/prompt-group-navigation'
-          raw=base64.b64decode(pathlib.Path('recovery/directory-head-v037-r7.bundle.b64').read_text(),validate=True)
-          assert hashlib.sha256(raw).hexdigest()=='2a34df95c10314cc73012289e86b14f36599a6de6078623b576e8dde71e928e5'
-          p=pathlib.Path('/tmp/directory-head-v037-r7.bundle');p.write_bytes(raw)
-          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/r7037')
-          assert git('rev-parse','refs/remotes/bundle/r7037')==head and git('rev-parse',head+'^')==old
+          head='192e15e784bd17a881023a6311804e7b8e0400bc';old='10fccf6f3956a17e6bc62d698e52fd9cd05b8325';ref='refs/heads/fix/prompt-group-navigation'
+          raw=base64.b64decode(pathlib.Path('recovery/delayed-history-v037-r8.bundle.b64').read_text(),validate=True)
+          assert hashlib.sha256(raw).hexdigest()=='6482e71591fa282a8a37768f1203a0d5644b0bce6c38117ac0ed9d539754d72c'
+          p=pathlib.Path('/tmp/delayed-history-v037-r8.bundle');p.write_bytes(raw)
+          git('bundle','verify',str(p));git('fetch','--no-tags',str(p),ref+':refs/remotes/bundle/r8037')
+          assert git('rev-parse','refs/remotes/bundle/r8037')==head and git('rev-parse',head+'^')==old
           p=json.loads(git('show',head+':package.json'))
-          assert p['version']=='0.3.7' and p['tocRevision']=='2026-11-17-v037-r7'
+          assert p['version']=='0.3.7' and p['tocRevision']=='2026-11-17-v037-r8'
           assert git('ls-remote','origin',ref).split()[0] in (old,head)
           git('push','--atomic','origin',head+':'+ref)
           assert git('ls-remote','origin',ref).split()[0]==head
