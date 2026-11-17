@@ -335,7 +335,7 @@ test('runtime schemas reject extra keys, fake commands and malformed settings', 
   assert.equal(validMessage({ kind: 'settings:set', expanded: 'true' }), false);
   assert.equal(validMessage({ kind: 'eval', code: 'alert(1)' }), false);
   assert.equal(validSettings({ auto: false, expanded: true }), false);
-  assert.equal(validSettings({ auto: false, expanded: true, collectionMinutes: 10 }), true);
+  assert.equal(validSettings({ auto: false, expanded: true, collectionMinutes: 10, collectionWaitMinutes: 1 }), true);
   assert.equal(validSettings({ auto: false, expanded: true, token: 'no' }), false);
 });
 

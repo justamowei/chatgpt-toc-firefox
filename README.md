@@ -5,3 +5,13 @@
 [交付紀錄](docs/release-v0.3.6.md) · [安裝](docs/install-firefox.md) · [開發規劃](docs/development-plan.md) · [版本規範](docs/version-policy.md) · [版本目錄](docs/versions.md)
 
 日常開發：在 Firefox 驗收本次功能；不例行全套測試或子代理驗收。每個功能／修正或 30 分鐘有效開發提交 Git 並同步私人 GitHub。詳見[現行開發流程](docs/development-plan.md)。
+
+## Reproduce the Firefox package for Mozilla review
+
+The submitted build was produced on Windows x64 using [Node.js 24.12.0](https://nodejs.org/en/download/archive/v24.12.0) and npm 11.6.2. Install that Node.js release, extract the source archive, and run these commands from its root:
+
+    npm ci
+    npm run build:firefox
+    npm run package:firefox
+
+The production files are in dist/firefox. The last command places the unsigned extension ZIP in artifacts/packages. The lockfile pins build dependencies. The build uses only the checked-in source and requires no credentials.

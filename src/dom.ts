@@ -28,7 +28,7 @@ export class DomAdapter implements NavigationAdapter {
   private hintEpoch = -1;
   private geometry = new HeightLedger();
   private adjacent = new Map<string, string>();
-  private collection: { boundary: CollectionBoundaryWitness; lastRenderActivity: number; anchor?: { root: HTMLElement; signature: string } } | null = null;
+  private collection: { waitMs: number; boundary: CollectionBoundaryWitness; lastRenderActivity: number; anchor?: { root: HTMLElement; signature: string } } | null = null;
   private lastAttempt: Attempt | null = null;
   lastLoadReport: LoadReport = { phase: 'scan', added: 0, steps: 0 };
   constructor(private store: IndexStore, private refresh: (direction?: Direction) => void) {}
@@ -225,15 +225,16 @@ export class DomAdapter implements NavigationAdapter {
     this.geometry.observe(measured, this.store.ordered ? this.store.entries.map(e => e.id)
       : measured.filter(t => t.role === 'user').map(t => t.id), scroller.clientWidth);
   }
-  begin(collect = false): void {
+  begin(waitMs?: number): void {
     this.unconfirmedDirection = 'older'; this.reversedUnconfirmed = false;
-    this.lastAttempt = null; this.lastLoadReport = { phase: collect ? 'head' : 'scan', added: 0, steps: 0 };
-    this.collection = collect ? { boundary: new CollectionBoundaryWitness(), lastRenderActivity: -Infinity } : null;
+    this.lastAttempt = null; this.lastLoadReport = { phase: waitMs !== undefined ? 'head' : 'scan', added: 0, steps: 0 };
+    this.collection = waitMs !== undefined ? { waitMs, boundary: new CollectionBoundaryWitness(), lastRenderActivity: -Infinity } : null;
   }
   get headQuietMs(): number {
     return this.collection && this.lastAttempt?.boundary?.physical
       ? this.lastAttempt.boundary.stableMs : 0;
   }
+  get collectionWaitExpired(): boolean { return this.collection !== null && this.headQuietMs >= this.collection.waitMs; }
   diagnostic(): object {
     const root = this.scroller(this.nodes.values().next().value);
     return { scroll: { tag: root.tagName, marked: root.hasAttribute('data-scroll-root'), overflow: getComputedStyle(root).overflowY,
@@ -544,6 +545,9 @@ export class DomAdapter implements NavigationAdapter {
             const top = direction === 'older' ? (physical ? -step : currentRoot.scrollTop - step)
               : currentRoot.scrollTop + Math.max(0, rect.bottom - viewport.bottom) + step;
             currentRoot.scrollTo({ top, behavior: 'instant' }); attempt.requested = top;
+          }
+          if (collection && this.collectionWaitExpired) {
+            this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return;
           }
           if (elapsed >= Math.min(targetId === null ? 6500 : 1600, batchEnd) && current.length) {
             this.lastLoadReport.added += added;

@@ -2,21 +2,26 @@ export type Completeness = 'unknown' | 'partial' | 'verified-complete';
 export interface Entry { id: string; text: string; stable: boolean; slot?: string; }
 export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; disputedUserIds?: ReadonlySet<string>; observedHeadId?: string; submittedAppend?: { epoch: number; after: string; id: string }; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
 export interface CompleteProof { source: 'conversation-structure'; branch: string; exhausted: boolean; orderedIds: string[]; }
-export interface Settings { auto: boolean; expanded: boolean; collectionMinutes: number; }
-export const DEFAULT_SETTINGS: Settings = { auto: true, expanded: false, collectionMinutes: 10 };
+export interface Settings { auto: boolean; expanded: boolean; collectionMinutes: number; collectionWaitMinutes: number; }
+export const DEFAULT_SETTINGS: Settings = { auto: true, expanded: false, collectionMinutes: 10, collectionWaitMinutes: 1 };
 
 export function validCollectionMinutes(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= 10;
 }
 
 export function validSettings(value: unknown): value is Settings {
-  return exactKeys(value, ['auto', 'expanded', 'collectionMinutes']) &&
-    typeof value.auto === 'boolean' && typeof value.expanded === 'boolean' && validCollectionMinutes(value.collectionMinutes);
+  return exactKeys(value, ['auto', 'expanded', 'collectionMinutes', 'collectionWaitMinutes']) &&
+    typeof value.auto === 'boolean' && typeof value.expanded === 'boolean' &&
+    validCollectionMinutes(value.collectionMinutes) && validCollectionMinutes(value.collectionWaitMinutes);
 }
 export function normalizeSettings(value: unknown): Settings {
   if (validSettings(value)) return { ...value };
+  if (exactKeys(value, ['auto', 'expanded', 'collectionMinutes']) &&
+    typeof value.auto === 'boolean' && typeof value.expanded === 'boolean' && validCollectionMinutes(value.collectionMinutes)) {
+    return { ...DEFAULT_SETTINGS, auto: value.auto, expanded: value.expanded, collectionMinutes: value.collectionMinutes };
+  }
   if (exactKeys(value, ['auto', 'expanded']) && typeof value.auto === 'boolean' && typeof value.expanded === 'boolean') {
-    return { auto: value.auto, expanded: value.expanded, collectionMinutes: DEFAULT_SETTINGS.collectionMinutes };
+    return { ...DEFAULT_SETTINGS, auto: value.auto, expanded: value.expanded };
   }
   return { ...DEFAULT_SETTINGS };
 }
@@ -437,6 +442,7 @@ export type NavState = 'idle' | 'loading' | 'located' | 'cancelled' | 'timed-out
 export interface Position { id: string; offset: number; role?: 'user' | 'assistant'; version?: string; anchorId?: string; }
 export interface NavigationAdapter {
   readonly collectionFinished?: boolean;
+  readonly collectionWaitExpired?: boolean;
   mounted(id: string): boolean;
   locate(id: string, signal: AbortSignal): boolean | Promise<boolean>;
   load(direction: 'older' | 'newer', signal: AbortSignal, timeout: number, targetId?: string | null): Promise<boolean>;
@@ -445,7 +451,7 @@ export interface NavigationAdapter {
 }
 export interface Limits { totalMs: number; collectionTotalMs?: number; batches: number; collectionBatches?: number; batchMs: number; noProgress: number; }
 export const NAV_LIMITS: Limits = { totalMs: 60_000, collectionTotalMs: 600_000, batches: 60, collectionBatches: 4800, batchMs: 8_000, noProgress: 3 };
-export type NavStopReason = 'none' | 'located' | 'not-found' | 'stalled' | 'boundary' | 'batch-limit' | 'time-limit' | 'batch-timeout' | 'cancelled' | 'unsupported';
+export type NavStopReason = 'none' | 'located' | 'not-found' | 'stalled' | 'boundary' | 'wait-limit' | 'batch-limit' | 'time-limit' | 'batch-timeout' | 'cancelled' | 'unsupported';
 export class Navigator {
   state: NavState = 'idle';
   lastStopReason: NavStopReason = 'none';
@@ -492,8 +498,9 @@ export class Navigator {
         // Check after locating the previous batch's result so the final stalled
         // or permitted load still gets one chance to verify its exact target.
         if (id === null && this.adapter.collectionFinished === true) return this.finish('idle', generation, 'boundary');
+        if (id === null && this.adapter.collectionWaitExpired === true) return this.finish('idle', generation, 'wait-limit');
         // An empty collection batch can be a slow mount, streamed answer or a
-        // retryable middle stall. Only explicit history proof finishes collection;
+        // retryable middle stall. A loaded-edge wait has its own bound;
         // the total/batch bounds still stop unknown or broken renderers.
         if (id !== null && stalls >= this.limits.noProgress) {
           if (this.adapter.reverseUnconfirmed?.(id)) stalls = 0;
@@ -540,7 +547,7 @@ async function boundedLoad(load: () => Promise<boolean>, controller: AbortContro
   } finally { clearTimeout(timer); if (aborted) signal.removeEventListener('abort', aborted); }
 }
 
-export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean } | { kind: 'collection:set'; minutes: number } | { kind: 'options:open' } |
+export type RuntimeMessage = { kind: 'settings:get' } | { kind: 'settings:set'; expanded: boolean } | { kind: 'auto:set'; enabled: boolean } | { kind: 'collection:set'; minutes: number; waitMinutes?: number } | { kind: 'options:open' } |
   { kind: 'cache:get' | 'cache:clear-page'; context: string } | { kind: 'cache:set'; state: StoredIndex } | { kind: 'cache:clear' };
 export function validMessage(value: unknown): value is RuntimeMessage {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -550,6 +557,7 @@ export function validMessage(value: unknown): value is RuntimeMessage {
   if (v.kind === 'cache:set') return keys.length === 2 && validStoredIndex(v.state);
   if (v.kind === 'settings:set') return keys.length === 2 && typeof v.expanded === 'boolean';
   if (v.kind === 'auto:set') return keys.length === 2 && typeof v.enabled === 'boolean';
-  if (v.kind === 'collection:set') return exactKeys(v, ['kind', 'minutes']) && validCollectionMinutes(v.minutes);
+  if (v.kind === 'collection:set') return validCollectionMinutes(v.minutes) &&
+    (Object.hasOwn(v, 'waitMinutes') ? exactKeys(v, ['kind', 'minutes', 'waitMinutes']) && validCollectionMinutes(v.waitMinutes) : exactKeys(v, ['kind', 'minutes']));
   return false;
 }

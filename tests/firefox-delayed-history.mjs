@@ -18,7 +18,11 @@ const state = () => js("const host = document.getElementById('chatgpt-toc-root')
 try {
   await driver.get(optionsUrl);
   await driver.wait(() => js("return (async() => (await browser.scripting.getRegisteredContentScripts({ ids: ['chatgpt-toc'] })).length === 1)();"), 10000);
-  await js("return browser.runtime.sendMessage({ kind: 'collection:set', minutes: 1 });");
+  await driver.wait(() => js("return document.querySelector('#collection-minutes').value === '10' && document.querySelector('#collection-wait-minutes').value === '1';"), 10000);
+  await js("document.querySelector('#collection-minutes').value = '2'; document.querySelector('#collection-wait-minutes').value = '1'; document.querySelector('#collection-save').click();");
+  await driver.wait(() => js("return (async () => (await browser.runtime.sendMessage({ kind: 'settings:get' })).collectionMinutes === 2)();"), 10000);
+  await driver.navigate().refresh();
+  await driver.wait(() => js("return document.querySelector('#collection-minutes').value === '2' && document.querySelector('#collection-wait-minutes').value === '1';"), 10000);
   await driver.get(url.replace('/synthetic', '/delayed-history'));
   await driver.wait(async () => !!await state(), 10000);
   await js("const panel = document.getElementById('chatgpt-toc-root').shadowRoot; const toggle = panel.querySelector('.toggle');" +
@@ -36,10 +40,12 @@ try {
   await driver.wait(async () => (await state()).ids.includes('older'), 8000);
   assert.deepEqual((await state()).ids, ['older', 'recent']);
   assert.equal((await state()).nav, 'loading');
-  await driver.wait(async () => (await state()).nav === 'timed-out', 32000);
-  assert.ok(Date.now() - started >= 59000, 'must reach the configured one-minute limit');
+  await driver.wait(async () => (await state()).nav === 'idle', 66000);
+  const elapsed = Date.now() - started;
+  assert.ok(elapsed >= 93000 && elapsed < 116000, 'the new page restarts the idle wait, which ends before the two-minute total');
+  assert.match((await state()).status, /已等待 1 分鐘/);
   assert.deepEqual((await state()).ids, ['older', 'recent']);
-  console.log('PASS: waits past 30 seconds, collects older history after 34 seconds, and preserves both rows at the configured time limit.');
+  console.log('PASS: options persist; an older mount after 34 seconds restarts the one-minute wait, which ends before the two-minute total.');
 } finally {
   await close();
 }

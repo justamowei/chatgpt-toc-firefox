@@ -57,27 +57,27 @@ test('manifest requires ChatGPT host permission and fresh install auto-registers
 
 test('v033 migration preserves old auto=false and expanded, adds ten minutes once and survives restarts', async () => {
   const first = await setup({ settings: { auto: false, expanded: true } });
-  assert.deepEqual(await first.send({ kind: 'settings:get' }), { auto: false, expanded: true, collectionMinutes: 10 });
+  assert.deepEqual(await first.send({ kind: 'settings:get' }), { auto: false, expanded: true, collectionMinutes: 10, collectionWaitMinutes: 1 });
   assert.equal(first.values[migration], true);
   assert.equal(first.writes.length, 1);
   await first.send({ kind: 'settings:get' }); assert.equal(first.writes.length, 1);
   await first.send({ kind: 'auto:set', enabled: false }, first.options); await settle();
-  assert.deepEqual(first.values.settings, { auto: false, expanded: true, collectionMinutes: 10 }); assert.equal(first.registered.length, 0);
+  assert.deepEqual(first.values.settings, { auto: false, expanded: true, collectionMinutes: 10, collectionWaitMinutes: 1 }); assert.equal(first.registered.length, 0);
   assert.ok(first.calls.includes('dispose:1')); assert.equal(first.calls.includes('dispose:2'), false);
   assert.equal(first.calls.includes('remove-permission'), false);
   const restarted = await setup(first.values);
-  assert.deepEqual(await restarted.send({ kind: 'settings:get' }), { auto: false, expanded: true, collectionMinutes: 10 }); assert.equal(restarted.registered.length, 0);
+  assert.deepEqual(await restarted.send({ kind: 'settings:get' }), { auto: false, expanded: true, collectionMinutes: 10, collectionWaitMinutes: 1 }); assert.equal(restarted.registered.length, 0);
   assert.equal(restarted.writes.length, 0);
 });
 
 test('collection minutes persist independently of automatic and expanded preferences, including legacy v032 marker', async () => {
   const app = await setup({ settings: { auto: false, expanded: true }, 'toc-v032-auto-migrated': true });
-  assert.deepEqual(await app.send({ kind: 'collection:set', minutes: 3 }, app.options), { auto: false, expanded: true, collectionMinutes: 3 });
+  assert.deepEqual(await app.send({ kind: 'collection:set', minutes: 3, waitMinutes: 2 }, app.options), { auto: false, expanded: true, collectionMinutes: 3, collectionWaitMinutes: 2 });
   await app.send({ kind: 'settings:set', expanded: false });
   await app.send({ kind: 'auto:set', enabled: true }, app.options);
-  assert.deepEqual(app.values.settings, { auto: true, expanded: false, collectionMinutes: 3 });
+  assert.deepEqual(app.values.settings, { auto: true, expanded: false, collectionMinutes: 3, collectionWaitMinutes: 2 });
   const restarted = await setup(app.values);
-  assert.deepEqual(await restarted.send({ kind: 'settings:get' }), { auto: true, expanded: false, collectionMinutes: 3 });
+  assert.deepEqual(await restarted.send({ kind: 'settings:get' }), { auto: true, expanded: false, collectionMinutes: 3, collectionWaitMinutes: 2 });
   assert.equal(restarted.writes.length, 0);
   for (const minutes of [1, 10]) assert.equal((await restarted.send({ kind: 'collection:set', minutes }, restarted.options)).collectionMinutes, minutes);
 });
@@ -101,7 +101,7 @@ test('collection settings reject invalid ranges, types, extra keys and any unver
 test('queued collection and panel changes preserve both preferences', async () => {
   const app = await setup();
   await Promise.all([app.send({ kind: 'collection:set', minutes: 2 }, app.options), app.send({ kind: 'settings:set', expanded: true })]);
-  assert.deepEqual(app.values.settings, { auto: true, expanded: true, collectionMinutes: 2 });
+  assert.deepEqual(app.values.settings, { auto: true, expanded: true, collectionMinutes: 2, collectionWaitMinutes: 1 });
 });
 
 test('withheld mandatory permission does not register; permission changes respect persistent auto preference', async () => {

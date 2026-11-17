@@ -91,7 +91,8 @@ browser.runtime.onMessage.addListener((message: unknown, sender) => {
     new URL(sender.url!).origin === new URL(message.state.context).origin) return cache.save(message.state).then(() => true);
   if (message.kind === 'cache:clear' && options) return cache.clear().then(() => true);
   if (message.kind === 'settings:set' && page) return update({ expanded: message.expanded });
-  if (message.kind === 'collection:set' && options) return update({ collectionMinutes: message.minutes });
+  if (message.kind === 'collection:set' && options) return update({ collectionMinutes: message.minutes,
+    ...(message.waitMinutes === undefined ? {} : { collectionWaitMinutes: message.waitMinutes }) });
   if (message.kind === 'options:open' && page) return browser.runtime.openOptionsPage();
   if (message.kind === 'auto:set' && options) return (async () => {
     if (message.enabled && !await browser.permissions.contains({ origins: HOSTS })) return { auto: false, error: 'permission-required' };

@@ -21,7 +21,7 @@ function start(): Instance {
   let listBuilt = false, listFrame: number | undefined, currentFrame: number | undefined;
   let returnPosition: Position | null = null, returnEpoch = -1, refreshTimer: ReturnType<typeof setTimeout> | undefined;
   let navigationPending = false, operation: AbortController | null = null;
-  let collecting = false, collectionStart = 0, collectionMinutes = DEFAULT_SETTINGS.collectionMinutes;
+  let collecting = false, collectionStart = 0, collectionSettings = DEFAULT_SETTINGS;
   const events = new AbortController();
   const store = new IndexStore();
   let restoredContext = '', restoreToken = 0, navigationRequest = 0;
@@ -87,6 +87,8 @@ function start(): Instance {
   const navigator = new Navigator(adapter, state => {
     if (!alive) return;
     host.dataset.navigation = state; status.textContent = labels[state]; stop.hidden = state !== 'loading'; earlier.disabled = state === 'loading';
+    if (state === 'idle' && navigator.lastStopReason === 'wait-limit') status.textContent =
+      `已等待 ${collectionSettings.collectionWaitMinutes} 分鐘，暫無較早提問。本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則，完整歷史尚未核對。`;
     if (state === 'timed-out') status.textContent = navigator.lastStopReason === 'batch-limit'
       ? `已達本次${collecting ? '收集' : '尋找'}步數上限，${collecting ? `新增 ${Math.max(0, store.entries.length - collectionStart)} 則；可繼續收集。` : '目標尚未重新掛載，可重試。'}`
       : `已達本次${collecting ? '收集' : '尋找'}時間上限，${collecting ? `新增 ${Math.max(0, store.entries.length - collectionStart)} 則；可繼續收集。` : '目標尚未重新掛載，可重試。'}`;
@@ -238,8 +240,8 @@ function start(): Instance {
     host.setAttribute('data-theme', document.documentElement.classList.contains('dark') ? 'dark' : document.documentElement.classList.contains('light') ? 'light' : 'system');
     if (navigator.state === 'loading') status.textContent = collecting
       ? adapter.headQuietMs > 0
-        ? `已到目前載入範圍頂端，等待較早提問。新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可隨時停止。`
-        : `正在向上收集 · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionMinutes} 分鐘，可按停止。`
+        ? `已到目前載入範圍頂端，等待較早提問（${Math.floor(adapter.headQuietMs / 1000)}／${collectionSettings.collectionWaitMinutes * 60} 秒）· 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則。`
+        : `正在向上收集 · 本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則 · 最多 ${collectionSettings.collectionMinutes} 分鐘，可按停止。`
       : adapter.lastLoadReport.phase === 'jump' ? '正在跳至已觀察的位置，等待目標重新掛載…'
       : adapter.lastLoadReport.phase === 'refine' ? '正在修正跳轉位置，核對目標訊息…' : '正在尋找目標附近的訊息…';
   }
@@ -277,17 +279,17 @@ function start(): Instance {
       try {
         const value: unknown = await browser.runtime.sendMessage({ kind: 'settings:get' });
         if (!alive || token !== navigationToken || epoch !== store.epoch) return;
-        collectionMinutes = validSettings(value) ? value.collectionMinutes : DEFAULT_SETTINGS.collectionMinutes;
-      } catch { collectionMinutes = DEFAULT_SETTINGS.collectionMinutes; }
+        collectionSettings = validSettings(value) ? value : DEFAULT_SETTINGS;
+      } catch { collectionSettings = DEFAULT_SETTINGS; }
       if (!alive || token !== navigationToken || epoch !== store.epoch) return;
     }
     const position = await adapter.capture(operation.signal);
     if (!alive || token !== navigationToken || epoch !== store.epoch) return;
     returnPosition = position; returnEpoch = epoch; render();
     delete host.dataset.restored;
-    adapter.begin(id === null);
+    adapter.begin(id === null ? collectionSettings.collectionWaitMinutes * 60_000 : undefined);
     targetWitness = entry ? { id: entry.id, text: entry.text } : null;
-    const result = await navigator.run(id, id === null ? collectionMinutes * 60_000 : undefined, entry?.stable === false);
+    const result = await navigator.run(id, id === null ? collectionSettings.collectionMinutes * 60_000 : undefined, entry?.stable === false);
     if (!alive || token !== navigationToken) return;
     navigationPending = false;
     targetWitness = null;

@@ -8,24 +8,30 @@ await writeFile('artifacts/settings/core.mjs', result.code);
 const { DEFAULT_SETTINGS, normalizeSettings, validSettings, validMessage } = await import('../artifacts/settings/core.mjs');
 
 test('default settings use ten minutes and legacy exact settings preserve explicit preferences', () => {
-  assert.deepEqual(DEFAULT_SETTINGS, { auto: true, expanded: false, collectionMinutes: 10 });
+  assert.deepEqual(DEFAULT_SETTINGS, { auto: true, expanded: false, collectionMinutes: 10, collectionWaitMinutes: 1 });
   for (const auto of [true, false]) for (const expanded of [true, false]) {
-    assert.deepEqual(normalizeSettings({ auto, expanded }), { auto, expanded, collectionMinutes: 10 });
+    assert.deepEqual(normalizeSettings({ auto, expanded }), { auto, expanded, collectionMinutes: 10, collectionWaitMinutes: 1 });
   }
   for (const collectionMinutes of [1, 3, 10]) {
     const source = { auto: false, expanded: true, collectionMinutes };
-    assert.equal(validSettings(source), true); assert.deepEqual(normalizeSettings(source), source);
-    assert.notEqual(normalizeSettings(source), source);
+    assert.deepEqual(normalizeSettings(source), { ...source, collectionWaitMinutes: 1 });
+    const current = { ...source, collectionWaitMinutes: 2 };
+    assert.equal(validSettings(current), true);
+    assert.deepEqual(normalizeSettings(current), current);
+    assert.notEqual(normalizeSettings(current), current);
   }
 });
 
 test('settings and collection runtime schemas strictly reject malformed or unbounded input', () => {
   for (const collectionMinutes of [0, 11, -1, 1.1, Infinity, NaN, '10', false, null, undefined]) {
-    assert.equal(validSettings({ auto: true, expanded: false, collectionMinutes }), false);
+    assert.equal(validSettings({ ...DEFAULT_SETTINGS, collectionMinutes }), false);
     assert.equal(validMessage({ kind: 'collection:set', minutes: collectionMinutes }), false);
+    assert.equal(validMessage({ kind: 'collection:set', minutes: 10, waitMinutes: collectionMinutes }), false);
+    assert.equal(validSettings({ ...DEFAULT_SETTINGS, collectionWaitMinutes: collectionMinutes }), false);
   }
   assert.equal(validMessage({ kind: 'collection:set', minutes: 1 }), true);
   assert.equal(validMessage({ kind: 'collection:set', minutes: 10 }), true);
+  assert.equal(validMessage({ kind: 'collection:set', minutes: 2, waitMinutes: 1 }), true);
   assert.equal(validMessage({ kind: 'collection:set', minutes: 5, auto: false }), false);
   assert.equal(validMessage({ kind: 'collection:set', collectionMinutes: 5 }), false);
   for (const value of [null, [], {}, { auto: 'false', expanded: true }, { auto: false, expanded: true, extra: true },
