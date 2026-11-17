@@ -1,5 +1,5 @@
 export type Completeness = 'unknown' | 'partial' | 'verified-complete';
-export interface Entry { id: string; text: string; stable: boolean; slot?: string; }
+export interface Entry { id: string; text: string; stable: boolean; slot?: string; literalSpeakerLabel?: true; }
 export interface Snapshot { entries: Entry[]; context: string; branch: string | null; invalidated?: boolean; disputedUserIds?: ReadonlySet<string>; observedHeadId?: string; submittedAppend?: { epoch: number; after: string; id: string }; messages?: { id: string; role: 'user' | 'assistant'; apiId: string | null }[]; }
 export interface CompleteProof { source: 'conversation-structure'; branch: string; exhausted: boolean; orderedIds: string[]; }
 export interface Settings { auto: boolean; expanded: boolean; collectionMinutes: number; collectionWaitMinutes: number; }
@@ -31,6 +31,9 @@ export function normalizeSettings(value: unknown): Settings {
   }
   return { ...DEFAULT_SETTINGS };
 }
+export function isSpeakerLabel(text: string): boolean {
+  return /^(?:你說|您說|You said)\s*:$/iu.test(text.normalize('NFKC').trim());
+}
 export function normalize(value: string): string { return value.normalize('NFKC').toLocaleLowerCase().replace(/\s+/g, ' ').trim(); }
 export type BranchConfidence = 'verified' | 'unverified';
 export interface ObservedSegment { ids: string[]; ordered: boolean; }
@@ -60,9 +63,12 @@ export function validStoredIndex(value: unknown): value is StoredIndex {
     if (!Array.isArray(entries) || !Array.isArray(segments) || entries.length > CACHE_LIMITS.entries || segments.length > entries.length) return false;
     const ids = new Set<string>();
     for (const entry of entries) {
-      if (!exactKeys(entry, Object.hasOwn(entry ?? {}, 'slot') ? ['id', 'text', 'stable', 'slot'] : ['id', 'text', 'stable']) ||
+      if (!exactKeys(entry, ['id', 'text', 'stable',
+        ...(Object.hasOwn(entry ?? {}, 'slot') ? ['slot'] : []),
+        ...(Object.hasOwn(entry ?? {}, 'literalSpeakerLabel') ? ['literalSpeakerLabel'] : [])]) ||
         typeof entry.id !== 'string' || !entry.id || entry.id.length > 512 || ids.has(entry.id) ||
         typeof entry.text !== 'string' || entry.stable !== true ||
+        (Object.hasOwn(entry, 'literalSpeakerLabel') && (entry.literalSpeakerLabel !== true || !isSpeakerLabel(entry.text))) ||
         (Object.hasOwn(entry, 'slot') && (typeof entry.slot !== 'string' || !entry.slot || entry.slot.length > 512))) return false;
       ids.add(entry.id); count++; characters += entry.text.length;
       if (count > CACHE_LIMITS.entries || characters > CACHE_LIMITS.characters) return false;
@@ -87,6 +93,31 @@ export function validStoredIndex(value: unknown): value is StoredIndex {
     generation.ordered && (generation.segments as ObservedSegment[]).length > 1 ||
     generation.ordered && (generation.segments as ObservedSegment[]).some(segment => !segment.ordered)) return false;
   return true;
+}
+
+// Old versions saved the label as plain prompt text, including offscreen rows.
+export function discardLegacySpeakerLabels(state: StoredIndex): StoredIndex {
+  const clean = <T extends { entries: Entry[]; segments: ObservedSegment[] }>(group: T): T => {
+    const entries = group.entries.filter(entry => entry.literalSpeakerLabel || !isSpeakerLabel(entry.text));
+    if (entries.length === group.entries.length) return group;
+    const ids = new Set(entries.map(entry => entry.id));
+    const segments = group.segments.map(segment => ({
+      ...segment, ids: segment.ids.filter(id => ids.has(id)),
+    })).filter(segment => segment.ids.length);
+    return { ...group, entries, segments };
+  };
+  const active = clean(state), quarantine = state.quarantine.map(clean).filter(group => group.entries.length);
+  if (active === state && quarantine.length === state.quarantine.length &&
+    quarantine.every((group, index) => group === state.quarantine[index])) return state;
+  const cleaned = { ...active, quarantine };
+  const ids = new Set(active.entries.map(entry => entry.id));
+  if (cleaned.observedHeadId && !ids.has(cleaned.observedHeadId)) delete cleaned.observedHeadId;
+  if (cleaned.recovery) {
+    const candidateIds = cleaned.recovery.candidateIds.filter(id => ids.has(id));
+    if (candidateIds.length) cleaned.recovery = { candidateIds };
+    else delete cleaned.recovery;
+  }
+  return cleaned;
 }
 
 type OrderGraph = Map<string, Set<string>>;
@@ -159,7 +190,9 @@ export class IndexStore {
     return null;
   }
   exportState(): StoredIndex {
-    const copy = (entries: Entry[]) => entries.filter(entry => entry.stable).map(({ id, text, slot }) => ({ id, text, stable: true, ...(slot ? { slot } : {}) }));
+    const copy = (entries: Entry[]) => entries.filter(entry => entry.stable).map(({ id, text, slot, literalSpeakerLabel }) => ({
+      id, text, stable: true, ...(slot ? { slot } : {}), ...(literalSpeakerLabel ? { literalSpeakerLabel } : {}),
+    }));
     const segments = (source: ObservedSegment[], entries: Entry[]) => {
       const ids = new Set(entries.map(entry => entry.id));
       return source.map(segment => ({ ids: segment.ids.filter(id => ids.has(id)), ordered: segment.ordered })).filter(segment => segment.ids.length);
@@ -174,7 +207,7 @@ export class IndexStore {
   }
   restoreState(value: unknown, snapshot: Snapshot): boolean {
     if (!validStoredIndex(value) || value.context !== snapshot.context) return false;
-    const state = structuredClone(value), current = new Map(snapshot.entries.filter(entry => entry.stable).map(entry => [entry.id, entry.text]));
+    const state = discardLegacySpeakerLabels(structuredClone(value)), current = new Map(snapshot.entries.filter(entry => entry.stable).map(entry => [entry.id, entry.text]));
     const ambiguous = new Set<string>();
     for (const entry of snapshot.entries) if (entry.stable && current.get(entry.id) !== entry.text) ambiguous.add(entry.id);
     const overlap = state.entries.filter(entry => current.has(entry.id));
@@ -263,7 +296,8 @@ export class IndexStore {
       if (!e || typeof e.id !== 'string' || !e.id || typeof e.text !== 'string') continue;
       if (unique.has(e.id) && unique.get(e.id)!.text !== e.text) ambiguous.add(e.id);
       // Copy only plain prompt fields, never adapter-owned nodes or other properties.
-      unique.set(e.id, { id: e.id, text: e.text, stable: e.stable === true, ...(typeof e.slot === 'string' && e.slot ? { slot: e.slot } : {}) });
+      unique.set(e.id, { id: e.id, text: e.text, stable: e.stable === true, ...(typeof e.slot === 'string' && e.slot ? { slot: e.slot } : {}),
+        ...(e.literalSpeakerLabel === true && isSpeakerLabel(e.text) ? { literalSpeakerLabel: true } : {}) });
     }
     for (const id of ambiguous) unique.delete(id);
     const items = [...unique.values()];
@@ -343,7 +377,7 @@ export class IndexStore {
         const extra = item.text.length - existing.text.length;
         if (this.characters + extra > this.limits.characters) { changed = this.markLimit('characters') || changed; continue; }
         if (bodyChanged) this.recoveredIds.delete(item.id);
-        if (existing.text !== item.text || existing.stable !== item.stable || existing.slot !== item.slot) {
+        if (existing.text !== item.text || existing.stable !== item.stable || existing.slot !== item.slot || existing.literalSpeakerLabel !== item.literalSpeakerLabel) {
           byId.set(item.id, item); this.characters += extra; changed = true;
         }
         continue;

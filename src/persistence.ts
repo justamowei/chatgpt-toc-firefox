@@ -1,7 +1,7 @@
-import { CACHE_LIMITS, IndexStore, validStoredIndex, type Snapshot, type StoredGeneration, type StoredIndex } from './core';
+import { CACHE_LIMITS, discardLegacySpeakerLabels, IndexStore, validStoredIndex, type Snapshot, type StoredGeneration, type StoredIndex } from './core';
 
 export const CACHE_KEY = 'toc-index-v1';
-export const PROFILE_LIMITS = { conversations: 12, characters: 6_000_000 };
+export const PROFILE_LIMITS = { characters: 6_000_000 };
 export interface IndexBackend { load(context: string): Promise<unknown>; save(state: StoredIndex): Promise<void>; clearPage?(context: string): Promise<void>; }
 export type PersistenceStatus = 'loading' | 'pending' | 'saved' | 'error' | 'off';
 interface LocalStorage {
@@ -22,7 +22,7 @@ export function conversationContext(url: string): string | null {
 function validProfile(value: unknown): value is ProfileCache {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const profile = value as ProfileCache;
-  if (Object.keys(profile).length !== 2 || profile.version !== 1 || !Array.isArray(profile.records) || profile.records.length > PROFILE_LIMITS.conversations) return false;
+  if (Object.keys(profile).length !== 2 || profile.version !== 1 || !Array.isArray(profile.records)) return false;
   const contexts = new Set<string>();
   for (const record of profile.records) {
     if (!record || typeof record !== 'object' || Array.isArray(record) || Object.keys(record).length !== 2 ||
@@ -38,6 +38,8 @@ const fingerprint = (state: StoredIndex): string => JSON.stringify(state);
 // remain candidates; contradictory bodies, order or known branches are isolated.
 export function mergeStoredIndices(previous: StoredIndex, incoming: StoredIndex): StoredIndex {
   if (!validStoredIndex(previous) || !validStoredIndex(incoming) || previous.context !== incoming.context) return structuredClone(incoming);
+  previous = discardLegacySpeakerLabels(previous);
+  incoming = discardLegacySpeakerLabels(incoming);
   let active = structuredClone(incoming);
   const knownBranchChanged = previous.branch !== null && incoming.branch !== null && previous.branch !== incoming.branch;
   const generations: StoredGeneration[] = [...incoming.quarantine, ...previous.quarantine.map(generation =>
@@ -135,6 +137,7 @@ export class CacheBroker implements IndexBackend {
       if (conversationContext(context) !== context) return undefined;
       const profile = await this.profile(), record = profile.records.find(record => record.state.context === context);
       if (!record) return undefined;
+      record.state = discardLegacySpeakerLabels(record.state);
       record.touched = Math.max(0, Math.floor(this.now()));
       await this.storage.set({ [CACHE_KEY]: profile });
       return structuredClone(record.state);
@@ -143,18 +146,20 @@ export class CacheBroker implements IndexBackend {
   save(state: StoredIndex): Promise<void> {
     // Clone before joining the queue so subsequent caller mutation cannot alter a queued write.
     if (!validStoredIndex(state) || conversationContext(state.context) !== state.context) return Promise.reject(new Error('Invalid conversation cache'));
-    const next = structuredClone(state);
+    const next = discardLegacySpeakerLabels(structuredClone(state));
     return this.serial(async () => {
       const profile = await this.profile(), previous = profile.records.find(record => record.state.context === next.context);
       const merged = previous ? mergeStoredIndices(previous.state, next) : next;
       if (previous && fingerprint(previous.state) === fingerprint(merged)) return;
-      if (JSON.stringify({ version: 1, records: [{ touched: 0, state: merged }] }).length > PROFILE_LIMITS.characters)
-        throw new Error('Conversation cache exceeds serialized profile budget');
-      const records = profile.records.filter(record => record.state.context !== next.context).sort((a, b) => b.touched - a.touched);
-      records.unshift({ touched: Math.max(0, Math.floor(this.now())), state: merged });
-      records.splice(PROFILE_LIMITS.conversations);
-      const bounded: ProfileCache = { version: 1, records };
-      while (records.length && JSON.stringify(bounded).length > PROFILE_LIMITS.characters) records.pop();
+      const bounded: ProfileCache = { version: 1, records: [{ touched: Math.max(0, Math.floor(this.now())), state: merged }] };
+      let characters = JSON.stringify(bounded).length;
+      if (characters > PROFILE_LIMITS.characters) throw new Error('Conversation cache exceeds serialized profile budget');
+      const older = profile.records.filter(record => record.state.context !== next.context).sort((a, b) => b.touched - a.touched);
+      for (const record of older) {
+        characters += JSON.stringify(record).length + 1; // Include the array delimiter.
+        if (characters > PROFILE_LIMITS.characters) break;
+        bounded.records.push(record);
+      }
       await this.storage.set({ [CACHE_KEY]: bounded });
     });
   }

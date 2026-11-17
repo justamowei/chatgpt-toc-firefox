@@ -214,18 +214,42 @@ test('merging at retention capacity never evicts already saved stable witnesses 
   assert.equal(retained.every(entry => entry.id.startsWith('old-')), true); assert.equal(saved.limitReason, 'entries');
 });
 
-test('profile limits evict least-recently-used conversations and enforce total serialized character budget', async () => {
+test('profile keeps more than 12 conversations, with LRU eviction only at the character budget', async () => {
   let clock = 1; const storage = memory(), broker = new CacheBroker(storage, () => clock++);
-  for (let i = 0; i < 12; i++) await broker.save(state([entry('a')], 'branch-a', `https://chatgpt.com/c/test-${i}`));
-  await broker.load('https://chatgpt.com/c/test-0');
-  await broker.save(state([entry('a')], 'branch-a', 'https://chatgpt.com/c/test-12'));
-  assert.equal(storage.values[CACHE_KEY].records.length, 12);
-  assert.equal(await broker.load('https://chatgpt.com/c/test-1'), undefined);
-  assert.ok(await broker.load('https://chatgpt.com/c/test-0'));
+  const prompts = Array.from({ length: 125 }, (_, i) => entry('prompt-' + i));
+  for (let i = 0; i < 15; i++) await broker.save(state(prompts, 'branch-a', 'https://chatgpt.com/c/test-' + i));
+  assert.equal(storage.values[CACHE_KEY].records.length, 15);
+  assert.equal((await broker.load('https://chatgpt.com/c/test-0')).entries.length, 125);
   await broker.save(state([entry('large', 'x'.repeat(3_100_000))], 'branch-a', 'https://chatgpt.com/c/large-a'));
   await broker.save(state([entry('large', 'x'.repeat(3_100_000))], 'branch-a', 'https://chatgpt.com/c/large-b'));
   assert.ok(JSON.stringify(storage.values[CACHE_KEY]).length <= PROFILE_LIMITS.characters);
   assert.equal(await broker.load('https://chatgpt.com/c/large-a'), undefined);
+  assert.ok(await broker.load('https://chatgpt.com/c/large-b'));
+});
+
+test('legacy label-only rows disappear from persisted search, preserving real messages and order', async () => {
+  const storage = memory(), broker = new CacheBroker(storage);
+  const first = entry('before'), last = entry('after');
+  const placeholder = entry('old-label', '你說：');
+  const literal = { ...entry('confirmed-literal', '你說：'), literalSpeakerLabel: true };
+  const cached = {
+    version: 1, context, branch: null, entries: [first, placeholder, last, literal],
+    segments: [{ ids: [first.id, placeholder.id, last.id, literal.id], ordered: true }],
+    quarantine: [{ reason: 'text-change', entries: [entry('archived-label', '您說：')],
+      segments: [{ ids: ['archived-label'], ordered: true }], ordered: true }],
+    limitReason: null, observedHeadId: placeholder.id, recovery: { candidateIds: [placeholder.id, last.id] },
+  };
+  assert.equal(validStoredIndex(cached), true);
+  storage.values[CACHE_KEY] = { version: 1, records: [{ touched: 1, state: cached }] };
+  const loaded = await broker.load(context);
+  assert.equal(validStoredIndex(loaded), true);
+  assert.deepEqual(loaded.entries, [first, last, literal]);
+  assert.deepEqual(loaded.segments, [{ ids: [first.id, last.id, literal.id], ordered: true }]);
+  assert.deepEqual(loaded.quarantine, []);
+  assert.equal(loaded.observedHeadId, undefined);
+  assert.deepEqual(loaded.recovery, { candidateIds: [last.id] });
+  await broker.save(state([entry('fresh')], null));
+  assert.deepEqual((await broker.load(context)).entries.filter(e => e.text.includes('你說')), [literal]);
 });
 
 test('corrupt profile is discarded, no fresh-chat or cross-origin persistence is accepted', async () => {

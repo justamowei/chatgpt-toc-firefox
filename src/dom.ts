@@ -56,7 +56,7 @@ export class DomAdapter implements NavigationAdapter {
     }
     const disputed = new Set<string>();
     let parsed = 0;
-    for (const { node, role, stableId: rawId, slot, text } of turns) {
+    for (const { node, role, stableId: rawId, slot, text, literalSpeakerLabel } of turns) {
       const conflict = role === 'user' && !!rawId && this.disputedUserIds.has(rawId);
       if (role === 'user') {
         parsed++;
@@ -73,7 +73,7 @@ export class DomAdapter implements NavigationAdapter {
       if (nodes.has(id) && (role !== 'user' || entries.some(entry => entry.id === id))) continue;
       nodes.set(id, node);
       if (role === 'user') {
-        entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}) });
+        entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}), ...(literalSpeakerLabel ? { literalSpeakerLabel } : {}) });
       }
     }
     // Slots renumber during normal history loading. Version/order witnesses live
@@ -116,7 +116,8 @@ export class DomAdapter implements NavigationAdapter {
           this.routeStale.get(e.node) !== e.stableId && !this.disputedUserIds.has(e.stableId) &&
           !this.store.entries.some(known => known.id === e.stableId) &&
           !this.store.quarantine.some(group => group.entries.some(known => known.id === e.stableId)))
-          .map(e => ({ id: e.stableId!, text: e.text, stable: true, ...(e.slot ? { slot: e.slot } : {}) }));
+          .map(e => ({ id: e.stableId!, text: e.text, stable: true, ...(e.slot ? { slot: e.slot } : {}),
+            ...(e.literalSpeakerLabel ? { literalSpeakerLabel: e.literalSpeakerLabel } : {}) }));
         if (entries.length) groups.push(entries);
       }
     }
