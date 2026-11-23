@@ -18,7 +18,7 @@ export class DomAdapter implements NavigationAdapter {
   private disputedUserIds = new Set<string>();
   private rawUserIds = new WeakMap<HTMLElement, string>();
   private promptRecognition = { parsed: 0, disputed: 0, stable: 0, mountedOnly: 0 };
-  private routeStale = new WeakMap<HTMLElement, { context: string; id: string }>();
+  private routeStale = new WeakMap<HTMLElement, string>();
   private highlightCleanup: (() => void) | null = null;
   private returnWitness: Position | null = null;
   private loadDirection: Direction | null = null;
@@ -37,7 +37,7 @@ export class DomAdapter implements NavigationAdapter {
     // A fresh chat receives /c/id after its first prompt; those same nodes are
     // part of the new chat. Only a previous conversation can leave stale turns.
     if (this.lastContext && context !== this.lastContext && /\/c\/[^/]+/.test(new URL(this.lastContext).pathname))
-      for (const [id, node] of this.nodes) this.routeStale.set(node, { context: this.lastContext, id: this.rawUserIds.get(node) ?? id });
+      for (const [id, node] of this.nodes) this.routeStale.set(node, this.rawUserIds.get(node) ?? id);
     if (context !== this.lastContext) {
       this.disputedUserIds.clear(); this.submission = null; this.observedScroll = null;
     }
@@ -46,7 +46,7 @@ export class DomAdapter implements NavigationAdapter {
     const main = document.querySelector('main') ?? document.body;
     const turns = readTurns().filter(turn => {
       const stale = this.routeStale.get(turn.node);
-      return !stale || stale.context === context || stale.id !== (turn.stableId ?? this.transient.get(turn.node));
+      return stale === undefined || stale !== (turn.stableId ?? this.transient.get(turn.node));
     });
     const usersByIdentity = new Map<string, string>();
     for (const turn of turns) if (turn.role === 'user' && turn.stableId) {
@@ -56,7 +56,7 @@ export class DomAdapter implements NavigationAdapter {
     }
     const disputed = new Set<string>();
     let parsed = 0;
-    for (const { node, role, stableId: rawId, slot, text, literalSpeakerLabel } of turns) {
+    for (const { node, role, stableId: rawId, slot, text } of turns) {
       const conflict = role === 'user' && !!rawId && this.disputedUserIds.has(rawId);
       if (role === 'user') {
         parsed++;
@@ -73,7 +73,7 @@ export class DomAdapter implements NavigationAdapter {
       if (nodes.has(id) && (role !== 'user' || entries.some(entry => entry.id === id))) continue;
       nodes.set(id, node);
       if (role === 'user') {
-        entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}), ...(literalSpeakerLabel ? { literalSpeakerLabel } : {}) });
+        entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}) });
       }
     }
     // Slots renumber during normal history loading. Version/order witnesses live
@@ -93,17 +93,7 @@ export class DomAdapter implements NavigationAdapter {
       // Do not consume on read alone: a persistence probe may read without merging.
     } else if (pending && newest && newest.id !== pending.tail && newest.stable &&
       this.store.canSeek(newest.id) && promptText(newest.text) === pending.text) this.submission = null;
-    const firstTurn = turns[0], firstPrompt = entries[0];
-    let observedHeadId: string | undefined;
-    if (firstTurn?.role === 'user' && firstPrompt?.stable && firstTurn.stableId === firstPrompt.id) {
-      const root = this.scroller(firstTurn.node);
-      if (root.scrollTop <= 2 && root.scrollHeight > root.clientHeight + 2) {
-        const viewport = this.viewport(root), rect = firstTurn.node.getBoundingClientRect();
-        if (rect.height > 0 && rect.top >= viewport.top - 2 && rect.top < viewport.bottom &&
-          !this.boundaryLoading(root, viewport)) observedHeadId = firstPrompt.id;
-      }
-    }
-    return { entries, context, branch, disputedUserIds: new Set(this.disputedUserIds), submittedAppend, observedHeadId };
+    return { entries, context, branch, disputedUserIds: new Set(this.disputedUserIds), submittedAppend };
   }
   readRemoved(records: MutationRecord[]): Entry[][] {
     const groups: Entry[][] = [];
@@ -113,11 +103,10 @@ export class DomAdapter implements NavigationAdapter {
       for (const root of record.removedNodes) {
         if (!(root instanceof HTMLElement) || root.matches('aside, nav, form, [role="textbox"], [contenteditable="true"]')) continue;
         const entries = readTurns([root]).filter(e => e.role === 'user' && e.stableId &&
-          (this.routeStale.get(e.node)?.context === this.store.context || this.routeStale.get(e.node)?.id !== e.stableId) && !this.disputedUserIds.has(e.stableId) &&
+          this.routeStale.get(e.node) !== e.stableId && !this.disputedUserIds.has(e.stableId) &&
           !this.store.entries.some(known => known.id === e.stableId) &&
           !this.store.quarantine.some(group => group.entries.some(known => known.id === e.stableId)))
-          .map(e => ({ id: e.stableId!, text: e.text, stable: true, ...(e.slot ? { slot: e.slot } : {}),
-            ...(e.literalSpeakerLabel ? { literalSpeakerLabel: e.literalSpeakerLabel } : {}) }));
+          .map(e => ({ id: e.stableId!, text: e.text, stable: true, ...(e.slot ? { slot: e.slot } : {}) }));
         if (entries.length) groups.push(entries);
       }
     }
@@ -306,7 +295,7 @@ export class DomAdapter implements NavigationAdapter {
     const place = (current: HTMLElement): void => {
       // Let the browser resolve all scrolling ancestors and lazy turn shells,
       // just as selecting an already mounted message does.
-      const anchor = turn.role === 'user' ? current : this.shell(current);
+      const anchor = expected?.stable === false ? current : this.shell(current);
       anchor.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
       lastWrite = performance.now(); scrollWrites++;
     };
@@ -511,7 +500,7 @@ export class DomAdapter implements NavigationAdapter {
         if (collection) collection.anchor = { root, signature: beforeSignature };
       }
       return await new Promise<boolean>(resolve => {
-        const started = performance.now(), batchEnd = Math.max(0, timeout - 200);
+        const started = performance.now();
         let timer: ReturnType<typeof setTimeout>, nudged = false, finished = false, lastNudgeAt = 0;
         let changedSince = started, last = beforeSignature;
         const finish = (progress: boolean) => {
@@ -531,8 +520,7 @@ export class DomAdapter implements NavigationAdapter {
           const boundary = direction === 'older' ? current[0] : current.at(-1);
           const viewport = this.viewport(currentRoot), rect = boundary?.node.getBoundingClientRect();
           const loading = this.boundaryLoading(currentRoot, viewport);
-          const hasScrollRange = currentRoot.scrollHeight > currentRoot.clientHeight + 2;
-          const physical = hasScrollRange && !!rect && (direction === 'older'
+          const physical = !!rect && (direction === 'older'
             ? currentRoot.scrollTop <= 2 && rect.top >= viewport.top - 2 && rect.top < viewport.bottom
             : currentRoot.scrollTop + currentRoot.clientHeight >= currentRoot.scrollHeight - 2 && rect.bottom <= viewport.bottom + 2 && rect.bottom > viewport.top);
           const boundaryStatus = collection?.boundary.observe({ now, physical, loading,
@@ -545,11 +533,9 @@ export class DomAdapter implements NavigationAdapter {
             finish(true); return;
           }
           if (targetId !== null && this.mounted(targetId)) { this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return; }
-          // At a loaded edge, a negative scroll request clamps to the same
-          // position. Stay there and let the renderer prepend without treating
-          // silence as the end of history.
-          const canNudge = collection ? !physical && currentRoot.scrollTop > 2 && elapsed - lastNudgeAt >= 640 : !nudged && elapsed >= 640;
-          if (canNudge && currentSignature === beforeSignature && boundary?.node.isConnected && rect) {
+          // Continue through slow mounts. The configured collection wait
+          // applies after the loaded boundary remains quiet.
+          if (currentSignature === beforeSignature && boundary?.node.isConnected && rect && ((collection ? !physical && currentRoot.scrollTop > 2 && elapsed - lastNudgeAt >= 640 : !nudged && elapsed >= 640))) {
             nudged = true; lastNudgeAt = elapsed;
             // Once anchored, continue from the current position; never re-align the
             // same shell between batches.
@@ -561,13 +547,12 @@ export class DomAdapter implements NavigationAdapter {
           if (collection && this.collectionWaitExpired) {
             this.lastLoadReport.added += added; finish(added > 0 || currentSignature !== beforeSignature); return;
           }
-          if (elapsed >= Math.min(targetId === null ? 6500 : 1600, batchEnd) && current.length) {
+          if (elapsed >= Math.min(targetId === null ? 6500 : 1600, Math.max(0, timeout - 200)) && current.length) {
             this.lastLoadReport.added += added;
             finish(added > 0 || currentSignature !== beforeSignature); return;
           }
-          if (elapsed >= batchEnd) { finish(false); return; }
-          const interval = collection && (physical || !hasScrollRange) ? 500 : 80;
-          timer = setTimeout(poll, Math.min(interval, batchEnd - elapsed));
+          if (elapsed >= Math.max(0, timeout - 200)) { finish(false); return; }
+          timer = setTimeout(poll, 80);
         };
         signal.addEventListener('abort', aborted, { once: true }); timer = setTimeout(poll, 80);
       });
