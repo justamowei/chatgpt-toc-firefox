@@ -89,8 +89,6 @@ function start(): Instance {
     host.dataset.navigation = state; status.textContent = labels[state]; stop.hidden = state !== 'loading'; earlier.disabled = state === 'loading';
     if (state === 'idle' && navigator.lastStopReason === 'wait-limit') status.textContent =
       `已等待 ${collectionSettings.collectionWaitMinutes} 分鐘，暫無較早提問。本次新增 ${Math.max(0, store.entries.length - collectionStart)} 則，完整歷史尚未核對。`;
-    if (state === 'not-found' && navigator.lastStopReason === 'position-unstable')
-      status.textContent = '目標訊息已掛載，但頁面位置未穩定；已停止本次跳轉。可手動捲動後再試。';
     if (state === 'timed-out') status.textContent = navigator.lastStopReason === 'batch-limit'
       ? `已達本次${collecting ? '收集' : '尋找'}步數上限，${collecting ? `新增 ${Math.max(0, store.entries.length - collectionStart)} 則；可繼續收集。` : '目標尚未重新掛載，可重試。'}`
       : `已達本次${collecting ? '收集' : '尋找'}時間上限，${collecting ? `新增 ${Math.max(0, store.entries.length - collectionStart)} 則；可繼續收集。` : '目標尚未重新掛載，可重試。'}`;

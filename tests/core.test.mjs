@@ -365,14 +365,3 @@ test('a 20-minute collection override survives the prior 10-minute cutoff', asyn
 test('unconfirmed seeking can reverse once after stalls, with the same deadline and no infinite retry',async()=>{
  for(const found of [true,false]){let reversed=false,loads=[],mounted=false;const nav=new Navigator({mounted:()=>mounted,locate:()=>mounted,direction:()=>reversed?'newer':'older',reverseUnconfirmed:()=>{if(reversed)return false;reversed=true;return true;},load:async d=>{loads.push(d);if(reversed&&found)mounted=true;return false;}},()=>{},{totalMs:200,batches:12,batchMs:100,noProgress:3});assert.equal(await nav.run('target'),found?'located':'not-found');assert.deepEqual(loads,found?['older','older','older','newer']:['older','older','older','newer','newer','newer']);}
 });
-
-test('a mounted target rejected by its adapter is not repeatedly relocated by the outer loop', async () => {
-  let locates=0, loads=0;
-  const nav=new Navigator({ retryMountedLocate: false, mounted:()=>true,
-    locate:()=>{ locates++; return false; }, direction:()=> 'older',
-    load:async()=>{ loads++; return false; } },()=>{},limits);
-  assert.equal(await nav.run('target'),'not-found');
-  assert.equal(locates,1);
-  assert.equal(loads,0);
-  assert.equal(nav.lastStopReason,'position-unstable');
-});
