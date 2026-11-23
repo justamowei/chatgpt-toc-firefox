@@ -483,6 +483,7 @@ export interface Position { id: string; offset: number; role?: 'user' | 'assista
 export interface NavigationAdapter {
   readonly collectionFinished?: boolean;
   readonly collectionWaitExpired?: boolean;
+  readonly retryMountedLocate?: boolean;
   mounted(id: string): boolean;
   locate(id: string, signal: AbortSignal): boolean | Promise<boolean>;
   load(direction: 'older' | 'newer', signal: AbortSignal, timeout: number, targetId?: string | null): Promise<boolean>;
@@ -491,7 +492,7 @@ export interface NavigationAdapter {
 }
 export interface Limits { totalMs: number; collectionTotalMs?: number; batches: number; collectionBatches?: number; batchMs: number; noProgress: number; }
 export const NAV_LIMITS: Limits = { totalMs: 60_000, collectionTotalMs: 600_000, batches: 60, collectionBatches: 4800, batchMs: 8_000, noProgress: 3 };
-export type NavStopReason = 'none' | 'located' | 'not-found' | 'stalled' | 'boundary' | 'wait-limit' | 'batch-limit' | 'time-limit' | 'batch-timeout' | 'cancelled' | 'unsupported';
+export type NavStopReason = 'none' | 'located' | 'not-found' | 'stalled' | 'boundary' | 'wait-limit' | 'position-unstable' | 'batch-limit' | 'time-limit' | 'batch-timeout' | 'cancelled' | 'unsupported';
 export class Navigator {
   state: NavState = 'idle';
   lastStopReason: NavStopReason = 'none';
@@ -529,6 +530,8 @@ export class Navigator {
             Math.max(1, totalMs - (performance.now() - started)));
           if (!live()) return generation === this.generation ? this.finish('timed-out', generation, timeoutReason()) : 'cancelled';
           if (located) return this.finish('located', generation, 'located');
+          if (this.adapter.mounted(id) && this.adapter.retryMountedLocate === false)
+            return this.finish('not-found', generation, 'position-unstable');
           // scrollIntoView can evict or replace a mounted node before exact-ID
           // verification finishes. A failed attempt is not proof of absence;
           // keep seeking within the same cancellation and load limits.

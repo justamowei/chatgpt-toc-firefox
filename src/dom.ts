@@ -10,6 +10,8 @@ type Attempt = { method: string; before: number; requested: number; after: numbe
   boundary?: BoundaryStatus };
 export class DomAdapter implements NavigationAdapter {
   nodes = new Map<string, HTMLElement>();
+  readonly retryMountedLocate = false;
+  private lastPlacement: { method: string; writes: number; before: number; requested: number; after: number; rootChanged: boolean; outcome: string } | null = null;
   private transient = new WeakMap<HTMLElement, string>();
   private serial = 0;
   private lastContext = '';
@@ -130,6 +132,7 @@ export class DomAdapter implements NavigationAdapter {
     this.observedScroll = null;
     this.collection = null;
     this.lastAttempt = null;
+    this.lastPlacement = null;
     this.geometry.reset();
     this.adjacent.clear();
     this.hintEpoch = this.store.epoch;
@@ -245,6 +248,7 @@ export class DomAdapter implements NavigationAdapter {
   }
   begin(waitMs?: number): void {
     this.unconfirmedDirection = 'older'; this.reversedUnconfirmed = false;
+    this.lastPlacement = null;
     this.lastAttempt = null; this.lastLoadReport = { phase: waitMs !== undefined ? 'head' : 'scan', added: 0, steps: 0 };
     this.collection = waitMs !== undefined ? { waitMs, boundary: new CollectionBoundaryWitness(), lastRenderActivity: -Infinity } : null;
   }
@@ -257,7 +261,7 @@ export class DomAdapter implements NavigationAdapter {
     const root = this.scroller(this.nodes.values().next().value);
     return { scroll: { tag: root.tagName, marked: root.hasAttribute('data-scroll-root'), overflow: getComputedStyle(root).overflowY,
       client: root.clientHeight, width: root.clientWidth, height: root.scrollHeight, top: root.scrollTop, connected: root.isConnected },
-      prompts: { ...this.promptRecognition }, geometry: this.geometry.diagnostic(), adjacentWitnesses: this.adjacent.size, collection: this.collection ? 'head' : null, lastAttempt: this.lastAttempt };
+      prompts: { ...this.promptRecognition }, geometry: this.geometry.diagnostic(), adjacentWitnesses: this.adjacent.size, collection: this.collection ? 'head' : null, lastAttempt: this.lastAttempt, lastPlacement: this.lastPlacement };
   }
   private top(node: HTMLElement): number {
     const scroller = this.scroller(node);
@@ -309,29 +313,22 @@ export class DomAdapter implements NavigationAdapter {
     if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname || !this.mounted(id) ||
       !readTurns().some(stillMatches)) return false;
     let scrollWrites = 0, lastWrite = -Infinity;
+    const originalRoot = this.scroller(node);
+    const placement: NonNullable<DomAdapter['lastPlacement']> = { method: 'conversation-root', writes: 0, before: originalRoot.scrollTop,
+      requested: originalRoot.scrollTop, after: originalRoot.scrollTop, rootChanged: false, outcome: 'waiting' };
+    this.lastPlacement = placement;
     const place = (current: HTMLElement): void => {
       const root = this.scroller(current);
       if (!root.contains(current) || root.scrollHeight <= root.clientHeight + 2) return;
-      // Give the browser the desired inset in the same native operation.
-      // Restore the website's declarations immediately after alignment.
-      const margin = current.style.getPropertyValue('scroll-margin-top');
-      const marginPriority = current.style.getPropertyPriority('scroll-margin-top');
-      const padding = root.style.getPropertyValue('scroll-padding-top');
-      const paddingPriority = root.style.getPropertyPriority('scroll-padding-top');
-      try {
-        current.style.setProperty('scroll-margin-top', Math.min(80, root.clientHeight * .16) + 'px', 'important');
-        root.style.setProperty('scroll-padding-top', '0px', 'important');
-        current.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
-      } finally {
-        if (margin) current.style.setProperty('scroll-margin-top', margin, marginPriority);
-        else current.style.removeProperty('scroll-margin-top');
-        if (padding) root.style.setProperty('scroll-padding-top', padding, paddingPriority);
-        else root.style.removeProperty('scroll-padding-top');
-      }
-      lastWrite = performance.now(); scrollWrites++;
+      const top = Math.max(0, Math.min(root.scrollHeight - root.clientHeight,
+        root.scrollTop + current.getBoundingClientRect().top - this.viewport(root).top - Math.min(80, root.clientHeight * .16)));
+      placement.rootChanged ||= root !== originalRoot;
+      placement.requested = top;
+      // Move only the measured conversation viewport without changing site
+      // styles or moving its other scrolling ancestors.
+      root.scrollTo({ top, behavior: 'instant' });
+      lastWrite = performance.now(); placement.writes = ++scrollWrites;
     };
-    // Native element alignment respects scroll padding, margins and lazy
-    // layout. Recheck the same ID after the renderer settles.
     place(node);
     const aligned = (current: HTMLElement): boolean => {
       const root = this.scroller(current), viewport = this.viewport(root), rect = current.getBoundingClientRect();
@@ -349,6 +346,10 @@ export class DomAdapter implements NavigationAdapter {
       await new Promise<void>(resolve => setTimeout(resolve, 80));
       if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) return false;
       this.refresh(); node = this.nodes.get(id);
+      const currentRoot = node?.isConnected ? this.scroller(node) : originalRoot;
+      placement.after = currentRoot.scrollTop;
+      placement.rootChanged ||= currentRoot !== originalRoot;
+      placement.outcome = node?.isConnected ? 'unstable' : 'unmounted';
       if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) return false;
       if (node?.isConnected && readTurns().some(stillMatches)) {
         const now = performance.now();
@@ -367,6 +368,7 @@ export class DomAdapter implements NavigationAdapter {
     const rect = node.getBoundingClientRect(), top = Math.max(0, this.top(node));
     const bottom = Math.min(innerHeight, this.scroller(node).getBoundingClientRect().bottom);
     if (rect.bottom <= top || rect.top >= bottom || alignedSince === null || performance.now() - alignedSince < 480 || !aligned(node)) return false;
+    placement.outcome = 'located';
     this.highlightCleanup?.();
     const before = { marker: node.getAttribute('data-toc-located'), owner: node.getAttribute('data-chatgpt-toc-highlight') };
     node.setAttribute('data-toc-located', id); node.setAttribute('data-chatgpt-toc-highlight', id);
