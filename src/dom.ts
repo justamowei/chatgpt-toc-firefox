@@ -31,7 +31,7 @@ export class DomAdapter implements NavigationAdapter {
   private collection: { waitMs: number; boundary: CollectionBoundaryWitness; lastRenderActivity: number; anchor?: { root: HTMLElement; signature: string } } | null = null;
   private lastAttempt: Attempt | null = null;
   lastLoadReport: LoadReport = { phase: 'scan', added: 0, steps: 0 };
-  constructor(private store: IndexStore, private refresh: (direction?: Direction) => void) {}
+  constructor(private store: IndexStore, private refresh: (direction?: Direction) => void, private observe?: (kind: string, id?: string) => void) {}
   read(): Snapshot {
     const context = location.origin + location.pathname;
     // A fresh chat receives /c/id after its first prompt; those same nodes are
@@ -296,6 +296,7 @@ export class DomAdapter implements NavigationAdapter {
       // Let the browser resolve all scrolling ancestors and lazy turn shells,
       // just as selecting an already mounted message does.
       const anchor = expected?.stable === false ? current : this.shell(current);
+      this.observe?.('plugin-locate', id);
       anchor.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
       lastWrite = performance.now(); scrollWrites++;
     };
@@ -495,6 +496,7 @@ export class DomAdapter implements NavigationAdapter {
       const movesTowardTarget = edgeRect && (direction === 'older'
         ? edgeRect.top < startViewport.top - 2 : edgeRect.bottom > startViewport.bottom + 2);
       if (movesTowardTarget && edge?.node.isConnected && !signal.aborted && (!collection?.anchor || collection.anchor.root !== root || collection.anchor.signature !== beforeSignature)) {
+        this.observe?.('plugin-load-' + direction, edge.ids[0]);
         edge.node.scrollIntoView({ block: direction === 'older' ? 'start' : 'end', inline: 'nearest', behavior: 'instant' });
         attempt.requested = root.scrollTop;
         if (collection) collection.anchor = { root, signature: beforeSignature };
@@ -542,6 +544,7 @@ export class DomAdapter implements NavigationAdapter {
             const step = Math.max(80, currentRoot.clientHeight * .45);
             const top = direction === 'older' ? (physical ? -step : currentRoot.scrollTop - step)
               : currentRoot.scrollTop + Math.max(0, rect.bottom - viewport.bottom) + step;
+            this.observe?.('plugin-nudge-' + direction);
             currentRoot.scrollTo({ top, behavior: 'instant' }); attempt.requested = top;
           }
           if (collection && this.collectionWaitExpired) {

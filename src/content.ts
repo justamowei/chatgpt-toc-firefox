@@ -1,3 +1,4 @@
+import { PageObservation } from './observation';
 import { DEFAULT_SETTINGS, IndexStore, Navigator, normalize, validSettings, type NavState, type Position } from './core';
 import { DomAdapter } from './dom';
 import { supported, BUILD_REVISION } from './config';
@@ -70,6 +71,15 @@ function start(): Instance {
     if (text) void copyText(text, '已複製頁面診斷到剪貼簿。');
   }); copyDiagnosis.id = 'toc-copy-diagnosis'; copyDiagnosis.hidden = true;
   diagnosis.style.cssText = 'white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;user-select:text;max-height:150px;overflow:auto;margin:0 14px 12px';
+  const observation = new PageObservation();
+  const observePage = button('開始觀察', () => {
+    if (observation.active) {
+      observation.stop(); observePage.textContent = '開始觀察';
+      diagnose.click();
+    } else {
+      observation.start(); observePage.textContent = '停止觀察並產生診斷';
+    }
+  }); observePage.id = 'toc-observe';
   const diagnose = button('頁面診斷', () => {
     // Counts only; no conversation text, IDs, URLs, or account information.
     const counts: Record<string, number> = {};
@@ -77,12 +87,12 @@ function start(): Instance {
     diagnosis.textContent = JSON.stringify({ version: browser.runtime.getManifest().version, revision: BUILD_REVISION, collected: store.entries.length,
       observed: store.retainedCount, mounted: store.mounted.size, quarantined: store.quarantine.reduce((n, g) => n + g.entries.length, 0),
       limitReason: store.limitReason, quarantineReasons: [...new Set(store.quarantine.map(group => group.reason))],
-      navigation: adapter.diagnostic(), ...counts }, null, 2); diagnosis.hidden = false; copyDiagnosis.hidden = false;
+      navigation: adapter.diagnostic(), observation: observation.export(), ...counts }, null, 2); diagnosis.hidden = false; copyDiagnosis.hidden = false;
   }); diagnose.id = 'toc-diagnose';
-  footer.append(earlier, back, stop, copyDirectory, clearPage, settings, disable, diagnose);
+  footer.append(earlier, back, stop, copyDirectory, clearPage, settings, disable, diagnose, observePage);
   const hint = make('div', 'hint', 'Shift＋O 開啟 · Esc 收合');
   panel.append(header, searchWrap, scope, list, status, footer, diagnosis, copyDiagnosis, hint); shell.append(panel, rail); shadow.append(shell); document.documentElement.append(host);
-  const adapter = new DomAdapter(store, refresh);
+  const adapter = new DomAdapter(store, refresh, (kind, id) => observation.note(kind, id));
   const labels: Record<NavState, string> = { idle: '請選取已收錄的提問。', loading: '正在尋找訊息…', located: '已定位並高亮正確訊息。', cancelled: '已停止導航。', 'timed-out': '已達載入上限；可稍後重試。', unsupported: '目前頁面無法完成導航，請更新導航器。', 'not-found': '尚未找到這則訊息，可繼續載入。' };
   const navigator = new Navigator(adapter, state => {
     if (!alive) return;
@@ -259,6 +269,7 @@ function start(): Instance {
   }
   async function navigate(id: string | null): Promise<void> {
     if (!alive || clearing) return;
+    observation.note(id === null ? 'collect-request' : 'navigate-request', id ?? undefined);
     refresh();
     const request = ++navigationRequest, context = store.context;
     if (id === null && pendingRestore) {
@@ -419,7 +430,7 @@ function start(): Instance {
   function dispose(): void {
     if (!alive) return;
     void persistence.flush().catch(() => {}); persistence.dispose(); restoreToken++;
-    alive = false; cancel(); events.abort(); observer.disconnect(); clearTimeout(refreshTimer); clearInterval(routeTimer);
+    alive = false; observation.stop(); cancel(); events.abort(); observer.disconnect(); clearTimeout(refreshTimer); clearInterval(routeTimer);
     if (listFrame !== undefined) cancelAnimationFrame(listFrame);
     if (currentFrame !== undefined) cancelAnimationFrame(currentFrame);
     browser.runtime.onMessage.removeListener(runtimeListener); port?.disconnect(); port = null; adapter.dispose(); store.reset(); host.remove();
