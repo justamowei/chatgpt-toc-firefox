@@ -209,6 +209,7 @@ export class DomAdapter implements NavigationAdapter {
     for (const current of candidates) {
       const rect = current.getBoundingClientRect(), overflow = getComputedStyle(current).overflowY;
       if (current.clientHeight <= 100 || rect.height <= 100 || rect.bottom <= 0 || rect.top >= innerHeight ||
+        rect.right <= 0 || rect.left >= innerWidth ||
         !(/auto|scroll/.test(overflow) || overflow === 'hidden')) continue;
       if (current.scrollHeight > current.clientHeight + 2) {
         if (overflow !== 'hidden' || current.hasAttribute('data-scroll-root')) scrollable.push(current);
@@ -311,31 +312,45 @@ export class DomAdapter implements NavigationAdapter {
     const place = (current: HTMLElement): void => {
       const root = this.scroller(current);
       if (!root.contains(current) || root.scrollHeight <= root.clientHeight + 2) return;
-      root.scrollTo({ top: root.scrollTop + current.getBoundingClientRect().top - this.viewport(root).top,
-        behavior: 'instant' });
+      current.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
       lastWrite = performance.now(); scrollWrites++;
     };
-    // Move just the live conversation viewport. scrollIntoView can move other
-    // ancestors and the virtualizer may evict the target during that move.
+    // Native element alignment respects scroll padding, margins and lazy
+    // layout. Recheck the same ID after the renderer settles.
     place(node);
+    const aligned = (current: HTMLElement): boolean => {
+      const root = this.scroller(current), viewport = this.viewport(root), rect = current.getBoundingClientRect();
+      const inset = parseFloat(getComputedStyle(root).scrollPaddingTop) || 0;
+      const margin = parseFloat(getComputedStyle(current).scrollMarginTop) || 0;
+      const visible = rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.left < innerWidth &&
+        rect.bottom > viewport.top && rect.top < viewport.bottom;
+      return visible && (Math.abs(rect.top - viewport.top - inset - margin) <= 24 ||
+        root.scrollTop + root.clientHeight >= root.scrollHeight - 2 && rect.top >= viewport.top);
+    };
     const settleStarted = performance.now();
+    let alignedSince: number | null = null;
     do {
       await new Promise<void>(resolve => setTimeout(resolve, 80));
       if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) return false;
       this.refresh(); node = this.nodes.get(id);
       if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) return false;
       if (node?.isConnected && readTurns().some(stillMatches)) {
-        const root = this.scroller(node), viewport = this.viewport(root), rect = node.getBoundingClientRect();
-        if (rect.bottom > viewport.top && rect.top < viewport.bottom && performance.now() - lastWrite >= 240) break;
-        if (scrollWrites < 3 && performance.now() - lastWrite >= 320 && (rect.bottom <= viewport.top || rect.top >= viewport.bottom)) place(node);
-      }
+        const now = performance.now();
+        if (aligned(node)) {
+          alignedSince ??= now;
+          if (now - alignedSince >= 480) break;
+        } else {
+          alignedSince = null;
+          if (scrollWrites < 3 && now - lastWrite >= 320) place(node);
+        }
+      } else alignedSince = null;
     } while (performance.now() - settleStarted < 1800);
     if (!node?.isConnected) return false;
     if (signal.aborted || !node.isConnected || (expected && !this.canLocate(id)) ||
       !readTurns().some(stillMatches)) return false;
     const rect = node.getBoundingClientRect(), top = Math.max(0, this.top(node));
     const bottom = Math.min(innerHeight, this.scroller(node).getBoundingClientRect().bottom);
-    if (rect.bottom <= top || rect.top >= bottom) return false;
+    if (rect.bottom <= top || rect.top >= bottom || alignedSince === null || performance.now() - alignedSince < 480 || !aligned(node)) return false;
     this.highlightCleanup?.();
     const before = { marker: node.getAttribute('data-toc-located'), owner: node.getAttribute('data-chatgpt-toc-highlight') };
     node.setAttribute('data-toc-located', id); node.setAttribute('data-chatgpt-toc-highlight', id);
@@ -514,8 +529,7 @@ export class DomAdapter implements NavigationAdapter {
       const movesTowardTarget = edgeRect && (direction === 'older'
         ? edgeRect.top < startViewport.top - 2 : edgeRect.bottom > startViewport.bottom + 2);
       if (root.scrollHeight > root.clientHeight + 2 && root.contains(edge?.node ?? null) && movesTowardTarget && edge?.node.isConnected && !signal.aborted && (!collection?.anchor || collection.anchor.root !== root || collection.anchor.signature !== beforeSignature)) {
-        const delta = direction === 'older' ? edgeRect.top - startViewport.top : edgeRect.bottom - startViewport.bottom;
-        root.scrollTo({ top: root.scrollTop + delta, behavior: 'instant' });
+        edge.node.scrollIntoView({ block: direction === 'older' ? 'start' : 'end', inline: 'nearest', behavior: 'instant' });
         attempt.requested = root.scrollTop;
         if (collection) collection.anchor = { root, signature: beforeSignature };
       }

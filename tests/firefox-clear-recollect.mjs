@@ -25,6 +25,19 @@ const { driver, url, optionsUrl, close } = await fixtureSession('artifacts/firef
       }
       viewport.addEventListener('scroll',()=>{clearTimeout(timer);timer=setTimeout(render,90)});
       viewport.scrollTop=9500;render();
+      // Retained route surfaces remain laid out outside the horizontal viewport.
+      for(let i=0;i<5;i++){
+        const main=document.createElement('main');
+        main.style.cssText='position:fixed;left:-3000px;top:0;width:800px;height:600px';
+        const scroll=document.createElement('div');
+        scroll.style.cssText='height:500px;overflow:auto';
+        const copy=group.cloneNode(true);copy.removeAttribute('id');copy.style.cssText='position:relative;height:10000px';
+        scroll.append(copy);main.append(scroll);document.body.prepend(main);scroll.scrollTop=9500;
+      }
+      viewport.addEventListener('scroll',()=>{
+        if(!window.rebound)return;window.rebound=false;
+        setTimeout(()=>{window.rebounds=(window.rebounds||0)+1;viewport.scrollTop=9500},350);
+      });
       </script>`);
     return true;
   },
@@ -61,10 +74,18 @@ try {
   for(const target of [16,2,18]){
     await click('#toc-list [data-entry-id=q'+target+']');
     await wait(()=>js("return document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')===arguments[0];",'q'+target),'exact offscreen target '+target,18000);
-    const position=await js("const root=document.getElementById('viewport'),node=document.querySelector('[data-message-id=\"q'+arguments[0]+'\"]');return {top:root.scrollTop,y:node.getBoundingClientRect().top-root.getBoundingClientRect().top,page:document.scrollingElement.scrollTop};",target);
+    const position=await js("const root=document.getElementById('viewport'),node=root.querySelector('[data-message-id=\"q'+arguments[0]+'\"]');return {top:root.scrollTop,y:node.getBoundingClientRect().top-root.getBoundingClientRect().top,page:document.scrollingElement.scrollTop};",target);
     assert.ok(position.top>0,'target must not jump to the page head');
     assert.ok(Math.abs(position.y)<=3,'align the actual target bubble');
     assert.equal(position.page,0,'only move the conversation viewport');
   }
-  console.log('PASS: hidden labels ignored, nested viewport recovered with no accepted turns, reused route nodes restored, clear/recollect gets all 20, and distant jumps hit exact bubbles.');
+  assert.equal(await js("return document.querySelectorAll('main').length"),6);
+  await js("window.rebound=true");
+  await click('#toc-list [data-entry-id=q17]');
+  await wait(()=>js("const h=document.getElementById('chatgpt-toc-root');return h.dataset.navigation==='located' && document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')==='q17' && window.rebounds===1;"),'recover a delayed return to the bottom',18000);
+  await driver.sleep(650);
+  const stable=await js("const root=document.getElementById('viewport'),node=root.querySelector('[data-message-id=q17]');return {y:node?.getBoundingClientRect().top-root.getBoundingClientRect().top,top:root.scrollTop};");
+  assert.ok(Math.abs(stable.y)<=3,'success must remain at the exact prompt after the rebound');
+  assert.ok(stable.top<9500);
+  console.log('PASS: hidden labels ignored, nested viewport recovered with no accepted turns, reused route nodes restored, clear/recollect gets all 20, distant jumps hit exact bubbles, and a delayed bottom rebound recovers with six retained mains.');
 } catch(error) { console.error(JSON.stringify({state:await state(),diagnostic:await diagnostic()})); throw error; } finally { await close(); }

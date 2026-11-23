@@ -28,9 +28,17 @@ function textOf(node: HTMLElement, user = false): string {
 export function readTurns(roots?: ParentNode[]): Turn[] {
   const turns: Turn[] = [], seen = new Set<HTMLElement>();
   const mains = [...document.querySelectorAll('main')];
-  const liveMains = mains.filter(main => !main.closest('[hidden], [inert], [aria-hidden="true"]') &&
-    (main.getClientRects().length || getComputedStyle(main).display === 'contents') &&
-    getComputedStyle(main).visibility !== 'hidden');
+  const liveMains = mains.filter(main => {
+    if (main.closest('[hidden], [inert], [aria-hidden="true"]')) return false;
+    for (let ancestor: HTMLElement | null = main; ancestor; ancestor = ancestor.parentElement) {
+      const style = getComputedStyle(ancestor);
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+    }
+    if (getComputedStyle(main).display === 'contents') return true;
+    const rect = main.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.left < innerWidth &&
+      rect.bottom > 0 && rect.top < innerHeight;
+  });
   for (const root of roots ?? (mains.length ? liveMains : [document.body])) {
     const candidates = [
       ...(root.nodeType === 1 && (root as HTMLElement).matches(selector) ? [root as HTMLElement] : []),
