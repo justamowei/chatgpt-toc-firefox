@@ -1,12 +1,14 @@
+import { isSpeakerLabel } from './core';
 // Explicit role markers only: never infer a speaker from text or turn order.
 const shellSelector = '[data-testid^="conversation-turn-"], [data-turn-id][data-turn]';
 const selector = '[data-message-author-role], [data-conversation-role], [data-user-message-bubble], [data-chatgpt-agent-turn-start], [data-testid^="conversation-turn-"][data-turn], [data-turn-id][data-turn]';
+const speakerLabelSelector = 'h1,h2,h3,h4,h5,h6,[role="heading"],.sr-only,.visually-hidden,[data-testid="user-message-label"]';
 const bubbleSelector = '[data-user-message-bubble]';
-const excluded = 'aside, nav, form, [role="textbox"], [contenteditable="true"], #chatgpt-toc-root';
+const excluded = 'aside, nav, form, [hidden], [inert], [aria-hidden="true"], [role="textbox"], [contenteditable="true"], #chatgpt-toc-root';
 const assistantContainer = '[data-message-author-role="assistant"], [data-conversation-role="assistant"], [data-turn="assistant"]';
 const userMarker = '[data-user-message-bubble], [data-message-author-role="user"], [data-conversation-role="user"], [data-turn="user"]';
 type Role = 'user' | 'assistant';
-export interface Turn { node: HTMLElement; role: Role; stableId: string | null; slot: string | null; text: string; }
+export interface Turn { node: HTMLElement; role: Role; stableId: string | null; slot: string | null; text: string; literalSpeakerLabel?: true; }
 function identity(node: Element | null, attribute: string): string | null { return node?.getAttribute(attribute)?.trim() || null; }
 function textOf(node: HTMLElement, user = false): string {
   const parts: string[] = [];
@@ -15,8 +17,8 @@ function textOf(node: HTMLElement, user = false): string {
     // The site can render a leading screen-reader speaker label inside the turn.
     // Match its own element, never strip a prefix from the user's typed text.
     if (user && current !== node && current.nodeType === 1 &&
-      (current as Element).matches('h1,h2,h3,h4,h5,h6,.sr-only,.visually-hidden,[data-testid="user-message-label"]') && !parts.some(part => part.trim()) &&
-      /^(?:你說|您說|You said)\s*[:：]$/iu.test((current.textContent ?? '').trim())) return;
+      (current as Element).matches(speakerLabelSelector) && !parts.some(part => part.trim()) &&
+      isSpeakerLabel(current.textContent ?? '')) return;
     if (current.nodeType === 3) parts.push(current.nodeValue ?? '');
     else for (const child of current.childNodes) read(child);
   }
@@ -26,7 +28,18 @@ function textOf(node: HTMLElement, user = false): string {
 export function readTurns(roots?: ParentNode[]): Turn[] {
   const turns: Turn[] = [], seen = new Set<HTMLElement>();
   const mains = [...document.querySelectorAll('main')];
-  for (const root of roots ?? (mains.length ? mains : [document.body])) {
+  const liveMains = mains.filter(main => {
+    if (main.closest('[hidden], [inert], [aria-hidden="true"]')) return false;
+    for (let ancestor: HTMLElement | null = main; ancestor; ancestor = ancestor.parentElement) {
+      const style = getComputedStyle(ancestor);
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return false;
+    }
+    if (getComputedStyle(main).display === 'contents') return true;
+    const rect = main.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.left < innerWidth &&
+      rect.bottom > 0 && rect.top < innerHeight;
+  });
+  for (const root of roots ?? (mains.length ? liveMains : [document.body])) {
     const candidates = [
       ...(root.nodeType === 1 && (root as HTMLElement).matches(selector) ? [root as HTMLElement] : []),
       ...root.querySelectorAll<HTMLElement>(selector),
@@ -34,12 +47,18 @@ export function readTurns(roots?: ParentNode[]): Turn[] {
     const owner = (node: HTMLElement) => node.closest(shellSelector) ?? node.closest('[data-turn-key]');
     const explicitBubbleOwners = new Set<Element>();
     for (const candidate of candidates) {
-      if (!candidate.matches(bubbleSelector) || candidate.closest(excluded) || candidate.closest(assistantContainer)) continue;
+      if (!candidate.matches(bubbleSelector) || candidate.closest(excluded) || candidate.closest(assistantContainer) ||
+        candidate.matches(speakerLabelSelector) && isSpeakerLabel(candidate.textContent ?? '')) continue;
       const scope = owner(candidate);
       if (scope) explicitBubbleOwners.add(scope);
     }
     for (const candidate of candidates) {
       if (candidate.closest(excluded)) continue;
+      // Preserve detached removals for the observation cache, but never read
+      // a connected renderer copy hidden by a CSS ancestor.
+      if (candidate.isConnected && (!candidate.getClientRects().length ||
+        getComputedStyle(candidate).visibility === 'hidden')) continue;
+      if (candidate.matches(speakerLabelSelector) && isSpeakerLabel(candidate.textContent ?? '')) continue;
       const shell = candidate.closest<HTMLElement>(shellSelector), group = candidate.closest<HTMLElement>('[data-turn-key]');
       const explicit = candidate.getAttribute('data-message-author-role') ?? candidate.getAttribute('data-conversation-role') ?? candidate.getAttribute('data-turn');
       const bubble = candidate.hasAttribute('data-user-message-bubble');
@@ -69,6 +88,9 @@ export function readTurns(roots?: ParentNode[]): Turn[] {
       }
       if (seen.has(node)) continue;
       const text = textOf(node, role === 'user');
+      const literalSpeakerLabel = role === 'user' && isSpeakerLabel(text);
+      if (literalSpeakerLabel && (node.matches(speakerLabelSelector) ||
+        !node.matches('[data-user-message-bubble], [data-message-author-role="user"][data-message-id]'))) continue;
       if (role === 'assistant' && !text) continue;
       // A stable empty user placeholder is hydration, not evidence of an attachment.
       if (role === 'user' && !text && !node.querySelector('img, video, audio')) continue;
@@ -79,7 +101,8 @@ export function readTurns(roots?: ParentNode[]): Turn[] {
       const ownedMessage = message === node || messageRole === role || (role === 'user' && !!message?.hasAttribute('data-user-message-bubble'));
       const turnKey = identity(group, 'data-turn-key'), turnId = identity(shell, 'data-turn-id');
       const stableId = messageId && ownedMessage ? messageId : turnKey ? `turn-key:${role}:${turnKey}` : turnId ? `turn:${role}:${turnId}` : messageId ? `message:${role}:${messageId}` : null;
-      turns.push({ node, role, stableId, slot: identity(shell, 'data-testid'), text: text || '〔附件或非文字提問〕' });
+      turns.push({ node, role, stableId, slot: identity(shell, 'data-testid'), text: text || '〔附件或非文字提問〕',
+        ...(literalSpeakerLabel ? { literalSpeakerLabel: true } : {}) });
     }
   }
   return turns;

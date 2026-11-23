@@ -56,7 +56,7 @@ export class DomAdapter implements NavigationAdapter {
     }
     const disputed = new Set<string>();
     let parsed = 0;
-    for (const { node, role, stableId: rawId, slot, text } of turns) {
+    for (const { node, role, stableId: rawId, slot, text, literalSpeakerLabel } of turns) {
       const conflict = role === 'user' && !!rawId && this.disputedUserIds.has(rawId);
       if (role === 'user') {
         parsed++;
@@ -73,7 +73,8 @@ export class DomAdapter implements NavigationAdapter {
       if (nodes.has(id) && (role !== 'user' || entries.some(entry => entry.id === id))) continue;
       nodes.set(id, node);
       if (role === 'user') {
-        entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}) });
+        entries.push({ id, text, stable: !!stableId, ...(slot ? { slot } : {}),
+          ...(literalSpeakerLabel ? { literalSpeakerLabel: true as const } : {}) });
       }
     }
     // Slots renumber during normal history loading. Version/order witnesses live
@@ -106,7 +107,8 @@ export class DomAdapter implements NavigationAdapter {
           this.routeStale.get(e.node) !== e.stableId && !this.disputedUserIds.has(e.stableId) &&
           !this.store.entries.some(known => known.id === e.stableId) &&
           !this.store.quarantine.some(group => group.entries.some(known => known.id === e.stableId)))
-          .map(e => ({ id: e.stableId!, text: e.text, stable: true, ...(e.slot ? { slot: e.slot } : {}) }));
+          .map(e => ({ id: e.stableId!, text: e.text, stable: true, ...(e.slot ? { slot: e.slot } : {}),
+            ...(e.literalSpeakerLabel ? { literalSpeakerLabel: true as const } : {}) }));
         if (entries.length) groups.push(entries);
       }
     }
@@ -142,7 +144,12 @@ export class DomAdapter implements NavigationAdapter {
     this.observedScroll = target;
   }
   currentDirection(): Direction | undefined { return this.loadSignal && !this.loadSignal.aborted ? this.loadDirection ?? undefined : undefined; }
-  mounted(id: string): boolean { return this.store.context === location.origin + location.pathname && !!this.nodes.get(id)?.isConnected; }
+  mounted(id: string): boolean {
+    const node = this.nodes.get(id), rect = node?.getBoundingClientRect();
+    return this.store.context === location.origin + location.pathname && !!node?.isConnected &&
+      !!rect && rect.width > 0 && rect.height > 0 &&
+      !node.closest('[hidden], [inert], [aria-hidden="true"]');
+  }
   private matchesPrompt(id: string, expected: Entry, turn: ReturnType<typeof readTurns>[number]): boolean {
     return turn.role === 'user' && turn.node.isConnected && this.nodes.get(id) === turn.node &&
       expected.text === turn.text && (expected.stable ? turn.stableId === id : this.transient.get(turn.node) === id);
@@ -291,36 +298,53 @@ export class DomAdapter implements NavigationAdapter {
     if (witness && (witness.role !== turn.role || witness.version !== await this.version(turn.text))) return false;
     if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname || !this.mounted(id) ||
       !readTurns().some(stillMatches)) return false;
-    let scrollWrites = 0, lastWrite = -Infinity;
+    let lastWrite = -Infinity;
     const place = (current: HTMLElement): void => {
       // Let the browser resolve all scrolling ancestors and lazy turn shells,
       // just as selecting an already mounted message does.
       const anchor = expected?.stable === false ? current : this.shell(current);
       this.observe?.('plugin-locate', id);
       anchor.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
-      lastWrite = performance.now(); scrollWrites++;
+      lastWrite = performance.now();
     };
-    // Move just the live conversation viewport. scrollIntoView can move other
-    // ancestors and the virtualizer may evict the target during that move.
     place(node);
     const settleStarted = performance.now();
+    let stableSince = settleStarted, layoutSince = settleStarted, signature = '';
+    let previousNode: HTMLElement | undefined, previousRoot: HTMLElement | undefined;
+    let placed = false;
+    // A first alignment can be followed by an entire renderer rebuild. Track
+    // identity across replacement nodes and wait for the resulting layout,
+    // rather than declaring success while the first mounted window is visible.
     do {
       await new Promise<void>(resolve => setTimeout(resolve, 80));
       if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) return false;
       this.refresh(); node = this.nodes.get(id);
       if (signal.aborted || epoch !== this.store.epoch || context !== location.origin + location.pathname) return false;
-      if (node?.isConnected && readTurns().some(stillMatches)) {
-        const root = this.scroller(node), viewport = this.viewport(root), rect = node.getBoundingClientRect();
-        if (rect.bottom > viewport.top && rect.top < viewport.bottom && performance.now() - lastWrite >= 240) break;
-        if (scrollWrites < 3 && performance.now() - lastWrite >= 320 && (rect.bottom <= viewport.top || rect.top >= viewport.bottom)) place(node);
+      const now = performance.now();
+      if (!node || !this.mounted(id) || !readTurns().some(stillMatches)) {
+        stableSince = layoutSince = now; signature = ''; previousNode = previousRoot = undefined;
+        continue;
       }
-    } while (performance.now() - settleStarted < 1800);
-    if (!node?.isConnected) return false;
-    if (signal.aborted || !node.isConnected || (expected && !this.canLocate(id)) ||
-      !readTurns().some(stillMatches)) return false;
-    const rect = node.getBoundingClientRect(), top = Math.max(0, this.top(node));
-    const bottom = Math.min(innerHeight, this.scroller(node).getBoundingClientRect().bottom);
-    if (rect.bottom <= top || rect.top >= bottom) return false;
+      const root = this.scroller(node), viewport = this.viewport(root), rect = node.getBoundingClientRect();
+      const next = [root.scrollHeight, root.clientHeight, root.clientWidth,
+        Math.round(rect.top), Math.round(rect.height)].join(':');
+      if (node !== previousNode || root !== previousRoot || next !== signature) {
+        stableSince = layoutSince = now; signature = next; previousNode = node; previousRoot = root;
+      }
+      const atBottom = root.scrollTop + root.clientHeight >= root.scrollHeight - 2;
+      const aligned = rect.width > 0 && rect.height > 0 && rect.top >= viewport.top - 2 &&
+        (rect.top <= viewport.top + Math.min(160, root.clientHeight / 4) || atBottom && rect.top < viewport.bottom);
+      if (!aligned) {
+        stableSince = now;
+        // Let the website finish its own height compensation before issuing
+        // another alignment. Recompute from the live node, never cached pixels.
+        if (now - layoutSince >= 240 && now - lastWrite >= 320) place(node);
+      } else if (now - stableSince >= 1000) { placed = true; break; }
+    } while (performance.now() - settleStarted < 6000);
+    if (!placed || !node || signal.aborted || epoch !== this.store.epoch ||
+      context !== location.origin + location.pathname || !this.mounted(id) ||
+      (expected && !this.canLocate(id)) || !readTurns().some(stillMatches)) return false;
+    this.observe?.('plugin-located-stable', id);
     this.highlightCleanup?.();
     const before = { marker: node.getAttribute('data-toc-located'), owner: node.getAttribute('data-chatgpt-toc-highlight') };
     node.setAttribute('data-toc-located', id); node.setAttribute('data-chatgpt-toc-highlight', id);
