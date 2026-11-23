@@ -67,25 +67,34 @@ try {
   await wait(async()=>(await diagnostic()).mounted>=3,'cached original nodes accepted when returning to their route');
   await click('#toc-clear-page');
   await wait(async()=>(await state()).status.includes('已清除本頁目錄'),'page cleared');
+  await js("window.upwardMoves=[document.getElementById('viewport').scrollTop];document.getElementById('viewport').addEventListener('scroll',()=>window.upwardMoves.push(document.getElementById('viewport').scrollTop));");
   await click('#toc-earlier');
   await wait(async()=>(await state()).ids.length===20,'recollect all 20 from a cleared tail',25000);
   assert.deepEqual((await state()).ids,Array.from({length:20},(_,i)=>'q'+i));
   await click('#toc-stop');
+  const upwardMoves=await js("return window.upwardMoves");
+  assert.ok(upwardMoves.every((top,index)=>index===0||top<=upwardMoves[index-1]+2),'collection only moves upward in this stable layout');
   for(const target of [16,2,18]){
     await click('#toc-list [data-entry-id=q'+target+']');
     await wait(()=>js("return document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')===arguments[0];",'q'+target),'exact offscreen target '+target,18000);
     const position=await js("const root=document.getElementById('viewport'),node=root.querySelector('[data-message-id=\"q'+arguments[0]+'\"]');return {top:root.scrollTop,y:node.getBoundingClientRect().top-root.getBoundingClientRect().top,page:document.scrollingElement.scrollTop};",target);
     assert.ok(position.top>0,'target must not jump to the page head');
-    assert.ok(Math.abs(position.y)<=3,'align the actual target bubble');
+    assert.ok(Math.abs(position.y-80)<=3,'align the actual target bubble');
     assert.equal(position.page,0,'only move the conversation viewport');
   }
   assert.equal(await js("return document.querySelectorAll('main').length"),6);
-  await js("window.rebound=true");
+  await js("window.rebound=true;document.getElementById('viewport').querySelector('[data-message-id=q17]').style.scrollMarginTop='900px'");
   await click('#toc-list [data-entry-id=q17]');
   await wait(()=>js("const h=document.getElementById('chatgpt-toc-root');return h.dataset.navigation==='located' && document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')==='q17' && window.rebounds===1;"),'recover a delayed return to the bottom',18000);
   await driver.sleep(650);
   const stable=await js("const root=document.getElementById('viewport'),node=root.querySelector('[data-message-id=q17]');return {y:node?.getBoundingClientRect().top-root.getBoundingClientRect().top,top:root.scrollTop};");
-  assert.ok(Math.abs(stable.y)<=3,'success must remain at the exact prompt after the rebound');
+  assert.ok(Math.abs(stable.y-80)<=3,'success must remain at the exact prompt after the rebound');
   assert.ok(stable.top<9500);
-  console.log('PASS: hidden labels ignored, nested viewport recovered with no accepted turns, reused route nodes restored, clear/recollect gets all 20, distant jumps hit exact bubbles, and a delayed bottom rebound recovers with six retained mains.');
+  await js("const root=document.getElementById('viewport'),group=document.getElementById('group'),far=document.createElement('section');far.style.top='1500px';far.innerHTML='<div data-user-message-bubble data-message-id=q3>Question 3</div>';group.append(far);window.longJumpMoves=[];root.addEventListener('scroll',()=>window.longJumpMoves.push(root.scrollTop));");
+  await driver.sleep(250);
+  await click('#toc-list [data-entry-id=q1]');
+  await wait(()=>js("const h=document.getElementById('chatgpt-toc-root');return h.dataset.navigation==='located'&&document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')==='q1';"),'use the distant mounted prompt',18000);
+  const longMoves=await js("return window.longJumpMoves");
+  assert.ok(longMoves[0]<2000,'first move must choose q3 far above the current mounted window');
+  console.log('PASS: hidden labels ignored, nested viewport recovered with no accepted turns, reused route nodes restored, clear/recollect gets all 20, distant jumps hit exact bubbles, and a delayed bottom rebound recovers with six retained mains; collection stays upward and navigation uses the most distant mounted approach prompt.');
 } catch(error) { console.error(JSON.stringify({state:await state(),diagnostic:await diagnostic()})); throw error; } finally { await close(); }
