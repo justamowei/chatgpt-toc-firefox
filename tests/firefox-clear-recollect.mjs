@@ -96,5 +96,13 @@ try {
   await wait(()=>js("const h=document.getElementById('chatgpt-toc-root');return h.dataset.navigation==='located'&&document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')==='q1';"),'use the distant mounted prompt',18000);
   const longMoves=await js("return window.longJumpMoves");
   assert.ok(longMoves[0]<2000,'first move must choose q3 far above the current mounted window');
+  await js("window.singleJumpMoves=[];document.getElementById('viewport').addEventListener('scroll',()=>window.singleJumpMoves.push(document.getElementById('viewport').scrollTop));");
+  await click('#toc-list [data-entry-id=q2]');
+  await wait(()=>js("return document.getElementById('chatgpt-toc-root').dataset.navigation==='located' && document.querySelector('[data-chatgpt-toc-highlight]')?.getAttribute('data-message-id')==='q2';"),'single native mounted jump');
+  const single=await js("const root=document.getElementById('viewport'),node=root.querySelector('[data-message-id=q2]');return {moves:window.singleJumpMoves,y:node.getBoundingClientRect().top-root.getBoundingClientRect().top,margin:node.style.scrollMarginTop,padding:root.style.scrollPaddingTop};");
+  assert.ok(single.moves.length<=1,'ordinary mounted navigation should produce a single scroll');
+  assert.ok(Math.abs(single.y-80)<=3);
+  assert.equal(single.margin,'');
+  assert.equal(single.padding,'');
   console.log('PASS: hidden labels ignored, nested viewport recovered with no accepted turns, reused route nodes restored, clear/recollect gets all 20, distant jumps hit exact bubbles, and a delayed bottom rebound recovers with six retained mains; collection stays upward and navigation uses the most distant mounted approach prompt.');
 } catch(error) { console.error(JSON.stringify({state:await state(),diagnostic:await diagnostic()})); throw error; } finally { await close(); }

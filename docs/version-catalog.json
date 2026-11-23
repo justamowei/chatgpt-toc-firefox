@@ -350,7 +350,7 @@
   },
   "workingCandidate": {
     "version": "0.3.8",
-    "revision": "2026-11-24-v038-r5",
+    "revision": "2026-11-24-v038-r6",
     "branch": "fix/prompt-group-navigation",
     "status": "test-candidate",
     "liveStatus": "PENDING",

@@ -312,13 +312,22 @@ export class DomAdapter implements NavigationAdapter {
     const place = (current: HTMLElement): void => {
       const root = this.scroller(current);
       if (!root.contains(current) || root.scrollHeight <= root.clientHeight + 2) return;
-      current.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
-      // Resolve lazy layout natively first, then put the prompt's beginning
-      // below the page header rather than inheriting a large scroll margin.
-      if (current.isConnected) root.scrollBy({
-        top: current.getBoundingClientRect().top - this.viewport(root).top - Math.min(80, root.clientHeight * .16),
-        behavior: 'instant',
-      });
+      // Give the browser the desired inset in the same native operation.
+      // Restore the website's declarations immediately after alignment.
+      const margin = current.style.getPropertyValue('scroll-margin-top');
+      const marginPriority = current.style.getPropertyPriority('scroll-margin-top');
+      const padding = root.style.getPropertyValue('scroll-padding-top');
+      const paddingPriority = root.style.getPropertyPriority('scroll-padding-top');
+      try {
+        current.style.setProperty('scroll-margin-top', Math.min(80, root.clientHeight * .16) + 'px', 'important');
+        root.style.setProperty('scroll-padding-top', '0px', 'important');
+        current.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
+      } finally {
+        if (margin) current.style.setProperty('scroll-margin-top', margin, marginPriority);
+        else current.style.removeProperty('scroll-margin-top');
+        if (padding) root.style.setProperty('scroll-padding-top', padding, paddingPriority);
+        else root.style.removeProperty('scroll-padding-top');
+      }
       lastWrite = performance.now(); scrollWrites++;
     };
     // Native element alignment respects scroll padding, margins and lazy
@@ -348,7 +357,7 @@ export class DomAdapter implements NavigationAdapter {
           if (now - alignedSince >= 480) break;
         } else {
           alignedSince = null;
-          if (scrollWrites < 3 && now - lastWrite >= 320) place(node);
+          if (scrollWrites < 2 && now - lastWrite >= 600) place(node);
         }
       } else alignedSince = null;
     } while (performance.now() - settleStarted < 1800);
