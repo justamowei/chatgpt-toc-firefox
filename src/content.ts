@@ -322,6 +322,7 @@ function start(): Instance {
       if (!alive || store.context !== context || context !== location.origin + location.pathname) return;
       query = ''; input.value = '';
       store.reset(context, branch);
+      adapter.resetPage();
       refresh();
       status.textContent = '已清除本頁目錄，並重新收錄目前畫面上的提問。';
     } catch {

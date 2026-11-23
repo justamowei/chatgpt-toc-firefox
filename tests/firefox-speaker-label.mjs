@@ -9,6 +9,7 @@ const { driver, url, optionsUrl, close } = await fixtureSession('artifacts/firef
       (offscreen ? '' : '<section data-turn-key="label-only"><div data-conversation-role="user">你說：</div></section>' +
       '<section data-turn-key="literal"><div data-conversation-role="user">你說：</div><div data-user-message-bubble data-message-id="literal">你說：</div></section>') +
       '<section data-turn-key="message"><div data-user-message-bubble data-message-id="with-prefix"><h5 class="sr-only">你說：</h5><p>你說：這是正文</p></div></section>' +
+      '<section data-turn-key="heading-marker"><h5 data-user-message-bubble data-message-id="heading-label">你說：</h5><div data-message-author-role="user" data-message-id="body">Actual prompt</div></section>' +
       '<div style="height:700px"></div></main>');
     return true;
   },
@@ -32,12 +33,12 @@ try {
 
   await open(context);
   await wait(async () => (await rows()).some(([id]) => id === 'saved'), 'old cache restored');
-  assert.deepEqual((await rows()).sort(), [['literal', '你說：'], ['saved', '以前保存的提問'], ['with-prefix', '你說：這是正文']]);
+  assert.deepEqual((await rows()).sort(), [['body', 'Actual prompt'], ['literal', '你說：'], ['saved', '以前保存的提問'], ['with-prefix', '你說：這是正文']]);
   await wait(() => js("return document.getElementById('chatgpt-toc-root').shadowRoot.querySelector('#toc-scope').textContent.includes('已儲存於本機');"), 'cleaned cache saved');
 
   await open(context + '?offscreen');
   await wait(async () => (await rows()).some(([id]) => id === 'literal'), 'genuine offscreen literal restored');
-  assert.deepEqual((await rows()).sort(), [['literal', '你說：'], ['saved', '以前保存的提問'], ['with-prefix', '你說：這是正文']]);
+  assert.deepEqual((await rows()).sort(), [['body', 'Actual prompt'], ['literal', '你說：'], ['saved', '以前保存的提問'], ['with-prefix', '你說：這是正文']]);
   console.log('PASS: author labels excluded from the live DOM and old cache, with literal user messages retained after refresh.');
 } finally {
   await close();

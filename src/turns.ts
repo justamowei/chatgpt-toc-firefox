@@ -39,12 +39,18 @@ export function readTurns(roots?: ParentNode[]): Turn[] {
     const owner = (node: HTMLElement) => node.closest(shellSelector) ?? node.closest('[data-turn-key]');
     const explicitBubbleOwners = new Set<Element>();
     for (const candidate of candidates) {
-      if (!candidate.matches(bubbleSelector) || candidate.closest(excluded) || candidate.closest(assistantContainer)) continue;
+      if (!candidate.matches(bubbleSelector) || candidate.closest(excluded) || candidate.closest(assistantContainer) ||
+        candidate.matches(speakerLabelSelector) && isSpeakerLabel(candidate.textContent ?? '')) continue;
       const scope = owner(candidate);
       if (scope) explicitBubbleOwners.add(scope);
     }
     for (const candidate of candidates) {
       if (candidate.closest(excluded)) continue;
+      // Preserve detached removals for the observation cache, but never read
+      // a connected renderer copy hidden by a CSS ancestor.
+      if (candidate.isConnected && (!candidate.getClientRects().length ||
+        getComputedStyle(candidate).visibility === 'hidden')) continue;
+      if (candidate.matches(speakerLabelSelector) && isSpeakerLabel(candidate.textContent ?? '')) continue;
       const shell = candidate.closest<HTMLElement>(shellSelector), group = candidate.closest<HTMLElement>('[data-turn-key]');
       const explicit = candidate.getAttribute('data-message-author-role') ?? candidate.getAttribute('data-conversation-role') ?? candidate.getAttribute('data-turn');
       const bubble = candidate.hasAttribute('data-user-message-bubble');

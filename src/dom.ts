@@ -18,7 +18,7 @@ export class DomAdapter implements NavigationAdapter {
   private disputedUserIds = new Set<string>();
   private rawUserIds = new WeakMap<HTMLElement, string>();
   private promptRecognition = { parsed: 0, disputed: 0, stable: 0, mountedOnly: 0 };
-  private routeStale = new WeakMap<HTMLElement, string>();
+  private routeStale = new WeakMap<HTMLElement, { context: string; id: string }>();
   private highlightCleanup: (() => void) | null = null;
   private returnWitness: Position | null = null;
   private loadDirection: Direction | null = null;
@@ -37,7 +37,7 @@ export class DomAdapter implements NavigationAdapter {
     // A fresh chat receives /c/id after its first prompt; those same nodes are
     // part of the new chat. Only a previous conversation can leave stale turns.
     if (this.lastContext && context !== this.lastContext && /\/c\/[^/]+/.test(new URL(this.lastContext).pathname))
-      for (const [id, node] of this.nodes) this.routeStale.set(node, this.rawUserIds.get(node) ?? id);
+      for (const [id, node] of this.nodes) this.routeStale.set(node, { context: this.lastContext, id: this.rawUserIds.get(node) ?? id });
     if (context !== this.lastContext) {
       this.disputedUserIds.clear(); this.submission = null; this.observedScroll = null;
     }
@@ -46,7 +46,7 @@ export class DomAdapter implements NavigationAdapter {
     const main = document.querySelector('main') ?? document.body;
     const turns = readTurns().filter(turn => {
       const stale = this.routeStale.get(turn.node);
-      return stale === undefined || stale !== (turn.stableId ?? this.transient.get(turn.node));
+      return !stale || stale.context === context || stale.id !== (turn.stableId ?? this.transient.get(turn.node));
     });
     const usersByIdentity = new Map<string, string>();
     for (const turn of turns) if (turn.role === 'user' && turn.stableId) {
@@ -113,7 +113,7 @@ export class DomAdapter implements NavigationAdapter {
       for (const root of record.removedNodes) {
         if (!(root instanceof HTMLElement) || root.matches('aside, nav, form, [role="textbox"], [contenteditable="true"]')) continue;
         const entries = readTurns([root]).filter(e => e.role === 'user' && e.stableId &&
-          this.routeStale.get(e.node) !== e.stableId && !this.disputedUserIds.has(e.stableId) &&
+          (this.routeStale.get(e.node)?.context === this.store.context || this.routeStale.get(e.node)?.id !== e.stableId) && !this.disputedUserIds.has(e.stableId) &&
           !this.store.entries.some(known => known.id === e.stableId) &&
           !this.store.quarantine.some(group => group.entries.some(known => known.id === e.stableId)))
           .map(e => ({ id: e.stableId!, text: e.text, stable: true, ...(e.slot ? { slot: e.slot } : {}),
@@ -122,6 +122,17 @@ export class DomAdapter implements NavigationAdapter {
       }
     }
     return groups;
+  }
+  resetPage(): void {
+    this.routeStale = new WeakMap();
+    this.disputedUserIds.clear();
+    this.submission = null;
+    this.observedScroll = null;
+    this.collection = null;
+    this.lastAttempt = null;
+    this.geometry.reset();
+    this.adjacent.clear();
+    this.hintEpoch = this.store.epoch;
   }
   noteSubmission(text: string): void {
     this.submission = null;
@@ -184,7 +195,12 @@ export class DomAdapter implements NavigationAdapter {
     const observed = this.observedScroll;
     if (observed?.isConnected && observed.scrollHeight > observed.clientHeight + 2 &&
       (node?.isConnected ? observed.contains(node) : turnNodes.some(turn => observed.contains(turn)))) return observed;
-    const anchors = [node, ...turnNodes, ...document.querySelectorAll<HTMLElement>('main')];
+    // Renderer transitions can temporarily leave no accepted turns. Raw turn
+    // markers still identify the conversation's nested scrolling ancestors.
+    const rawTurns = turnNodes.length ? [] : [...document.querySelectorAll<HTMLElement>('main [data-user-message-bubble], main [data-conversation-role], main [data-message-author-role], main [data-turn-key]')]
+      .filter(turn => !turn.closest('aside, nav, form, [hidden], [inert], [aria-hidden="true"], #chatgpt-toc-root') &&
+        turn.getClientRects().length > 0 && getComputedStyle(turn).visibility !== 'hidden');
+    const anchors = [node, ...turnNodes, ...rawTurns, ...document.querySelectorAll<HTMLElement>('main')];
     for (const anchor of anchors) if (anchor?.isConnected) for (let current: HTMLElement | null = anchor; current; current = current.parentElement) candidates.add(current);
     for (const root of document.querySelectorAll<HTMLElement>('[data-scroll-root]'))
       if (root.querySelector('main') || root.closest('main')) candidates.add(root);
@@ -198,11 +214,11 @@ export class DomAdapter implements NavigationAdapter {
         if (overflow !== 'hidden' || current.hasAttribute('data-scroll-root')) scrollable.push(current);
         else if (current !== document.body && current !== document.documentElement &&
           !current.closest('aside, nav, form, [data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]') &&
-          turnNodes.some(turn => turn !== current && current.contains(turn))) hidden.push(current);
+          [...turnNodes, ...rawTurns].some(turn => turn !== current && current.contains(turn))) hidden.push(current);
       }
       if (current.hasAttribute('data-scroll-root')) stationary ??= current;
     }
-    const ownsTurn = (root: HTMLElement) => (node?.isConnected ? root.contains(node) : turnNodes.some(turn => root.contains(turn)));
+    const ownsTurn = (root: HTMLElement) => (node?.isConnected ? root.contains(node) : [...turnNodes, ...rawTurns].some(turn => root.contains(turn)));
     const outsideTurn = (root: HTMLElement) => !root.closest('[data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]');
     return scrollable.find(root => root.hasAttribute('data-scroll-root') && ownsTurn(root)) ??
       scrollable.find(root => outsideTurn(root) && ownsTurn(root)) ??
@@ -293,10 +309,10 @@ export class DomAdapter implements NavigationAdapter {
       !readTurns().some(stillMatches)) return false;
     let scrollWrites = 0, lastWrite = -Infinity;
     const place = (current: HTMLElement): void => {
-      // Let the browser resolve all scrolling ancestors and lazy turn shells,
-      // just as selecting an already mounted message does.
-      const anchor = turn.role === 'user' ? current : this.shell(current);
-      anchor.scrollIntoView({ block: 'start', inline: 'nearest', behavior: 'instant' });
+      const root = this.scroller(current);
+      if (!root.contains(current) || root.scrollHeight <= root.clientHeight + 2) return;
+      root.scrollTo({ top: root.scrollTop + current.getBoundingClientRect().top - this.viewport(root).top,
+        behavior: 'instant' });
       lastWrite = performance.now(); scrollWrites++;
     };
     // Move just the live conversation viewport. scrollIntoView can move other
@@ -388,11 +404,14 @@ export class DomAdapter implements NavigationAdapter {
     return this.store.seekDirection(targetId, anchor ? [anchor.id] : this.store.mounted);
   }
   private shell(node: HTMLElement): HTMLElement {
-    return node.closest<HTMLElement>('[data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]') ?? node;
+    const shell = node.closest<HTMLElement>('[data-testid^="conversation-turn-"], [data-turn-id][data-turn], [data-turn-key]');
+    // A shared turn group can span the whole mounted history. Its top is not
+    // the position of each message inside it.
+    return shell && shell.querySelectorAll('[data-user-message-bubble]').length <= 1 ? shell : node;
   }
   private frontier(root: HTMLElement): { node: HTMLElement; ids: string[] }[] {
     const shells = new Map<HTMLElement, string[]>();
-    for (const turn of readTurns()) if (turn.stableId && turn.node.isConnected) {
+    for (const turn of readTurns()) if (turn.stableId && turn.node.isConnected && root.contains(turn.node) && this.nodes.get(turn.stableId) === turn.node) {
       const shell = this.shell(turn.node);
       if (!shell.isConnected || shell.getBoundingClientRect().height <= 0) continue;
       const ids = shells.get(shell) ?? []; ids.push(turn.stableId); shells.set(shell, ids);
@@ -494,8 +513,9 @@ export class DomAdapter implements NavigationAdapter {
       // now-trailing edge in the opposite direction.
       const movesTowardTarget = edgeRect && (direction === 'older'
         ? edgeRect.top < startViewport.top - 2 : edgeRect.bottom > startViewport.bottom + 2);
-      if (movesTowardTarget && edge?.node.isConnected && !signal.aborted && (!collection?.anchor || collection.anchor.root !== root || collection.anchor.signature !== beforeSignature)) {
-        edge.node.scrollIntoView({ block: direction === 'older' ? 'start' : 'end', inline: 'nearest', behavior: 'instant' });
+      if (root.scrollHeight > root.clientHeight + 2 && root.contains(edge?.node ?? null) && movesTowardTarget && edge?.node.isConnected && !signal.aborted && (!collection?.anchor || collection.anchor.root !== root || collection.anchor.signature !== beforeSignature)) {
+        const delta = direction === 'older' ? edgeRect.top - startViewport.top : edgeRect.bottom - startViewport.bottom;
+        root.scrollTo({ top: root.scrollTop + delta, behavior: 'instant' });
         attempt.requested = root.scrollTop;
         if (collection) collection.anchor = { root, signature: beforeSignature };
       }
@@ -538,7 +558,7 @@ export class DomAdapter implements NavigationAdapter {
           // position. Stay there and let the renderer prepend without treating
           // silence as the end of history.
           const canNudge = collection ? !physical && currentRoot.scrollTop > 2 && elapsed - lastNudgeAt >= 640 : !nudged && elapsed >= 640;
-          if (canNudge && currentSignature === beforeSignature && boundary?.node.isConnected && rect) {
+          if (canNudge && hasScrollRange && currentSignature === beforeSignature && boundary?.node.isConnected && rect) {
             nudged = true; lastNudgeAt = elapsed;
             // Once anchored, continue from the current position; never re-align the
             // same shell between batches.
