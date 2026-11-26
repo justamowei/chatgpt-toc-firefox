@@ -1,0 +1,185 @@
+{
+  "date": "2026-10-04 Asia/Taipei",
+  "source": "real ChatGPT in Codex IAB; readonly DOM geometry and native keyboard observations; addon not executed",
+  "notes": [
+    "Control+Home did not reach conversation head.",
+    "PageUp changed height from10792 to12840 and scrollTop increased on one upward move; coordinates require revalidation.",
+    "This does not validate full addon on real ChatGPT or Firefox."
+  ],
+  "frames": [
+    {
+      "action": "before-native-home",
+      "scroll": [
+        {
+          "client": 720,
+          "height": 10792,
+          "top": 3202
+        }
+      ],
+      "users": [
+        {
+          "y": -70
+        },
+        {
+          "y": 1190
+        },
+        {
+          "y": 4970
+        },
+        {
+          "y": 6230
+        }
+      ]
+    },
+    {
+      "action": "after-native-home",
+      "scroll": [
+        {
+          "client": 720,
+          "height": 10792,
+          "top": 3104.5
+        }
+      ],
+      "users": [
+        {
+          "y": 27.5
+        },
+        {
+          "y": 1287.5
+        },
+        {
+          "y": 5067.5
+        },
+        {
+          "y": 6327.5
+        }
+      ]
+    },
+    {
+      "action": "native-home-settled",
+      "scroll": [
+        {
+          "client": 720,
+          "height": 10792,
+          "top": 2113.5
+        }
+      ],
+      "users": [
+        {
+          "y": -241.5
+        },
+        {
+          "y": 1018.5
+        },
+        {
+          "y": 6058.5
+        },
+        {
+          "y": 7318.5
+        }
+      ]
+    },
+    {
+      "action": "native-pageup-0",
+      "scroll": [
+        {
+          "client": 720,
+          "height": 10792,
+          "top": 2067.5
+        }
+      ],
+      "users": [
+        {
+          "y": -195.5
+        },
+        {
+          "y": 1064.5
+        },
+        {
+          "y": 6104.5
+        },
+        {
+          "y": 7364.5
+        }
+      ]
+    },
+    {
+      "action": "native-pageup-1",
+      "scroll": [
+        {
+          "client": 720,
+          "height": 10792,
+          "top": 1497
+        }
+      ],
+      "users": [
+        {
+          "y": -885
+        },
+        {
+          "y": 375
+        },
+        {
+          "y": 1635
+        },
+        {
+          "y": 6675
+        },
+        {
+          "y": 7935
+        }
+      ]
+    },
+    {
+      "action": "native-pageup-2",
+      "scroll": [
+        {
+          "client": 720,
+          "height": 12840,
+          "top": 2882
+        }
+      ],
+      "users": [
+        {
+          "y": -222
+        },
+        {
+          "y": 1038
+        },
+        {
+          "y": 7338
+        },
+        {
+          "y": 8598
+        }
+      ]
+    },
+    {
+      "action": "native-pageup-3",
+      "scroll": [
+        {
+          "client": 720,
+          "height": 12840,
+          "top": 2398
+        }
+      ],
+      "users": [
+        {
+          "y": -998
+        },
+        {
+          "y": 262
+        },
+        {
+          "y": 1522
+        },
+        {
+          "y": 7822
+        },
+        {
+          "y": 9082
+        }
+      ]
+    }
+  ]
+}

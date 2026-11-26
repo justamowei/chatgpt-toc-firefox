@@ -1,0 +1,151 @@
+{
+  "source": "current production readTurns executed read-only on real ChatGPT DOM in Codex IAB; current IndexStore replayed locally",
+  "addonExecutedInIab": false,
+  "firefoxLiveAcceptance": false,
+  "frames": 20,
+  "observed": 12,
+  "finalMounted": 2,
+  "exactIdTextOrder": true,
+  "trace": [
+    {
+      "action": "fix-head",
+      "mounted": 5,
+      "observed": 5,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-0",
+      "mounted": 5,
+      "observed": 5,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-1",
+      "mounted": 5,
+      "observed": 6,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-2",
+      "mounted": 4,
+      "observed": 6,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-3",
+      "mounted": 4,
+      "observed": 7,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-4",
+      "mounted": 5,
+      "observed": 8,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-5",
+      "mounted": 6,
+      "observed": 10,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-6",
+      "mounted": 5,
+      "observed": 10,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-7",
+      "mounted": 4,
+      "observed": 10,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-8",
+      "mounted": 4,
+      "observed": 10,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-9",
+      "mounted": 5,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-10",
+      "mounted": 5,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-11",
+      "mounted": 4,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-12",
+      "mounted": 4,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-13",
+      "mounted": 3,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-14",
+      "mounted": 3,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-15",
+      "mounted": 2,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-16",
+      "mounted": 2,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-17",
+      "mounted": 2,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    },
+    {
+      "action": "fix-down-18",
+      "mounted": 2,
+      "observed": 12,
+      "ordered": true,
+      "quarantined": 0
+    }
+  ]
+}

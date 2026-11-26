@@ -1,0 +1,43 @@
+{
+  "runtimeCommit": "8f2daab1536ad9e30abc74479a8dfa3854766d57",
+  "production": {
+    "version": "0.3.1",
+    "revision": "2026-10-06-r4",
+    "fixture": false,
+    "hashes": {
+      "background.js": "bba203ccf71c5419898051ebd5de68c850830d3f84535d4d85e31a50f83b8977",
+      "content.js": "875412c5be1497639c43ed650c63fdf184fc89fa925ce93ba5c4ebfb7ac9b32e",
+      "options.js": "a986be9a94429358b8a9fd6871e3ab0672cc75fdb1c020cdd1878f8076350ad4",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "9ff5ae7e1f2f97c05716e0e1ee8444e73f29ea978b602fe7d4d376d077678307"
+    }
+  },
+  "fixture": {
+    "version": "0.3.1",
+    "revision": "2026-10-06-r4",
+    "fixture": true,
+    "hashes": {
+      "background.js": "8081a2f22c734deba874c64b5d68ac5e07814eac29efb4cc1a26e7a4e01bb7ff",
+      "content.js": "78506c23baa39469da1b73214001b8c418f47c3e56c58fb48ece825b2c668f70",
+      "options.js": "febbd740915f6b41763d8549492ccb5177796dff2d6cf3477e3f2e021e419443",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "9796621f5f92d9f5bd21be044ccac59f0cb88df18c78a4db72ad411a66505dbf"
+    }
+  },
+  "primaryCounts": {
+    "collection-boundary": 5,
+    "compact-ui": 4,
+    "anchor-walk": 5,
+    "scroll-mechanism": 7,
+    "navigation-speed": 4,
+    "seen-cache": 8
+  },
+  "independentCounts": {
+    "boundary": 5,
+    "compact-ui": 4
+  },
+  "independentSixHashesMatch": true,
+  "liveChatGptAddon": false
+}

@@ -4,7 +4,7 @@
 適用範圍：電腦瀏覽器中的 ChatGPT Web 長對話  
 文件狀態：公開資料調查與可執行方案；尚未在你的帳號重現或測試工具
 
-**2026-10-02 決策更新：已選擇直接自製，Firefox 為第一優先；目前依使用者要求暫停開發，已追加 Git 與 GitHub 私人雲端備份規則，並完成私人儲存庫與兩分支首次同步：https://github.com/justamowei/chatgpt-toc-firefox 。後續以本 repo 的《docs/development-plan.md：開發規劃 v1.3（Firefox 優先）》為準；本文保留作調查背景。**
+**2026-10-02 決策更新：已選擇直接自製，Firefox為第一優先；使用者已恢復開發，v0.1原型已建置並執行原生合成自測。Git每功能／30分鐘commit、每次push與SHA核對持續執行，私人儲存庫：https://github.com/justamowei/chatgpt-toc-firefox 。後續以docs/development-plan.md v1.4與原型驗收報告為準；本文保留作當次調查背景，未在使用者帳號確認OpenAI根因。**
 
 ## 1. 決策摘要
 

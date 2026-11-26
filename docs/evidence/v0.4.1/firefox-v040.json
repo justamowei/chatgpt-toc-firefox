@@ -1,0 +1,135 @@
+{
+  "suite": "Firefox v0.4.0 cached-history virtual renderer on localhost; not ChatGPT LIVE",
+  "firefox": "158.0",
+  "build": {
+    "version": "0.4.1",
+    "revision": "2026-10-15-v041",
+    "fixture": true,
+    "hashes": {
+      "background.js": "58c117acd1e7a59f0afee5fdd5194725e65da8508a02a47e3b739d2810aaacab",
+      "content.js": "a85a5f1a9a3199e596e6478a479f018da1fd6c97c7b5ffbaac1ec9a1eec49630",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "9925163dc5fd30f7364b5f3d209c5912d42fb0c8c28787f1ea71a5a7a552d9e3"
+    }
+  },
+  "results": [
+    {
+      "name": "COLD collection fetches missing pages once, retains 48, ends at head",
+      "status": "PASS",
+      "actual": {
+        "count": 48,
+        "fetches": 7,
+        "elapsedMs": 15810,
+        "top": 0
+      }
+    },
+    {
+      "name": "WARM distant unmounted target jumps across 55k answer without intermediate fetch",
+      "status": "PASS",
+      "actual": {
+        "elapsedMs": 492,
+        "scrollEvents": 2,
+        "historyFetchesAfterFirstPass": 0,
+        "exactHighlight": "warm:u-3",
+        "mountedWindowCount": 2
+      }
+    },
+    {
+      "name": "WIDTH change disables old geometry; warm cache still navigates by walking",
+      "status": "PASS",
+      "actual": {
+        "elapsedMs": 7249,
+        "scrollEvents": 21,
+        "fastElapsedMs": 492,
+        "fastScrollEvents": 2,
+        "comparison": "same cached renderer, old geometry invalidated by width change"
+      }
+    },
+    {
+      "name": "WARM repeat navigation uses relearned width and direct path",
+      "status": "PASS",
+      "actual": {
+        "scrollEvents": 2,
+        "exactHighlight": "warm:u-10",
+        "fetches": 0
+      }
+    },
+    {
+      "name": "STALE 18k layout shift misses once, walks from current window, never highlights wrong target",
+      "status": "PASS",
+      "actual": {
+        "elapsedMs": 3952,
+        "scrollEvents": 6,
+        "exactHighlight": "warm:u-30",
+        "singleFastMiss": true
+      }
+    },
+    {
+      "name": "ROOT replacement discards previous geometry and preserves directory",
+      "status": "PASS",
+      "actual": {
+        "retained": 48,
+        "oldSpansDiscarded": true,
+        "exactHighlight": "warm:u-20"
+      }
+    },
+    {
+      "name": "OVERSHOOT stale inflated spans land before target; fallback reverses using live order",
+      "status": "PASS",
+      "actual": {
+        "exactHighlight": "warm:u-30",
+        "singleFastMiss": true,
+        "walkedNewerAfterMiss": true,
+        "scrollEvents": 4
+      }
+    },
+    {
+      "name": "CANCEL during warm remount prevents late extension scroll/highlight",
+      "status": "PASS",
+      "actual": {
+        "noLateScroll": true,
+        "noLateTargetHighlight": true
+      }
+    },
+    {
+      "name": "SHORT deadline includes failed fast wait and fallback; no late writes",
+      "status": "PASS",
+      "actual": {
+        "elapsedMs": 1002,
+        "deadlineMs": 1000,
+        "fastAttempts": 1,
+        "noLateScroll": true
+      }
+    },
+    {
+      "name": "F5 preserves text index while page geometry starts cold",
+      "status": "PASS",
+      "actual": {
+        "retained": 48,
+        "geometryCold": true,
+        "newPageHistoryCold": true
+      }
+    },
+    {
+      "name": "SPA while warm navigation is pending cancels old target without further movement",
+      "status": "PASS",
+      "actual": {
+        "oldTargetNeverHighlighted": true,
+        "noLateScroll": true,
+        "newContext": "/c/warm-B"
+      }
+    },
+    {
+      "name": "EPOCH body contradiction during fast jump cancels and invalidates old geometry",
+      "status": "PASS",
+      "actual": {
+        "contradictionQuarantined": true,
+        "oldGeometryInvalidated": true,
+        "noLateScroll": true,
+        "noWrongHighlight": true
+      }
+    }
+  ]
+}

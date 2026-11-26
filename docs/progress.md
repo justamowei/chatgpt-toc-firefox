@@ -1,4 +1,48 @@
+# 2026-10-08 v0.3.4 保存排序修正（本節優先）
+
+runtime a1ff15a7535cb7bf08cff683ff69104be17f1efb，fix/saved-directory-order；已雲端 checkpoint SYNC_VERIFIED（run 37721041589）。已保存排序與恢復身份分開，F5／SPA 不再降級排序；v1 保持相容，實際矛盾隔離與 completeness 門檻仍保留。94 pure／13 native localhost／typecheck／build／lint 通過，獨立十二hash一致；LIVE PENDING。後續 delivery tag／release refs 同步證據另附。詳見 [報告](release-v0.3.4.md)。以下為歷史紀錄。
+
+# 2026-10-07 版本治理與歷史選定
+
+更新 [版本規範](version-policy.md)、[版本目錄](versions.md)；seven歷史交付以原始SHA建立annotatedtags，0.2.0 withdrawn，0.3.1 r2–r5另記metadata。產品runtime未改，版本維持0.3.3。私人GitHub refs將由一次性雲端Linux作業從原始bundle同步；本機GCM與網路Git禁用。同步完成以GitHub refs/tag object/peeled commits另外報告核對，不把備份當作正常同步。
+
+# 2026-10-07 v0.3.3 更新（本節優先）
+
+## 三項修正
+
+1. SPA 切換對話後，背景讀取以 tabs.get 的當前頂層 URL 驗證對話，不再只比 content sender 的初始文件 URL。切出先 flush 舊對話，恢復讀取使用 context／generation 防止遲到結果覆蓋新對話；空掛載階段仍能恢復同對話快取。切換時清除搜尋字串，避免上一對話的篩選造成空白。
+2. 未知分支的已保存提問恢复到可點選列表，保留穩定 ID、正文與舊順序提示。跳轉用相鄰掛載窗口尋找，重新掛載後才核對 ID／正文並高亮，不依據快取宣稱完整或證明目前分支。無順序橋接時先向上找，連續無進展後最多反向一次；沿用原本 60 秒／60 輪尋找期限。正文、順序或已知分支矛盾的舊版本仍隔離供搜尋。兼容 v0.3.2 的 restored-unverified 快取，不需要重新收集才能恢復候選提問。
+3. 「收集整段對話」預設最多 10 分鐘；設定可選整數 1–10 分鐘並儲存，下次收集生效，執行中維持原期限。收集最多 4800 輪；穩定物理邊界可提早完成，停止／真正閱讀操作仍可取消，Alt 不停止。單次導航仍最多 60 秒，與收集期限分開。
+
+資料保存規格延續：Firefox storage.local、同對話 URL 隔離，每對話 5000 筆／500 萬正文，全 profile 最近使用 12 個對話／600 萬 JSON 字元。全域容量超限仍會淘汰較久未使用對話；未保存、已清除或已淘汰資料不能憑空恢復。無痕不保存，不使用 session/history API，不上傳聊天內容。
+
+
+runtime commit 567dfda645d113449eece4932519da98e59e7118。每功能／30 有效分鐘 commit、私人 GitHub 備份規則延續；Git Credential Manager 停用。Firefox 原生合成13/13、純測試88/88，LIVE待驗。詳见 [v0.3.3 報告](release-v0.3.3.md)。以下為歷史，衝突時以本節為準。
+
+# 2026-10-07 v0.3.2 更新（本節優先）
+
+## 五項修正
+
+1. 面板開關保留列表節點與捲動位置，首次長列表每 frame 最多建 60 列。資料／搜尋真正改變才重建，一次驗證目前所有可定位 ID。捲動只更新前後兩個目前閱讀指示；普通串流／捲動合併到 120ms 更新，新移除提問立即擷取。
+2. 收集跨輪保留物理邊界證據，同容器、窗口與幾何穩定 6 秒及兩次間隔 2.4 秒的 clamp 探測才換向。容忍 2px 抖動；累積漂移、載入、正文渲染、節點／容器替換重新計時。不再因三次空輪停止，仍限制 5 分鐘／2400 輪、明確取消與保存容量。
+3. Alt、AltGraph、Ctrl／Meta 組合、單獨修飾鍵及 Shift + O 不停止收集。停止按鈕、Esc 和實際閱讀操作保留。Shift + O 只在輸入框外開啟面板。
+4. 穩定 ID、正文與順序存於 Firefox storage.local，按對話 URL 隔離。背景序列化合併多分頁，400ms 節流及離頁 flush；過期讀取不覆蓋新觀測。未知分支的上次資料保留供搜尋，重新觀察相同 ID／正文後去重／恢復；不同版本保持隔離。只保存普通視窗本機資料，不上傳聊天內容，不使用歷史 API。
+5. required ChatGPT host permission、預設 auto=true。舊 auto=false 本版升級遷移一次，之後明確停用保持。Firefox 授權並載入完成後自動啟用，安裝前已開啟的頁面需重新整理。
+
+保存預算：每對話 5000 筆／500 萬正文字元；全 profile 最近使用 12 個對話／600 萬 JSON 字元。全域超限移除較久未使用對話；單筆 JSON 過大拒絕新寫入，保留舊儲存並顯示錯誤。清除儲存不清除已開分頁記憶體，繼續瀏覽可能補存。
+
+
+本版原生 Firefox 合成驗收18/18、純測試74/74及獨立hash核對通過；LIVE待驗。詳見 [v0.3.2報告](release-v0.3.2.md)。功能runtime已commit 2c9d0d2；每功能／30有效分鐘commit及雲端備份規則延續，GCM停止使用、一般push待恢復，備份使用連接器 checkpoint +原始bundle。以下為歷史紀錄，衝突時以本節及本版報告為準。
+
 # 開發與 Git 同步紀錄
+
+## 2026-10-06：r5 修改與部分驗收
+
+固定runtime/test本機來源 992757435d30459be80586ee4e2682a3abc99f39；typecheck/core28/geometry9/build/lint完成，IAB localhost+runtime-shim實際觀察120快取對6／0／5掛載、ShiftO開啟、正常輸入O、精確跳轉及離屏搜尋。原生FirefoxUI7與ChatGPTLIVE仍PENDING，原因與自動執行拒絕見 [r5文件](mounted-rail-v0.3.1-r5.md)。一般Git同步的credential-manager已停止，連接器checkpoint分支另備份原始bundle；不把備份commit當作本機原始commit的相同SHA。
+
+## 2026-10-06：r4 候選完成
+
+UI commit eb347bd 與 runtime/test commit 8f2daab1536ad9e30abc74479a8dfa3854766d57 已 push 並核對遠端。主流程核心 28、幾何 9、邊界 5、介面 4、錨點 5、捲動機制 7、跳轉回歸 4、快取 8 全部通過；固定 SHA 獨立驗收另見 [報告](acceptance-v0.3.1-r4.md)。候選資料夾 Firefox-測試版-v0.3.1-r4 的 6 個 production 檔案核對 SHA256。真實 ChatGPT Firefox addon LIVE 尚未完成。詳見 [r4 說明](boundary-compact-v0.3.1-r4.md)。
 
 時間皆為 Asia/Taipei。
 
@@ -33,3 +77,208 @@ GitHub visibility：private；預設分支 main。origin 使用無內嵌憑證�
 - 不使用 force-push。首次同步後沒有待推送的程式快照；本段文件將另建 docs commit 推送 main，再將該文件更新合併及推送至開發分支。
 - 後續文件／合併 commit 的完整 SHA 與最後遠端核對結果記於 outputs 的《GitHub 建立結果.md》，Git log 亦可核對，避免文件把自身 commit SHA 寫成不存在的值。
 - 功能開發維持暫停。下一步為等待使用者恢復開發，再依固定 commit 提供 sub-agent 驗收。
+
+## 2026-10-02 18:45：恢復功能開發，核心第一組修正
+
+- 分支：feat/firefox-prototype；使用者已授權恢復功能開發。
+- 修正：未知分支不保留卸載歷史、增量文字更新保留其他提問、順序與明確分支失效、完整度證據撤銷、強制單批／總逾時，以及取消後丟棄晚到結果。
+- 驗證：npm run typecheck PASS；npm run test:core 11/11 PASS。CORE-04 合成 1,000 提問，20 次，p95 3.05 ms，0 次失敗。
+- 首次沙箱核心測試因 esbuild 父目錄讀取被拒失敗；核准環境重跑成功。這是環境限制，原失敗保留於當輪執行紀錄。
+- sub-agent：對固定 0e8d6a0 快照做了獨立審查及 scratch probe；本組修正尚待新 SHA 的獨立回歸。
+- 推送：本組完成後立即 commit／push 並比對遠端 SHA，確切 SHA 以 Git log 與雲端紀錄核對。
+- 下一步：Firefox 建置、DOM adapter、Shadow DOM 目錄、選用權限設定與原生附加元件 fixture。LIVE／REL 保持 PENDING。
+
+## 2026-10-02 19:13：Firefox 可操作原型快照
+
+- 分支：feat/firefox-prototype；索引核心、Shadow DOM 目錄、搜尋、定位／高亮、返回、有限載入／取消、頁面與分支失效、設定頁與背景清理已實作。
+- Typecheck／正式 build／web-ext 零警告 lint／12 個核心回歸均 PASS；原生 Firefox 157.0 實際工具列注入合成頁面，7 組主要流程 PASS。
+- 原生合成 FF-02：20/20 目標精準且可見，0失敗；定位20次p95 147.75ms，返回同一u-6錨點最大偏移0px。
+- FF-04：搜尋、同文字不同ID、HTML文字、键盤、深淺色、500px實際窄視窗 PASS。初次窄視窗產品溢出 FAIL，調整寬度後重跑上述關聯案例 PASS；未隱藏該次失敗。
+- 早期fixture腳本的 WebDriver clear 不觸發input、JS字串與ShadowRoot Promise呼叫錯誤，保留run1–3失敗資料後修正測試呼叫，未改固定20目標或通過門檻。
+- FF-03：合成虛擬化收錄20、停止後無晚到捲動、branch／SPA失效 PASS；不標記完整。真實ChatGPT不採用合成分支信號。
+- FF-01：實際按鈕啟動／重複一個根節點／停用後觀察器不重新啟動／重新注入 PASS。
+- FF-05：原生選用權限 grant／deny／revoke／reload／背景喚醒仍 PENDING，下一組測試補齊。LIVE-01–07／REL-01 PENDING。
+- sub-agent 已獨立指出核心單批逾時signal與舊promise返回結果缺陷，已修正並加入第12個測試；本快照將交固定SHA重新驗收。
+- 本組立即 commit／push 並核對SHA；node_modules、build、測試profile與原始artifact均忽略，使用者交付包另放outputs。
+
+## 2026-10-02 19:27：SPA 更新修正與原生權限回歸
+
+- sub-agent 在 fc02d697 固定快照獨立重建：typecheck／build／lint、核心12/12與原生主要7組 PASS；獨立20次定位p95 351.42ms，返回最大偏移0px。額外邊界probe為2 PASS、1 FAIL：對話切換取消刷新計時器後未清除handle，新訊息不再更新。
+- 已修正該handle，新增 FF-03 pending-refresh-route 原生案例：切換後目錄20→21，PASS。修正後主要8組全PASS；20次定位p95 212.71ms，0失敗，返回0px。
+- FF-05 原生5組PASS：直接點Firefox權限拒絕／允許、重新載入自動注入、背景 stopped→runtime訊息→running且設定與註冊保留、撤銷後兩個無activeTab頁面立即清理、未知／額外訊息欄位拒絕。
+- 權限測試早期Chrome上下文shadow API／moz-button scroll錯誤是測試操作FAIL；改為真實WebDriver指標點擊可見按鈕中心後通過，未以預先授權替代原生權限視窗。失敗artifact保留。
+- 背景測試使用Firefox自身測試用terminateBackground，僅作用隔離profile本附加元件；自然閒置與整個Firefox重啟仍未驗證。
+- 已支援TOC_TEST_EXECUTOR，獨立測試結果不再固定標為primary-agent。
+- 本組修正／測試完成後立即commit、push、核對遠端SHA，交sub-agent固定新快照。LIVE-01–07／REL-01保持PENDING。
+
+## 2026-10-02 20:19：自然背景休眠不移除目錄
+
+- 9afa2c9b2602b51f0088b57ae59317c6b9e3d19d已push、遠端SHA一致；其後計畫文件a7e682bb80662f1974d85c0a41e93578ee6be486也已push並核對。
+- sub-agent對9afa獨立主要8組、權限5組與額外邊界3組PASS，另找到阻擋缺陷：兩個auto頁面、關閉options後35秒自然idle，background stopped且兩個UI消失；喚醒後不復原。保留該FAIL證據。
+- 修正：runtime port斷線只清除port參考，不再誤判為停用。內容UI與索引在頁面本機持續運作；明確停用／撤權仍透過dispose訊息，背景tabs.sendMessage fallback能處理已無port的頁面。
+- 新增原生自然idle案例：35秒無extension API、background確實stopped、兩UI保留且新增訊息20→21。接續由options喚醒並撤權，兩個頁面皆清理，reload不重注入。權限／生命週期6組PASS。
+- 主要8組關聯回歸PASS；20/20定位、0失敗，p95 122.62ms，返回最大偏移0px。核心及background來源未改，沿用已通過的對應核心證據。
+- 本組立即commit／push並核對；交付新固定SHA給sub-agent複驗。整個Firefox重啟、真實ChatGPT、ESR、容器／工作區與簽章仍PENDING。
+
+## 2026-10-02 20:33：原生停用再啟用唯一目錄與CSS生命週期
+
+- 2cfe1e712c58da57975c5d1154e4f1bc64cc1daf已push且远端一致；sub-agent主要8/8、權限6/6、自然與強制active UI休眠／喚醒PASS，修復上一缺陷。
+- 新獨立FAIL：原生addon.disable銷毀content context但舊DOM殘留；enable後工具列再啟動生成2個root，違反唯一實例。uninstall殘留DOM另列觀察限制。
+- 修正：新content context啟動前清理孤兒root與舊高亮標籤；目錄預設隱藏，host.css由Firefox scripting插入／自動註冊管理，原生停用／移除時樣式自動移除。高亮改用同一管理CSS，不遺留inline outline。自然background idle不移除管理CSS。
+- 更新既有auto註冊缺少host.css的協調路徑，加入原生registration-upgrade回歸。
+- 主測：主要8/8，20/20定位p95 113.50ms、0失敗、返回0px；權限／生命週期7/7；addon disable／enable唯一可操作root／uninstall隱藏且reload無root 3/3。Typecheck／build／lint／package均退出0。
+- 測試初輪highlight helper誤收合持久expanded面板，定位按鈕不可見；保留run1-toggle失敗證據，改為只有收合時才展開，不改產品行為或門檻。
+- 浏览器卸載context後不能執行JS清理；隱藏且不運作DOM需reload或新context清掉，文件明記。明確網站撤權／單頁停用仍直接清DOM。
+- 本組完成後立即commit／push／核對，交新固定SHA重新驗受影響的background、CSS、DOM及原生流程。核心未變，舊獨立核心證據明記重用；LIVE／ESR／容器／簽章仍PENDING。
+
+## 2026-10-02 20:39：固定建置資產換行
+
+- fb5bfa0fbad4c011d05583d89e947a6112f28370已push且遠端一致。sub-agent固定快照原生回歸進行中，發現host.css raw copy因工作樹與git archive資產換行不一致而有不同hash；JS bundle相同。字節核查：獨立archive raw CRLF hash=f3ac96f93a29de3bed06affeee5d902baf1cb4706f032d337a2fbb318a992ad4，canonical LF hash=5dfc4c888918275eb536a33e22a37f3153d8a1d273d60feb83a453c864bdc8bb。
+- 修正build對options.html與host.css固定UTF-8／LF，不修改runtime功能。正式及fixture重新build、lint、package並比對hash；新的canonical CSS預期與sub-agent先前LF資產相同。
+- 原CSS差異保留記錄，不能聲稱fb5當時所有輸出byte一致。新快照需獨立重建核對；只有runtime JS、CSS與manifest皆byte-identical的原生證據才明記重用，不將舊整包hash套用新ZIP。
+
+## 2026-10-02 20:50：v0.1原型交付與獨立驗收完成
+
+- 交付建置來源5cf4764741cca11cf9b52310007cb656fd5b9606已push，遠端SHA一致；最後只追加文件，不改runtime。
+- GPT-6.1 Sol high獨立fb5主要8/8、權限7/7、addon生命週期3/3、額外SPA／未知分支／可信輸入3/3、自然及強制idle／喚醒PASS。20/20定位p95 208.96ms、返回0px；實際窄視窗500px。
+- 獨立5cf：offline npm ci／typecheck／build／lint／package退出0；canonical addon lifecycle3/3與原生grant／兩auto可見UI／force／wake PASS。JS與manifest byte-identical、HTML/CSS經換行normalization等價，關聯回歸有直接canonical證據，不冒稱raw assets byte-identical。
+- 七個ZIP members逐一對應dist；主交付ZIP SHA862fe1bfe7e7ebbca31d47e2ab15a45c196deceef5f446615b3a19cea5df0162。獨立ZIP timestamp不同，整包hash另記最終報告，檔案hash一致。
+- T07a原型範圍PASS，無已知剩餘阻擋缺陷。歷史FAIL均保留。LIVE-01–07／ESR／容器工作區／REL-01仍PENDING，未稱作原長對話問題全部已解決或正式日常版。
+- 安裝目錄、ZIP、預覽與中文驗收／安裝說明已放outputs；兩份獨立報告同步repo docs與outputs。最後文件commit後立即push、核對遠端SHA，確切最後文件SHA以Git log為準。
+
+## 2026-10-03：v0.1.1 零索引相容修復
+
+- 使用者真實 chatgpt.com／Firefox 157 一般視窗，有目錄但新舊對話 0 則；不保存完整對話 URL 或內容。
+- 新增 turn key／user bubble、角色 turn shell／turn ID 辨識，角色限定 ID、巢狀去重、排除控制文字／側欄／輸入框／空殼；新增屬性 observer 與新節點高亮。
+- 新增本機「頁面診斷」只提供版本及標記數量，無聊天文字、ID、URL、持久化或傳送。
+- Firefox 157 新結構六組 PASS：旧 selector 0→新版6、定位與實際3px outline、返回0px、去重／附件、hydration、殼、失效／未知分支。Typecheck、核心12/12、正式build／零警告lint PASS。
+- 首輪測試 helper Promise 呼叫失敗與核心 esbuild 沙箱權限失敗保留，修正測試 await／正常工具權限後通過；產品核心未改。
+- 本修復立即commit／push核對，接續 GPT-6.1 Sol high 固定SHA獨立原生驗收、受影響原生回歸與新交付包。LIVE仍待確認；不承諾全量長歷史。
+- 電腦操作因目前Windows瀏覽器未支援網址政策而停止；不繞過限制，合成瀏覽器與程式工作继续。
+
+## 2026-10-03：獨立驗收返回錨點缺陷修復
+
+- 6a67fbfe240d838335e517ecd3e0e96c54f0e2fb 已push／遠端一致。GPT-6.1 Sol high於固定archive原生複驗：new6 PASS；獨立9 probe中8 PASS／1 FAIL。
+- IND-08：空assistant sentinel的parent中有user bubble，textOf誤讀user文字並建立assistant return anchor，提問離開viewport後仍錯誤啟用返回。FAIL結果與截圖保留。
+- 修正：sentinel候選內容本身或後代含user marker時不建assistant錨點；新增NEW-07檢查wrapper空白可視但user不可視的返回disabled情況。
+- New7／typecheck PASS；測試NEW-01改用整個main的原始legacy queryall，確認真正0→6，不用預先過濾composer。runtime此次仅sentinel處理改變。
+- 首個快照legacy8／addon生命週期3 PASS；本修復立即commit／push／核對，接續新固定SHA獨立複驗及正式包替換。
+
+## 2026-10-03：新舊混合 user marker 一致排除
+
+- c1e833771073506fd528858bd2d4b498bb5b6fa4 已push／遠端一致；獨立stock7 PASS、原9 probe全PASS，IND08修復。追加純turn shell後代共用空sentinel之IND09 FAIL，10組為9PASS／1FAIL。
+- 原因是matches已包含data-turn=user，但querySelector後代判斷漏掉；統一userMarker常數供兩者使用，新增NEW08；保留c1 FAIL結果／截圖。
+- 最後來源new8／typecheck PASS。此修復僅變更sentinel排除marker集合，其他runtime不變。立即commit／push／核對，再以固定SHA獨立重跑stock8＋既有10probe、主測legacy8／lifecycle3與最終交付hash核對。
+
+## 2026-10-03：v0.1.1 最後交付與獨立 PASS
+
+- 最後runtime來源5aa5102e2cc5e605196f6edfce2fb6d6b4faf649已push／遠端一致。主測新8、legacy8、addon生命週期3均PASS；20/20定位p95 135.0866ms、返回最大偏移0px。Typecheck／正式build／lint 0/0/0／package均PASS。
+- GPT-6.1 Sol high獨立固定archive：ci／build／typecheck／lint／package／verify退出0；原生new8/8、自主probe10/10 PASS。6a67 IND08及c1e833 IND09相同sample皆轉PASS；前兩個FAIL報告、logs／JSON／截圖另保留。
+- 正式交付六runtime與獨立canonical一致；交付ZIP含build-info之7members也全相符。ZIP SHA256 7f6b70e09178c7a0cd73f7d5ed8419546c24f1b4c4fd739ed90cf719e7dca3d7，prodcontent 0f2d006125a6c643f0354fdeeeebab728dd431014f4cccb6cbace60e89be766b。
+- 交付outputs/Firefox-原型-v0.1.1、ChatGPT-對話導航器-v0.1.1-未簽章.zip、bugfix-v0.1.1.md與Firefox-sub-agent-v0.1.1驗收.md；manifest正式origin僅chatgpt.com、無測試origin。
+- 同步安裝說明／計畫與v0.1歷史報告註記，最後文件commit／push／核對。核心沿用12/12且blob未改；舊權限7組保留歷史证據，不當作本輪獨立重跑。
+- 使用者真實頁面更新後的收錄／定位仍PENDING，請先移除舊暫時addon、載入新版manifest、reload ChatGPT再用工具列啟動；若仍0，回覆頁面診斷數量即可。無法直接操作Firefox是目前工具網址政策限制，不繞過；LIVE／長歷史／ESR／容器／簽章維持PENDING。
+
+## 2026-10-03：使用者確認辨識成功，完整索引需求核查
+
+- 使用者回報v0.1.1已能抓取真實對話，約6–7題；仅記錄辨識回饋，不把LIVE完整度或十個遠距目標改PASS。
+- 核對沒有七題硬上限。production branch=null，卸載撤銷原索引；load直接頂／底也不能覆蓋中間虛擬內容。
+- 完成docs/full-history-plan.md与FULL01–12門檻，原計畫§4.2允許正常登入同來源唯讀探索，建議以可靠歷史來源及DOM按需定位分離。資料端、分頁、分支、取消與失敗均有明確契約。
+- GPT-6.1 Sol high唯讀審查已交outputs/Firefox-完整對話索引-唯讀設計審查.md；沒有改產品source或取用真實帳號／Firefox profile。
+- 本組僅需求／設計，沒有接入網站API或更改v0.1.1行為；不宣稱完整載入已開發。文件低影響變更不新增鏡像測試，立即commit／push／核對。
+
+## 2026-10-03：完整歷史來源模組
+
+- 使用者要求執行完整索引方案；新增同來源目前對話的唯讀 loadHistory，明確呼叫才請求 session 與歷史，不寫入 storage 或 log。
+- 新分頁協定需明確耗盡，舊 mapping 僅第一頁 404 後使用，沿 current_node 到真實 root；全部完成後重新核對 head，拒絕資料中途改變。
+- 固定來源、型別／ID／順序、隱藏訊息、串流大小、時間、頁數／訊息上限與取消晚到請求均有獨立測試。HIST-01–17 主端與模組作者均 17/17 PASS；既有 CORE 12/12、完整索引 4/4 PASS。此 commit 只包含可獨立測試的來源模組，前端整合仍在進行。
+- source 及憑證均未取用真實使用者 Firefox profile；候選網站協定與真實登入驗收仍 PENDING，不把 localhost 合成 cookie/token 當成真實帳號驗證。
+
+## 2026-10-03：v0.2.0 完整目錄介面與回歸
+
+- 整合明確「載入完整目錄」、取消、重新載入、來源失敗降級與全提問搜尋；完整記憶體快照獨立於 IndexStore，正常 DOM 卸載不會縮小清單。
+- API raw ID 與角色相符的 DOM alias 核對，未知畫面只顯示伺服器分支、不提供未核對定位；實際已掛載 subset 不冒充整個 UI 分支證明。
+- 審查發現並修正：完全換分支後失效、slotless assistant 新ID、pending／loaded 的跨卸載回答 witness、角色錨點方向與純空 user hydration。附件文字與檔名索引分開核對；已有實際媒體才用非文字提問占位。
+- 單元37/37 PASS：history17＋fullIndex7＋direction1＋既有core12；原生FULL13/13先前快照PASS，新增14/15在本快照等待結果。原生舊renderer8/8、fixture8/8已PASS，但最终SHA需固定後獨立回歸。正式build/lint初次PASS，最终source另重建核對。
+- manifest/package升0.2.0，正式權限與origin沒有擴張；文件明示未簽章實驗版、固定大小／時間上限、真實內部API與長對話PENDING。此功能commit鎖定後交獨立sub-agent，不把未跑項目記PASS。
+
+## 2026-10-03：完整索引分頁新頁邊界修復
+
+- 22cc60b 固定獨立單元37／FULL15／renderer8／fixture8均PASS，但只讀審查發現未檢查可選has_next_page；該快照不作最終交付來源。
+- 新est首次與重讀head若明示仍有更新頁，不套用完整結果；可選欄位需boolean，older頁has_next=true仍合法。新增HIST-18與FULL-NATIVE-16回歸。
+- 主端38/38合成單元PASS；最終原生16組正在執行，修復commit交sub-agent重新固定SHA驗收，前一次PASS保留但不冒充最終。
+
+## 2026-10-03 05:35:44（Asia/Taipei）：v0.2.0 最終交付核對
+
+- branch feat/firefox-prototype，最終實作source 95c2694e03185f66a1a0dc19a62bc8280b61420e；該commit push成功，git ls-remote相同；沒有force-push或公開Release。
+- GPT-6.1 Sol high固定git archive獨立驗收：38/38單元、Firefox157原生FULL16／renderer8／fixture8／permissions7／addon lifecycle3，共42/42 PASS；自主newer-page反例由22cc60b FAIL改95c2694 PASS。歷史FAIL與合成資料範圍均保留。
+- 正式typecheck/build/lint主端及獨立PASS，lint零errors/warnings/notices。正式content hash625f31fd5c14ec064a6bde4c7fc3ff39f76b7e60bc1b2f1fc3a746204a4675d7；交付ZIP SHA1d0723f76997e0f173ac4633cc45e8919e34f2dcc85edf98121cdc6d06de5c5c，7members與交付副本／獨立build完全一致。
+- 輸出Firefox-原型-v0.2.0、未簽章ZIP、完整目錄使用說明與獨立驗收報告。已同步完整歷史方案、原開發計畫與驗收表。本組最終文件commit／push／遠端SHA核對後記outputs/GitHub建立結果；产品source保持95c2694。
+- 沒有取得或保存真實使用者聊天／憑證／Firefoxprofile。真實ChatGPT內部API/登入、整段expected集合與畫面分支、LIVE/ESR/容器/簽章仍PENDING；實驗版先供暫時安裝測試，不宣稱正式全量保證。
+
+## 2026-10-03：v0.2.0 使用者真實超限失敗，交付門檻收緊
+
+使用者回報仍隨掛載數變動，完整載入提示為「對話超出本次載入上限，未宣稱完整；仍可使用已掛載目錄。」已確認 HistoryError limit，但頁大小、總量、文字／深度等具體類型待證據。產品目標 LIVE FAIL；舊合成 PASS 保留，不能抵銷實際失敗。新增 docs/live-history-failure.md，完整目錄數、穩定搜尋、全集合／分支与遠距定位必須真實 Firefox 驗收後才可交付修正版。目前沒有受允許 Firefox 分頁控制通道，不繞過先前網址政策限制；已請使用者提供無內容 network 大小／狀態 metadata。新 runtime 尚未改動。
+
+## 2026-10-03：超限縮頁與具體診斷開發（未交付）
+
+- 增加固定 limit enum 與數值，分辨 session/page/total bytes、單提問字元、depth/nodes/messages/pages；頁面診斷分開 mountedCount/fullCount，最後讀取結果不被正常導航／刷新覆寫。診斷不含內容、token、cookies、IDs、URL或hash。
+- 僅 paginated page-bytes 超限時縮 num_turns 100→50→25→12→6→3→1，同 cursor與同總deadline／已讀bytes。最小頁仍超限明確失敗；head重新核對保持首次成功大小，older縮頁不改head邊界；session/legacy/總量/正文等不套用縮頁。未擴張原上限。
+- 主端 history/full-index/direction 34/34＋core12/12合成PASS；typecheck/build/lint PASS（0/0/0）。隔離Firefox157 localhost原生FULL18/18 PASS，新增真正HTTP gzip壓縮頭頁decoded超2MiB：縮100→50後四頁收齊200、只有7mounted、捲動後200維持；單題262145超限精準診斷且導航後保留。這仍不是使用者真實ChatGPT驗收。
+- 新renderer診斷回歸正在執行；固定SHA後sub-agent作獨立審查。使用者真實超限kind/size仍待network無內容metadata；LIVE FAIL保持，不重包／替換已交付v0.2.0，也不宣稱已解決。
+
+## 2026-10-03：3bedace 縮頁修正合成複验完成，真實驗收仍未完成
+
+主端固定runtime3bedace的renderer8/8已PASS，連同FULL18/18及單元46/46。GPT-6.1 Sol high固定archive獨立typecheck與history34/34 PASS，自主5/5合成probe PASS，包括真HTTP gzip的head50/older25/recheck50、舊95c相同樣本limit拒絕、失敗bytes計入總量、頭頁重讀不縮、忽略signal晚串流取消。詳見docs/history-limit-debug.md。沒有新增synthetic阻擋；不能改為真實PASS。使用者network metadata與真實Firefox長對話測試仍待完成；無新包交付，已交付v0.2.0 content/ZIP未變。文件與安全JSON結果同步outputs。
+
+## 2026-10-03：依使用者指示撤回 API／縮頁方向
+
+使用者要求先處理5–7則虛擬化窗口卸載、保留已看過的項目，並用computer觀察真實Firefox。正式content/dom/turns/package/lock/manifest恢復到5aa5102 v0.1.1，與該source逐檔diff為空。正式build content SHA0f2d006125a6c643f0354fdeeeebab728dd431014f4cccb6cbace60e89be766b，與既有v0.1.1一致；typecheck/build/lint(0/0/0)/core12 PASS。不把撤回當快取問題已修好，使用者Firefox已安裝v0.2.0尚未透過UI換載。
+
+不抹Git歷史，保留3bedace實驗／合成報告但標withdrawn；新DOM資料保留規格見docs/observed-dom-cache-plan.md。已确认IndexStore的branch=null卸載reset／filter是資料丟失機制；新的已觀察快取尚未實作，真實分支與渲染訊號需先看Firefox。CUA inventory無native apps/Firefox，只有空IAB/MCPApps；本輪工具無node_repl/sky，插件搜尋Firefox無結果，沒有親自進入實際頁面。之前API network大小問題不再需要；不繞政策限制。後續需可用且允許的Firefox控制通道。
+
+## 2026-10-03：DOM快取規格獨立審查
+
+GPT-6.1 Sol high唯讀固定5aa規格審查已完成，未修改來源／測試／release。新增SeenCache/MountedMap/BranchConfidence、cacheRevision/navigationEpoch分離、非overlap segment、長期正文version見證、prefix edit/hydration限制與定位前核對。源碼撤回08f7867已push，遠端一致；使用者Firefox已載入v0.2.0沒有透過UI換載。v0.2.0資料夾／交付JSON標withdrawn但原runtime與ZIP不擦除；API報告保留歷史。有效方案docs/observed-dom-cache-plan.md；純DOM已觀察快取尚未實作，真實場景未觀察。CUA native computer APIs disabled、無Firefox通道，已用computer inventory確認；插件查詢Firefox無結果。不假稱親自查看真實畫面。
+
+## 2026-10-03：使用者改授權 IAB 真實 ChatGPT 場景測試
+
+使用者明確同意先用 Codex 內建瀏覽器。登入免費帳號後建立12則中性提問與回答，真實 DOM 底部2 user＋3 assistant，首中尾窗口實際移除整個turn，重掛載 user ID／全文一致；窗口會保留附近訊息＋尾兩輪，不是固定七則。PageUp/PageDown/Control+Home 作用於 data-scroll-root；top/height有錨點修正，冷啟動到頂後仍延遲掛載首兩則。
+
+測試端純資料 Map 在往返保留12。重載同一對話後使用另一空Map，從初始4則逐段收齊12，全部ID／提問全文一致。保存63份無帳號／完整私有URL／回答全文／憑證的真實快照，56份完成窗口本機重播目前src/core.ts；28次有overlap、adapter未invalidated仍reset/drop，確認舊索引卸載刪除機制。scripts/replay-live-dom.mjs 可重新核對，結果見docs/evidence/iab-2026-10-03。這是實際DOM輸入重播，不是addon在IAB執行；Firefox LIVE、分支、編輯、導航等仍待驗收。未改runtime／未重包。子代理GPT-6.1 Sol high作獨立唯讀審查，文件與證據提交後push並核對遠端。
+
+獨立審查以另一支記憶體編譯腳本重算56筆trace，所有欄位一致；28次共同ID順序無矛盾。63→56排除的7份都是缺context，只有一份生成中。另確認同ID／全文的conversation-turn-N會重編／重用，不能用slot換號判定分支。修正文檔等待延遲說法：存檔間隔含其他工具操作，未量測精確載入耗時。子代理未改檔案或操作瀏覽器，報告docs/iab-live-independent-review.md。
+# 2026-10-03 已觀察快取修正候選
+
+2026-10-04：使用者確認已見提問保留可用；回報收集1–2則觸載入上限及離屏導航慢。v0.3.1新增分離預算、適應掛載等待、長回答正文內部跨越、位置線索直接跳轉與範圍修正，核心22／型別PASS。原生速度回歸仍進行中，未交付新版資料夾。詳見 docs/navigation-speed-v0.3.1.md。
+
+使用者詢問找不到 v0.3.0 manifest 後，已將既有 production build（fixture=false）完整複製到 sibling `outputs/Firefox-測試版-v0.3.0`，含 manifest、三個JS、options.html、host.css、build-info與讀我。六個正式檔案逐一SHA-256核對、manifest version=0.3.0；與已驗收產品4c3d838建置一致，沒有修改源碼或重建不同產品。此為明示候選测试版的可暫時載入資料夾，真實Firefox LIVE門檻維持未完成，尚未操作使用者Firefox安裝。
+
+產品驗收固定來源 `4c3d838d187b0e2771bbf58d6ba00ddc0b07a4b2`，已push且遠端SHA一致。GPT-6.1 Sol high 獨立核心20／重播20窗口／Firefox本機快取8項通過；正式content hash `441c92cc5731915fca39a2b4c7f471498d65216f26e83e8ab942b291acda2a36`。報告見 docs/acceptance-seen-cache-v0.3.0.md。後續文件提交不改產品源碼。真實Firefox整體addon仍未LIVE驗收。
+
+本輪最終回歸：核心 20／Firefox 本機快取 8／生命週期 3 全部 PASS，正式 build 與 lint 無錯誤或警告。子代理指出無 user 順序錨點的離屏答案仍會猜 newer，已加入拒絕導航與手動返回提示，並以 CACHE-08 核對沒有猜測捲動。真實 IAB 解析器＋本機快取輸入保留精確 12／尾端掛載 2 的證據維持通過。這些是候選實作驗證，真實 Firefox addon LIVE 驗收仍未完成；沒有發佈「已完全修好」安裝包。
+
+v0.3.0 將已觀察提問與目前 DOM 掛載分開；加入長期正文見證、順序區段、隔離舊版本、即時 Observer 收集、70% viewport 步進、精確返回版本核對和 SPA 舊內容排除。核心 20 項 PASS；本機 Firefox 快取前 5 項 PASS。新增 2 項回歸尚待最終執行。真實 IAB 執行同一份提問解析器取得 20 個窗口，本機當前快取保留預期 12 則而頁尾只掛載 2 則，精確全文／ID／順序一致。附加元件未在真實 Firefox ChatGPT 上完成驗收；候選不等於 LIVE PASS。見 docs/seen-cache-v0.3.0.md。
+
+
+## 2026-10-04：v0.3.1 導航修正本機回歸完成
+
+產品來源f9974ec368d81e4a25cc9e2583ebf6e55dbcb63d，commit／push／遠端SHA核對一致。核心22、typecheck、Firefox本機速度4、快取8通過；正式build與lint0 errors／0 warnings／0 notices。40題從4收齊40共31.165秒，離屏1.397秒，高度變動18000px後4.193秒，取消無晚到動作且保留40。詳見docs/navigation-speed-v0.3.1.md；GPT-6.1 Sol high固定SHA獨立複驗進行中。
+
+真實ChatGPT IAB原生PageUp觀察到高度10792→12840／top1497→2882；未執行addon，Control+Home亦未到頭，不能冒稱完整LIVE。正式content SHA1d0d8cd1ca057ca0e53ac5179c4a55e522c178d9b5e501336d967b2d4fd85e84，已核對六檔並準備sibling outputs/Firefox-測試版-v0.3.1/manifest.json候選副本。沒有操作使用者Firefox安裝，真實Firefox完整addon及簽章仍未驗收。
+
+固定產品來源f9974ec的GPT-6.1 Sol high獨立驗收完成：typecheck／核心22、原生Firefox本機速度4／快取8通過，40題31.192秒、離屏1.408秒、18000px高度變動後4.256秒。獨立前後source/tests/scripts/package/manifests均與固定來源一致，正式content hash未變。獨立報告docs/acceptance-navigation-v0.3.1.md、兩份JSON已收進匿名證據目錄。後續文件提交不改產品，候選副本非正式LIVE或簽章版。
+
+## 2026-10-05：v0.3.1 r2 主端回歸完成
+
+依使用者回報新增0無進展／離屏not-found，修正為actual scroll viewport、head確認+sweep到原訊息附近、實測user span鏈、暫時定位失敗有限重試與返回offset連續600ms穩定。診斷revision2026-10-05-r2。最後補上全局已確認順序的高度span保留，避免保留尾端覆寫完整相鄰鏈；MECH05在往返後驗證仍使用height鏈。核心26／geometry9／typecheck／Firefox掛載7／速度4／快取8全部主端PASS，正式build/lint0 errors／warnings／notices。40題32.849秒43scroll自然idle、離屏1.189秒、高度變動1.206秒。固定產品source31608f2c3766d282f66c65a6d15ab63ceaf894a1與遠端相同。獨立GPT-6.1 Sol high對最後提交重新typecheck／core26／geometry9／原生機制7／速度4／快取8全部PASS；40題33.273秒43步、離屏1.405秒、高度改變後1.426秒。不沿用舊979候選結果，見docs/acceptance-v0.3.1-r2.md。
+
+純數字／合成JSON證據docs/evidence/scroll-mechanism-2026-10-05；正式content 4e74710ce1c34f69313886eb6973612b3ed183c0f1e9262e3f820339e84f492b，fixture2675b598be58e8c4d954bdf622b1b08f8a41a03511bf8317931496afb2b42098。已準備sibling Firefox-測試版-v0.3.1-r2與六檔hash核對，不覆蓋舊候選。沒有操作使用者Firefox安裝，真實Firefox新流程完整addon尚未LIVE驗收，實際根因仍不能以合成模型斷言。
+
+## 2026-10-05：v0.3.1 r3 訊息錨點巡覽
+
+使用者回報r2仍無效果，建議重複定位當前最遠掛載訊息。真實已授權IAB透過locator定位section6→4→2→1，觀察較早窗口陸續掛載與root高度6653→5629→6653→6669；slots只作當前DOM描述。未執行addon，並非Firefox LIVE。
+
+固定產品535a4ffe0fbde463b97c687e4e8dab93f7814bf0已push，遠端一致。改採outer shell原生scrollIntoView、連續窗口與pinned tail隔離、實測相鄰ID見證+當前successor核對；新ID／window change才作進展。收集older後newer，5分鐘／2400步，seek60秒／60步；兩端無進展不證明完整。診斷revision2026-10-05-r3。
+
+主端typecheck/core28/geometry9、新anchor5、原native機制7/速度4/快取8全部PASS；正式build/lint0/0/0。獨立GPT-6.1 Sol high固定archive重建typecheck/core28/geometry9/anchor5全部PASS。40題47.289秒、遠距13.167秒、18000px留白後5.591秒；不再宣稱r2的1秒級遠距。正式content55e9d391826942df3b132e2046787434785abaf50748e9181178782d7d4c3bda、fixture974bcf84877947f9d0a36484c5387f1e71617d69134c5ae2e2586df64c82dfed。未覆蓋舊r2，sibling Firefox-測試版-v0.3.1-r3六檔核對完成。證據/限制見docs/anchor-walk-v0.3.1-r3.md及docs/acceptance-v0.3.1-r3.md；真實Firefox ChatGPT完整addon仍未LIVE驗收。

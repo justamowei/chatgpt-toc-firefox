@@ -1,0 +1,18 @@
+{
+  "production": {
+    "version": "0.3.1",
+    "fixture": false,
+    "hashes": {
+      "background.js": "bba203ccf71c5419898051ebd5de68c850830d3f84535d4d85e31a50f83b8977",
+      "content.js": "1d0d8cd1ca057ca0e53ac5179c4a55e522c178d9b5e501336d967b2d4fd85e84",
+      "options.js": "a986be9a94429358b8a9fd6871e3ab0672cc75fdb1c020cdd1878f8076350ad4",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "fbc849f0af4b24c89360b59ca8b55d0ccd423429f737b0db422a651d57a5c6a4",
+      "manifest.json": "9ff5ae7e1f2f97c05716e0e1ee8444e73f29ea978b602fe7d4d376d077678307"
+    }
+  },
+  "sourceCommit": "f9974ec368d81e4a25cc9e2583ebf6e55dbcb63d",
+  "date": "2026-10-04 Asia/Taipei",
+  "fullFirefoxChatGptLive": false,
+  "candidate": true
+}

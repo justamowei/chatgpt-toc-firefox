@@ -1,0 +1,95 @@
+{
+  "date": "2026-10-08T03:05:24.877Z",
+  "firefox": "157.0.1",
+  "source": "localhost renderer contract, native Firefox scrollIntoView and content-visibility shells; not ChatGPT LIVE",
+  "liveChatGptAddon": false,
+  "build": {
+    "version": "0.3.4",
+    "revision": "2026-10-08-v034",
+    "fixture": true,
+    "hashes": {
+      "background.js": "58c117acd1e7a59f0afee5fdd5194725e65da8508a02a47e3b739d2810aaacab",
+      "content.js": "387e2a3dadc6628a40889ae6cd4c8d8b64a8ed80d870a7b84ff4d9b0ffc224da",
+      "options.js": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+      "options.html": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "87ecd0f868cc8dcbf637f2c3951dcb5009ac53523eb0efe31d15c52794bef8c7"
+    }
+  },
+  "results": [
+    {
+      "name": "ANCHOR-01: cold seven-message tail traverses native outer shells and collects all thirty exactly",
+      "status": "FAIL",
+      "elapsedMs": 325,
+      "error": "Expected values to be strictly equal:\n\n'loading' !== 'idle'\n",
+      "ui": {
+        "expanded": true,
+        "highlight": null,
+        "ids": [
+          "anchor:u-23",
+          "anchor:u-24",
+          "anchor:u-25",
+          "anchor:u-26",
+          "anchor:u-27",
+          "anchor:u-28",
+          "anchor:u-29"
+        ],
+        "nav": "loading",
+        "scope": "本頁已看過 7 則 · 目前掛載 7 則。歷史尚未完整；當前分支未完整核對；搜尋涵蓋已觀察資料。 本機目錄儲存中。",
+        "status": "正在尋找訊息…"
+      },
+      "fixture": {
+        "calls": [
+          {
+            "at": 317,
+            "direction": "older",
+            "edgeError": 0,
+            "end": 27,
+            "index": 23,
+            "outer": true,
+            "pinned": false,
+            "role": "user",
+            "start": 23,
+            "top": 92200
+          }
+        ],
+        "contentVisibility": "auto",
+        "events": [
+          {
+            "at": 103,
+            "top": 98470
+          },
+          {
+            "at": 317,
+            "top": 92200
+          }
+        ],
+        "lazyShells": 14,
+        "mounts": [
+          {
+            "at": 101,
+            "end": 27,
+            "start": 23
+          }
+        ],
+        "outerClient": 650,
+        "outerHeight": 650,
+        "rootHeight": 113900,
+        "start": 23,
+        "top": 92200,
+        "writes": [
+          {
+            "at": 103,
+            "kind": "native-scroll-event",
+            "top": 98470
+          },
+          {
+            "at": 317,
+            "kind": "native-scroll-event",
+            "top": 92200
+          }
+        ]
+      }
+    }
+  ]
+}

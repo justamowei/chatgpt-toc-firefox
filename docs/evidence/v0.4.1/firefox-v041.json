@@ -1,0 +1,707 @@
+{
+  "suite": "v0.4.1 eligibility regression on isolated Firefox localhost; not ChatGPT LIVE",
+  "firefox": "158.0",
+  "results": [
+    {
+      "name": "UNRELATED ordered component: original gate walks; patch jumps and verifies exact target",
+      "status": "PASS",
+      "actual": {
+        "before": {
+          "diagnostic": {
+            "adjacentWitnesses": 0,
+            "collection": null,
+            "fast": {
+              "attempts": 0,
+              "elapsedMs": 0,
+              "fallbacks": 0,
+              "result": "cold"
+            },
+            "geometry": {
+              "measuredAnswers": 0,
+              "measuredSpans": 2,
+              "measuredTurns": 3
+            },
+            "lastAttempt": {
+              "after": 2275,
+              "before": 2500,
+              "heightAfter": 4128,
+              "heightBefore": 4128,
+              "method": "mounted-edge-anchor",
+              "replaced": false,
+              "requested": 2275,
+              "scrollEvents": 3
+            },
+            "scroll": {
+              "client": 500,
+              "connected": true,
+              "height": 4128,
+              "marked": true,
+              "overflow": "auto",
+              "tag": "DIV",
+              "top": 2275,
+              "width": 883
+            }
+          },
+          "elapsedMs": 1647,
+          "estimateBeforeNavigation": 500,
+          "fallbackMessage": null,
+          "globalOrdered": false,
+          "highlight": null,
+          "loaded": false,
+          "located": false,
+          "scrollEvents": 2,
+          "segments": [
+            {
+              "count": 3,
+              "ordered": true
+            },
+            {
+              "count": 2,
+              "ordered": true
+            }
+          ]
+        },
+        "after": {
+          "diagnostic": {
+            "adjacentWitnesses": 0,
+            "collection": null,
+            "fast": {
+              "attempts": 1,
+              "elapsedMs": 81,
+              "eligibility": {
+                "estimatedY": 500,
+                "globalOrdered": false,
+                "mountedAnchors": 1,
+                "segmentEntries": 3,
+                "targetObserved": true,
+                "targetSegmentOrdered": true,
+                "widthCompatible": true
+              },
+              "fallbacks": 0,
+              "lastAttempt": {
+                "after": 484,
+                "before": 2500,
+                "heightAfter": 4128,
+                "heightBefore": 4128,
+                "method": "observed-span-jump",
+                "replaced": false,
+                "requested": 484,
+                "scrollEvents": 1
+              },
+              "result": "mounted",
+              "skipReason": null
+            },
+            "geometry": {
+              "measuredAnswers": 0,
+              "measuredSpans": 2,
+              "measuredTurns": 3
+            },
+            "lastAttempt": {
+              "after": 484,
+              "before": 2500,
+              "heightAfter": 4128,
+              "heightBefore": 4128,
+              "method": "observed-span-jump",
+              "replaced": false,
+              "requested": 484,
+              "scrollEvents": 1
+            },
+            "scroll": {
+              "client": 500,
+              "connected": true,
+              "height": 4128,
+              "marked": true,
+              "overflow": "auto",
+              "tag": "DIV",
+              "top": 500,
+              "width": 883
+            }
+          },
+          "elapsedMs": 328,
+          "estimateBeforeNavigation": 500,
+          "fallbackMessage": null,
+          "globalOrdered": false,
+          "highlight": "a",
+          "loaded": true,
+          "located": true,
+          "scrollEvents": 2,
+          "segments": [
+            {
+              "count": 3,
+              "ordered": true
+            },
+            {
+              "count": 2,
+              "ordered": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "SPARSE mounted a,c cannot replace ordered a,b,c successor; old loses chain, patch jumps",
+      "status": "PASS",
+      "actual": {
+        "before": {
+          "diagnostic": {
+            "adjacentWitnesses": 0,
+            "collection": null,
+            "fast": {
+              "attempts": 0,
+              "elapsedMs": 0,
+              "fallbacks": 0,
+              "result": "cold"
+            },
+            "geometry": {
+              "measuredAnswers": 0,
+              "measuredSpans": 2,
+              "measuredTurns": 3
+            },
+            "lastAttempt": {
+              "after": 2275,
+              "before": 2500,
+              "heightAfter": 4128,
+              "heightBefore": 4128,
+              "method": "mounted-edge-anchor",
+              "replaced": false,
+              "requested": 2275,
+              "scrollEvents": 3
+            },
+            "scroll": {
+              "client": 500,
+              "connected": true,
+              "height": 4128,
+              "marked": true,
+              "overflow": "auto",
+              "tag": "DIV",
+              "top": 2275,
+              "width": 883
+            }
+          },
+          "elapsedMs": 1641,
+          "estimateBeforeNavigation": null,
+          "fallbackMessage": null,
+          "globalOrdered": false,
+          "highlight": null,
+          "loaded": false,
+          "located": false,
+          "scrollEvents": 2,
+          "segments": [
+            {
+              "count": 3,
+              "ordered": true
+            },
+            {
+              "count": 2,
+              "ordered": true
+            }
+          ]
+        },
+        "after": {
+          "diagnostic": {
+            "adjacentWitnesses": 0,
+            "collection": null,
+            "fast": {
+              "attempts": 1,
+              "elapsedMs": 81,
+              "eligibility": {
+                "estimatedY": 500,
+                "globalOrdered": false,
+                "mountedAnchors": 1,
+                "segmentEntries": 3,
+                "targetObserved": true,
+                "targetSegmentOrdered": true,
+                "widthCompatible": true
+              },
+              "fallbacks": 0,
+              "lastAttempt": {
+                "after": 484,
+                "before": 2500,
+                "heightAfter": 4128,
+                "heightBefore": 4128,
+                "method": "observed-span-jump",
+                "replaced": false,
+                "requested": 484,
+                "scrollEvents": 1
+              },
+              "result": "mounted",
+              "skipReason": null
+            },
+            "geometry": {
+              "measuredAnswers": 0,
+              "measuredSpans": 2,
+              "measuredTurns": 3
+            },
+            "lastAttempt": {
+              "after": 484,
+              "before": 2500,
+              "heightAfter": 4128,
+              "heightBefore": 4128,
+              "method": "observed-span-jump",
+              "replaced": false,
+              "requested": 484,
+              "scrollEvents": 1
+            },
+            "scroll": {
+              "client": 500,
+              "connected": true,
+              "height": 4128,
+              "marked": true,
+              "overflow": "auto",
+              "tag": "DIV",
+              "top": 500,
+              "width": 883
+            }
+          },
+          "elapsedMs": 333,
+          "estimateBeforeNavigation": 500,
+          "fallbackMessage": null,
+          "globalOrdered": false,
+          "highlight": "a",
+          "loaded": true,
+          "located": true,
+          "scrollEvents": 2,
+          "segments": [
+            {
+              "count": 3,
+              "ordered": true
+            },
+            {
+              "count": 2,
+              "ordered": true
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "GAP reports rejection and never invents a direct position",
+      "status": "PASS",
+      "actual": {
+        "diagnostic": {
+          "adjacentWitnesses": 0,
+          "collection": null,
+          "fast": {
+            "attempts": 0,
+            "elapsedMs": 0,
+            "eligibility": {
+              "estimatedY": null,
+              "globalOrdered": false,
+              "mountedAnchors": 1,
+              "segmentEntries": 3,
+              "targetObserved": true,
+              "targetSegmentOrdered": true,
+              "widthCompatible": true
+            },
+            "fallbacks": 0,
+            "lastAttempt": null,
+            "result": "cold",
+            "skipReason": "span-gap"
+          },
+          "geometry": {
+            "measuredAnswers": 0,
+            "measuredSpans": 0,
+            "measuredTurns": 2
+          },
+          "lastAttempt": {
+            "after": 2275,
+            "before": 2500,
+            "heightAfter": 4128,
+            "heightBefore": 4128,
+            "method": "mounted-edge-anchor",
+            "replaced": false,
+            "requested": 2275,
+            "scrollEvents": 3
+          },
+          "scroll": {
+            "client": 500,
+            "connected": true,
+            "height": 4128,
+            "marked": true,
+            "overflow": "auto",
+            "tag": "DIV",
+            "top": 2275,
+            "width": 883
+          }
+        },
+        "elapsedMs": 1642,
+        "estimateBeforeNavigation": null,
+        "fallbackMessage": "目標與目前位置之間缺少相鄰距離測量",
+        "globalOrdered": false,
+        "highlight": null,
+        "loaded": false,
+        "located": false,
+        "scrollEvents": 2,
+        "segments": [
+          {
+            "count": 3,
+            "ordered": true
+          },
+          {
+            "count": 2,
+            "ordered": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "UNSEEN reports rejection and never invents a direct position",
+      "status": "PASS",
+      "actual": {
+        "diagnostic": {
+          "adjacentWitnesses": 0,
+          "collection": null,
+          "fast": {
+            "attempts": 0,
+            "elapsedMs": 0,
+            "eligibility": {
+              "estimatedY": null,
+              "globalOrdered": false,
+              "mountedAnchors": 0,
+              "segmentEntries": 3,
+              "targetObserved": false,
+              "targetSegmentOrdered": true,
+              "widthCompatible": false
+            },
+            "fallbacks": 0,
+            "lastAttempt": null,
+            "result": "cold",
+            "skipReason": "target-not-observed"
+          },
+          "geometry": {
+            "measuredAnswers": 0,
+            "measuredSpans": 0,
+            "measuredTurns": 1
+          },
+          "lastAttempt": {
+            "after": 2275,
+            "before": 2500,
+            "heightAfter": 4128,
+            "heightBefore": 4128,
+            "method": "mounted-edge-anchor",
+            "replaced": false,
+            "requested": 2275,
+            "scrollEvents": 3
+          },
+          "scroll": {
+            "client": 500,
+            "connected": true,
+            "height": 4128,
+            "marked": true,
+            "overflow": "auto",
+            "tag": "DIV",
+            "top": 2275,
+            "width": 883
+          }
+        },
+        "elapsedMs": 1650,
+        "estimateBeforeNavigation": null,
+        "fallbackMessage": "本次頁面尚未測量目標位置",
+        "globalOrdered": false,
+        "highlight": null,
+        "loaded": false,
+        "located": false,
+        "scrollEvents": 2,
+        "segments": [
+          {
+            "count": 3,
+            "ordered": true
+          },
+          {
+            "count": 2,
+            "ordered": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "WIDTH reports rejection and never invents a direct position",
+      "status": "PASS",
+      "actual": {
+        "diagnostic": {
+          "adjacentWitnesses": 0,
+          "collection": null,
+          "fast": {
+            "attempts": 0,
+            "elapsedMs": 0,
+            "eligibility": {
+              "estimatedY": null,
+              "globalOrdered": false,
+              "mountedAnchors": 0,
+              "segmentEntries": 3,
+              "targetObserved": true,
+              "targetSegmentOrdered": true,
+              "widthCompatible": false
+            },
+            "fallbacks": 0,
+            "lastAttempt": null,
+            "result": "cold",
+            "skipReason": "width-changed"
+          },
+          "geometry": {
+            "measuredAnswers": 0,
+            "measuredSpans": 2,
+            "measuredTurns": 3
+          },
+          "lastAttempt": {
+            "after": 2275,
+            "before": 2500,
+            "heightAfter": 4128,
+            "heightBefore": 4128,
+            "method": "mounted-edge-anchor",
+            "replaced": false,
+            "requested": 2275,
+            "scrollEvents": 3
+          },
+          "scroll": {
+            "client": 500,
+            "connected": true,
+            "height": 4128,
+            "marked": true,
+            "overflow": "auto",
+            "tag": "DIV",
+            "top": 2275,
+            "width": 983
+          }
+        },
+        "elapsedMs": 1645,
+        "estimateBeforeNavigation": null,
+        "fallbackMessage": "頁面寬度已變，舊測量不適用",
+        "globalOrdered": false,
+        "highlight": null,
+        "loaded": false,
+        "located": false,
+        "scrollEvents": 2,
+        "segments": [
+          {
+            "count": 3,
+            "ordered": true
+          },
+          {
+            "count": 2,
+            "ordered": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "AMBIGUOUS reports rejection and never invents a direct position",
+      "status": "PASS",
+      "actual": {
+        "diagnostic": {
+          "adjacentWitnesses": 0,
+          "collection": null,
+          "fast": {
+            "attempts": 0,
+            "elapsedMs": 0,
+            "eligibility": {
+              "estimatedY": null,
+              "globalOrdered": false,
+              "mountedAnchors": 0,
+              "segmentEntries": 4,
+              "targetObserved": true,
+              "targetSegmentOrdered": false,
+              "widthCompatible": true
+            },
+            "fallbacks": 0,
+            "lastAttempt": null,
+            "result": "cold",
+            "skipReason": "target-order-unconfirmed"
+          },
+          "geometry": {
+            "measuredAnswers": 0,
+            "measuredSpans": 2,
+            "measuredTurns": 3
+          },
+          "lastAttempt": {
+            "after": 2275,
+            "before": 2500,
+            "heightAfter": 4128,
+            "heightBefore": 4128,
+            "method": "mounted-edge-anchor",
+            "replaced": false,
+            "requested": 2275,
+            "scrollEvents": 3
+          },
+          "scroll": {
+            "client": 500,
+            "connected": true,
+            "height": 4128,
+            "marked": true,
+            "overflow": "auto",
+            "tag": "DIV",
+            "top": 2275,
+            "width": 883
+          }
+        },
+        "elapsedMs": 1675,
+        "estimateBeforeNavigation": 500,
+        "fallbackMessage": "目標區段的順序尚未確認",
+        "globalOrdered": false,
+        "highlight": null,
+        "loaded": false,
+        "located": false,
+        "scrollEvents": 2,
+        "segments": [
+          {
+            "count": 4,
+            "ordered": false
+          },
+          {
+            "count": 2,
+            "ordered": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "OTHER segment anchors cannot supply a shortcut across unconfirmed group order",
+      "status": "PASS",
+      "actual": {
+        "diagnostic": {
+          "adjacentWitnesses": 1,
+          "collection": null,
+          "fast": {
+            "attempts": 0,
+            "elapsedMs": 0,
+            "eligibility": {
+              "estimatedY": null,
+              "globalOrdered": false,
+              "mountedAnchors": 0,
+              "segmentEntries": 3,
+              "targetObserved": true,
+              "targetSegmentOrdered": true,
+              "widthCompatible": true
+            },
+            "fallbacks": 0,
+            "lastAttempt": null,
+            "result": "cold",
+            "skipReason": "span-gap"
+          },
+          "geometry": {
+            "measuredAnswers": 0,
+            "measuredSpans": 3,
+            "measuredTurns": 5
+          },
+          "lastAttempt": {
+            "after": 3300,
+            "before": 3300,
+            "heightAfter": 4128,
+            "heightBefore": 4128,
+            "method": "mounted-edge-anchor",
+            "replaced": false,
+            "requested": 3300,
+            "scrollEvents": 2
+          },
+          "scroll": {
+            "client": 500,
+            "connected": true,
+            "height": 4128,
+            "marked": true,
+            "overflow": "auto",
+            "tag": "DIV",
+            "top": 3300,
+            "width": 883
+          }
+        },
+        "elapsedMs": 336,
+        "estimateBeforeNavigation": 500,
+        "fallbackMessage": "目標與目前位置之間缺少相鄰距離測量",
+        "globalOrdered": false,
+        "highlight": null,
+        "loaded": true,
+        "located": false,
+        "scrollEvents": 1,
+        "segments": [
+          {
+            "count": 3,
+            "ordered": true
+          },
+          {
+            "count": 2,
+            "ordered": true
+          }
+        ]
+      }
+    },
+    {
+      "name": "MISS retains the direct attempt after walking updates lastAttempt",
+      "status": "PASS",
+      "actual": {
+        "diagnostic": {
+          "adjacentWitnesses": 0,
+          "collection": null,
+          "fast": {
+            "attempts": 1,
+            "elapsedMs": 1227,
+            "eligibility": {
+              "estimatedY": 500,
+              "globalOrdered": false,
+              "mountedAnchors": 1,
+              "segmentEntries": 3,
+              "targetObserved": true,
+              "targetSegmentOrdered": true,
+              "widthCompatible": true
+            },
+            "fallbacks": 1,
+            "lastAttempt": {
+              "after": 2500,
+              "before": 2500,
+              "heightAfter": 4128,
+              "heightBefore": 4128,
+              "method": "observed-span-jump",
+              "replaced": false,
+              "requested": 484,
+              "scrollEvents": 1
+            },
+            "result": "miss",
+            "skipReason": null
+          },
+          "geometry": {
+            "measuredAnswers": 0,
+            "measuredSpans": 0,
+            "measuredTurns": 1
+          },
+          "lastAttempt": {
+            "after": 2500,
+            "before": 2500,
+            "heightAfter": 4128,
+            "heightBefore": 4128,
+            "method": "mounted-edge-anchor",
+            "replaced": false,
+            "requested": 2500,
+            "scrollEvents": 2
+          },
+          "scroll": {
+            "client": 500,
+            "connected": true,
+            "height": 4128,
+            "marked": true,
+            "overflow": "auto",
+            "tag": "DIV",
+            "top": 2500,
+            "width": 883
+          }
+        },
+        "elapsedMs": 1640,
+        "estimateBeforeNavigation": 500,
+        "fallbackMessage": "直接跳轉後目標未掛載",
+        "globalOrdered": false,
+        "highlight": null,
+        "loaded": false,
+        "located": false,
+        "scrollEvents": 2,
+        "segments": [
+          {
+            "count": 3,
+            "ordered": true
+          },
+          {
+            "count": 2,
+            "ordered": true
+          }
+        ]
+      }
+    }
+  ]
+}

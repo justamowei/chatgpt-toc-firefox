@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-04T16:00:22.817Z",
+  "firefox": "157.0",
+  "source": "localhost nested scrolling and virtual unmount model; not real ChatGPT LIVE",
+  "build": {
+    "version": "0.3.1",
+    "fixture": true,
+    "hashes": {
+      "background.js": "8081a2f22c734deba874c64b5d68ac5e07814eac29efb4cc1a26e7a4e01bb7ff",
+      "content.js": "1910298695341b3b6d20b17b89356a12d5c759da52a3c799c69b652cc2ef794e",
+      "options.js": "febbd740915f6b41763d8549492ccb5177796dff2d6cf3477e3f2e021e419443",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "fbc849f0af4b24c89360b59ca8b55d0ccd423429f737b0db422a651d57a5c6a4",
+      "manifest.json": "9796621f5f92d9f5bd21be044ccac59f0cb88df18c78a4db72ad411a66505dbf"
+    }
+  },
+  "results": [
+    {
+      "name": "execution",
+      "status": "FAIL",
+      "error": "Wait timed out after 9151ms",
+      "ui": {
+        "highlight": null,
+        "ids": [
+          "mechanism:u-16",
+          "mechanism:u-17"
+        ],
+        "nav": "loading",
+        "scope": "本頁已看過 2 則 · 目前掛載 2 則。歷史尚未完整；當前分支未完整核對；搜尋涵蓋已觀察資料。",
+        "status": "正在收集較早提問 · 本次新增 0 則 · 已看過 2 則。"
+      },
+      "stats": {
+        "client": 650,
+        "events": 1,
+        "height": 30100,
+        "top": 29450,
+        "unmounts": 1
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-15",
+  "runtimeCommit": "16bb24d905300e4eea187f00e76b415cfb525f2c",
+  "productVersion": "0.4.1",
+  "revision": "2026-10-15-v041",
+  "status": "diagnostic-candidate",
+  "chatgptLive": "PENDING: user page diagnosis not yet provided",
+  "typecheck": "PASS",
+  "pureTests": {
+    "passed": 95,
+    "total": 95
+  },
+  "governanceTests": {
+    "passed": 7,
+    "total": 7
+  },
+  "firefoxLocalhost": {
+    "version": "158.0",
+    "passed": 28,
+    "total": 28,
+    "suites": {
+      "firefox-v041": 8,
+      "firefox-v040": 12,
+      "firefox-v034": 8
+    }
+  },
+  "webExtLint": {
+    "errors": 0,
+    "notices": 0,
+    "warnings": 0
+  },
+  "zipSha256": "15917d934f68b2f09eee5d0c1aa27f2cf3d6d8a1e866d1993d456f13f3d9fd97",
+  "runtimeCloudCheckpoint": {
+    "status": "SYNC_VERIFIED",
+    "branch": "fix/fast-eligibility-v041",
+    "head": "16bb24d905300e4eea187f00e76b415cfb525f2c",
+    "actionUrl": "https://github.com/justamowei/chatgpt-toc-firefox/actions/runs/38606761254"
+  },
+  "v041TagCreated": false,
+  "releaseBranchUpdated": false
+}

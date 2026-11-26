@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-06T03:15:46.313Z",
+  "firefox": "157.0",
+  "source": "isolated localhost Firefox addon UI; not ChatGPT LIVE",
+  "build": {
+    "version": "0.3.1",
+    "revision": "2026-10-06-r4",
+    "fixture": true,
+    "hashes": {
+      "background.js": "8081a2f22c734deba874c64b5d68ac5e07814eac29efb4cc1a26e7a4e01bb7ff",
+      "content.js": "78506c23baa39469da1b73214001b8c418f47c3e56c58fb48ece825b2c668f70",
+      "options.js": "febbd740915f6b41763d8549492ccb5177796dff2d6cf3477e3f2e021e419443",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "9796621f5f92d9f5bd21be044ccac59f0cb88df18c78a4db72ad411a66505dbf"
+    }
+  },
+  "results": [
+    {
+      "name": "UI-01: compact rail caps growth at five without discarding the expanded list",
+      "status": "PASS",
+      "actual": [
+        {
+          "prompts": 0,
+          "compactMarkers": 0,
+          "height": 57
+        },
+        {
+          "prompts": 1,
+          "compactMarkers": 1,
+          "height": 69
+        },
+        {
+          "prompts": 5,
+          "compactMarkers": 5,
+          "height": 137
+        },
+        {
+          "prompts": 6,
+          "compactMarkers": 5,
+          "height": 137
+        },
+        {
+          "prompts": 120,
+          "compactMarkers": 5,
+          "height": 137
+        }
+      ]
+    },
+    {
+      "name": "UI-02: expansion restores every marker and repeated collapse preserves all prompts",
+      "status": "PASS",
+      "actual": {
+        "expandedMarkers": 120,
+        "collapsedMarkers": 5,
+        "retainedPrompts": 120,
+        "repeatedToggles": 2
+      }
+    },
+    {
+      "name": "UI-03: horizontal neutral navigation fits light, dark and narrow windows",
+      "status": "PASS",
+      "actual": {
+        "writingMode": "horizontal-tb",
+        "lightAccent": "#6366f1",
+        "darkAccent": "#a5b4fc",
+        "narrowPanel": {
+          "left": 28.866668701171875,
+          "right": 432.8666687011719
+        }
+      }
+    },
+    {
+      "name": "UI-04: sampled compact markers still locate their exact prompt",
+      "status": "PASS",
+      "actual": {
+        "exactTarget": "ui:120:u-60",
+        "compactMarkers": 5,
+        "retainedPrompts": 120
+      }
+    }
+  ]
+}

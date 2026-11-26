@@ -1,3 +1,21 @@
+# Firefox 日常安裝
+
+「about:debugging → 這個 Firefox → 載入暫時附加元件」保留到 Firefox 重啟。一般版 Firefox 要長期安裝，使用 Mozilla 簽章的 XPI。私人使用可在 AMO Developer Hub 選擇「On your own」送簽，不需公開上架。
+
+1. 用 `npm run build:firefox` 和 `npm run package:firefox` 建置未簽章 ZIP，在 Mozilla 開發者後台以自行散布方式上傳，並附上同版本原始碼與建置說明。
+2. 簽章完成後，從後台下載簽章版 `.xpi`。
+3. 在 Firefox 開啟 `about:addons`，從齒輪選「從檔案安裝附加元件」，選取簽章版 XPI。安裝後重啟 Firefox，確認目錄可用。
+
+升版沿用既有附加元件 ID。暫時版本移除後的本機資料由 Firefox 管理，若要保留可讀目錄，請先用面板的「複製目錄」備份文字。
+
+[Mozilla 送簽流程](https://extensionworkshop.com/documentation/publish/submitting-an-add-on/#self-distribution) · [自行散布與安裝](https://extensionworkshop.com/documentation/publish/self-distribution/)
+
+## 歷史測試版安裝說明
+
+# Firefox 目前安裝：v0.3.6 r4
+
+在 about:debugging#/runtime/this-firefox 暫時載入 outputs/Firefox-測試版-v0.3.6/manifest.json。重整 ChatGPT，「頁面診斷」版本為 0.3.6，revision 為 2026-11-17-v036-r4。見 [v0.3.6 交付](release-v0.3.6.md)。下方保留原版紀錄。
+
 # Firefox v0.3.5 更新與使用
 
 正式manifest：outputs/Firefox-測試版-v0.3.5/manifest.json；version0.3.5／revision2026-10-10-v035。

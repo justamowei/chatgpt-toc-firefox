@@ -1,0 +1,94 @@
+{
+  "date": "2026-10-04T16:38:56.949Z",
+  "firefox": "157.0",
+  "source": "real IAB snapshots rebuilt on localhost",
+  "liveChatGptAddon": false,
+  "build": {
+    "version": "0.3.1",
+    "revision": "2026-10-05-r2",
+    "fixture": true,
+    "hashes": {
+      "background.js": "8081a2f22c734deba874c64b5d68ac5e07814eac29efb4cc1a26e7a4e01bb7ff",
+      "content.js": "2675b598be58e8c4d954bdf622b1b08f8a41a03511bf8317931496afb2b42098",
+      "options.js": "febbd740915f6b41763d8549492ccb5177796dff2d6cf3477e3f2e021e419443",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "fbc849f0af4b24c89360b59ca8b55d0ccd423429f737b0db422a651d57a5c6a4",
+      "manifest.json": "9796621f5f92d9f5bd21be044ccac59f0cb88df18c78a4db72ad411a66505dbf"
+    }
+  },
+  "results": [
+    {
+      "name": "CACHE-01: real snapshot cold collection retains exact 12 IDs/text through slot renumbering",
+      "status": "PASS",
+      "actual": {
+        "count": 12,
+        "slotChangesPreserved": true,
+        "quarantined": 0
+      }
+    },
+    {
+      "name": "CACHE-02: returning to a tail window keeps offscreen search and reading return",
+      "status": "PASS",
+      "actual": {
+        "retained": 12,
+        "offscreenSearch": true,
+        "exactHighlight": true,
+        "returnRestored": true
+      }
+    },
+    {
+      "name": "CACHE-03: empty mounts and first-seen removed subtrees survive UI debounce",
+      "status": "PASS",
+      "actual": {
+        "retained": 13,
+        "emptyMountRetained": true,
+        "removedFirstSeen": true,
+        "uncertainOrderDisabled": true
+      }
+    },
+    {
+      "name": "CACHE-04: prefix edits quarantine old versions; never erase previously observed text",
+      "status": "PASS",
+      "actual": {
+        "historicalVersions": 13,
+        "editedCurrent": true,
+        "oldTextSearchable": true,
+        "staleReturnDisabled": true
+      }
+    },
+    {
+      "name": "CACHE-05: SPA URL transitions exclude old DOM and late removed old-route prompts",
+      "status": "PASS",
+      "actual": {
+        "oldRouteLeak": false,
+        "newRouteOnly": true
+      }
+    },
+    {
+      "name": "CACHE-06: assigning a new conversation URL preserves its first prompt on the same node",
+      "status": "PASS",
+      "actual": {
+        "sameNodeSurvivesUrlAssignment": true
+      }
+    },
+    {
+      "name": "CACHE-07: bounded head collection preserves disjoint windows and guards offscreen return",
+      "status": "PASS",
+      "actual": {
+        "collected": 20,
+        "mounted": 10,
+        "unconfirmedReturnRefused": true,
+        "restoredAfterOrderWitness": true,
+        "cancelledWithoutCacheLoss": true
+      }
+    },
+    {
+      "name": "CACHE-08: an unmounted answer without a prompt-order anchor refuses guessed return",
+      "status": "PASS",
+      "actual": {
+        "unmountedAnswerReturnRefused": true,
+        "noGuessedScroll": true
+      }
+    }
+  ]
+}

@@ -1,0 +1,141 @@
+{
+  "date": "2026-10-06T03:11:41.239Z",
+  "firefox": "157.0",
+  "source": "localhost nested scrolling and virtual unmount model; not real ChatGPT LIVE",
+  "build": {
+    "version": "0.3.1",
+    "revision": "2026-10-06-r4",
+    "fixture": true,
+    "hashes": {
+      "background.js": "8081a2f22c734deba874c64b5d68ac5e07814eac29efb4cc1a26e7a4e01bb7ff",
+      "content.js": "78506c23baa39469da1b73214001b8c418f47c3e56c58fb48ece825b2c668f70",
+      "options.js": "febbd740915f6b41763d8549492ccb5177796dff2d6cf3477e3f2e021e419443",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "9796621f5f92d9f5bd21be044ccac59f0cb88df18c78a4db72ad411a66505dbf"
+    }
+  },
+  "results": [
+    {
+      "name": "MECH-01: real nested-scroll shape ignores a non-scrollable outer marker and moves hidden inner root",
+      "status": "PASS",
+      "actual": {
+        "client": 650,
+        "events": 18,
+        "evictions": [],
+        "height": 30100,
+        "replacements": [],
+        "top": 0,
+        "unmounts": 18
+      }
+    },
+    {
+      "name": "MECH-02: head collection sweeps unseen middle instead of declaring a head jump complete",
+      "status": "PASS",
+      "actual": {
+        "collected": 18,
+        "exactOrder": true,
+        "scope": "本頁已看過 18 則 · 目前掛載 2 則。歷史尚未完整；當前分支未完整核對；搜尋涵蓋已觀察資料。",
+        "stats": {
+          "client": 650,
+          "events": 31,
+          "evictions": [],
+          "height": 30100,
+          "replacements": [],
+          "top": 29450,
+          "unmounts": 31
+        }
+      }
+    },
+    {
+      "name": "MECH-ANCHOR: warm offscreen target is reached through live mounted turn anchors",
+      "status": "PASS",
+      "actual": {
+        "method": "mounted-edge-anchor",
+        "exactHighlight": "mechanism:u-7",
+        "geometry": {
+          "measuredTurns": 36,
+          "measuredAnswers": 18,
+          "measuredSpans": 17
+        }
+      }
+    },
+    {
+      "name": "MECH-03: replacing scroll root during navigation recovers the exact target",
+      "status": "PASS",
+      "actual": {
+        "exactHighlight": "mechanism:u-2",
+        "replacementAfterArming": true,
+        "stats": {
+          "client": 650,
+          "events": 58,
+          "evictions": [],
+          "height": 30100,
+          "replacements": [
+            48433
+          ],
+          "top": 2270,
+          "unmounts": 58
+        }
+      }
+    },
+    {
+      "name": "MECH-04: async eviction during a mounted target jump retries exact remount",
+      "status": "PASS",
+      "actual": {
+        "exactHighlight": "mechanism:u-1",
+        "evictionAfterArming": true,
+        "state": "located"
+      }
+    },
+    {
+      "name": "MECH-06: reading return waits for remount after its final offset scroll",
+      "status": "PASS",
+      "actual": {
+        "sameAnswer": "mechanism:a-17",
+        "offsetBefore": -406,
+        "offsetAfter": -406,
+        "remounted": true
+      }
+    },
+    {
+      "name": "MECH-05: diagnostic exposes geometry and actual movement without message IDs or text",
+      "status": "PASS",
+      "actual": {
+        "scroll": {
+          "tag": "DIV",
+          "marked": true,
+          "overflow": "hidden",
+          "client": 650,
+          "width": 1200,
+          "height": 30100,
+          "top": 8880,
+          "connected": true
+        },
+        "geometry": {
+          "measuredTurns": 36,
+          "measuredAnswers": 18,
+          "measuredSpans": 17
+        },
+        "adjacentWitnesses": 17,
+        "collection": null,
+        "lastAttempt": {
+          "method": "mounted-edge-anchor",
+          "before": 18440,
+          "requested": 10440,
+          "after": 10440,
+          "heightBefore": 30100,
+          "heightAfter": 30100,
+          "scrollEvents": 1,
+          "replaced": false,
+          "boundary": {
+            "physical": false,
+            "loading": false,
+            "probes": 0,
+            "stableMs": 0
+          }
+        }
+      }
+    }
+  ]
+}

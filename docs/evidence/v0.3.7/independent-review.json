@@ -1,0 +1,84 @@
+{
+  "status": "PASS",
+  "reviewType": "Independent read-only source and pure-local-test acceptance",
+  "runtimeSha": "0a069e08a7893a55b48d061ce7dbb8a9fc0f9b64",
+  "baseSha": "ab0877a4827a06e679ffabe6d8be520123352511",
+  "scope": "v0.3.7: stop at stable physical head, retain collected data, continue upward without repeatedly aligning an unchanged frontier",
+  "blockingFindings": [],
+  "checks": [
+    {
+      "name": "TypeScript --noEmit from fixed-SHA archive",
+      "status": "PASS"
+    },
+    {
+      "name": "Pure test subset from fixed-SHA archive",
+      "status": "PASS",
+      "passed": 94,
+      "failed": 0,
+      "skipped": 0,
+      "suites": {
+        "collection-policy": 10,
+        "core": 30,
+        "persistence": 31,
+        "background": 10,
+        "geometry": 9,
+        "interaction": 2,
+        "settings": 2
+      }
+    }
+  ],
+  "findings": [
+    "Collection finishes only after the existing witness observes a live physical head for six seconds and records two spaced clamped probes. Loading, rendering, root/shell/signature or significant geometry changes invalidate proof.",
+    "Unchanged collection frontier/root is anchored once; subsequent batches continue from current scrollTop, so the prior repeated head-shell alignment loop is removed.",
+    "At confirmed head, collection stage becomes done directly; there is no newer sweep. Status explicitly retains partial-history wording.",
+    "Abort checks surround refresh and precede scrolling; finish clears its poll timer and abort handler; finally disconnects render observer and scroll listener. Existing cancellation/generation tests pass.",
+    "Neither done nor cancellation clears IndexStore. Firefox permissions, cache schema, persistence and hydration paths are unchanged; the 31 persistence and 10 background pure cases pass."
+  ],
+  "testContractNotes": [
+    "The fixed-SHA top browser harness reuses the 450-normal URL for two starts. Parent confirmed cache contamination of its seventh-entry setup assertion and has isolated URL by pad/start/mode in the working harness without changing runtime sources.",
+    "The fixed-SHA delayed browser result contained obsolete newerAfterFirstZero:true metadata despite an explicit no-newer assertion. Parent reports correction to stoppedAtHead:true in the working harness.",
+    "The boundary browser contract covers delayed five- and twenty-five-second mounts, frozen middle retry/cancellation, loading and identity/root/height/viewport reset; top contract covers padding, hidden loader, visible busy loading, unknown spacer and late scroll cancellation. These are complementary to the pure witness tests."
+  ],
+  "limitations": [
+    "This reviewer did not execute Firefox browser suites; parent is running the isolated native Firefox suites.",
+    "No ChatGPT LIVE session tested.",
+    "No personal Firefox profile, installed personal Firefox extension or user browsing state inspected or operated.",
+    "No network Git operation or Git Credential Manager operation executed."
+  ],
+  "sourceEditsByReviewer": false,
+  "artifactDirectory": "C:/Users/Andy/Documents/Codex/2026-10-02/new-chat-2/work/top-v037-review",
+  "recoveryAppendix": {
+    "status": "PASS",
+    "review": "Read-only review of original failure, harness corrections and parent-produced corrected native Firefox artifacts",
+    "originalFailureArtifact": "outputs/chatgpt-toc/artifacts/firefox-recovery-v037-complete/results.json",
+    "originalObservedFailure": "V034-08 timeout with mixed B:u-23..29 and A:u-23..29 in the index",
+    "harnessAssessment": [
+      "Waiting for every ID to match the requested route prefix is justified: mount formerly waited only for the existing host, and a seven-row wait could be satisfied by the previous conversation tail.",
+      "Clearing the renderer pending timer when freezing is justified: the former freeze flag prevented future scheduling but did not cancel an already scheduled 130ms render, so an empty mount could be refilled."
+    ],
+    "correctedArtifact": "outputs/chatgpt-toc/artifacts/firefox-recovery-v037-isolated-empty/results.json",
+    "correctedResult": {
+      "passed": 8,
+      "failed": 0,
+      "emptySpaRestoreMs": 476,
+      "restoredBeforeMount": 30,
+      "orderingRetained": true
+    },
+    "unchangedFixtureContentHash": "1fb2f50d34a190f10f9eedddbc401df0e21450e25f751e620ec67c48b8a08956",
+    "baselineComparison": "core.ts, persistence.ts and background.ts have no diff between the requested v034 baseline and runtime SHA; DomAdapter read/readRemoved and content collect/restore paths are unchanged.",
+    "conclusion": "The harness corrections are reasonable and the corrected recovery contract passes on unchanged runtime. No demonstrated v037 product blocker. The exact sole cause of the original failure is not proven; retain its artifact and do not describe it as a confirmed environment failure.",
+    "parentNativeSuiteSummary": {
+      "top": 6,
+      "boundary": 6,
+      "recovery": 8,
+      "totalPassed": 20,
+      "executedBy": "parent agent, isolated native Firefox localhost",
+      "reviewerExecutedFirefox": false
+    },
+    "notPerformed": [
+      "ChatGPT LIVE",
+      "Personal Firefox profile or installed personal extension inspection/operation",
+      "Network Git or Git Credential Manager operations"
+    ]
+  }
+}

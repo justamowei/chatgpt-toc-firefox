@@ -1,6 +1,7 @@
 {
   "name": "chatgpt-toc-firefox",
-  "version": "0.1.0",
+  "version": "0.3.7",
+  "tocRevision": "2026-11-18-v037-r9",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,8 +9,26 @@
     "build:firefox": "node scripts/build.mjs",
     "lint:firefox": "web-ext lint --source-dir dist/firefox --warnings-as-errors",
     "test:core": "node --test tests/core.test.mjs",
+    "test:geometry": "node --test tests/geometry.test.mjs",
+    "test:interaction": "node --test tests/interaction.test.mjs",
+    "test:persistence": "node --test tests/persistence.test.mjs",
+    "test:background": "node --test tests/background.test.mjs",
+    "test:collection-policy": "node --test tests/collection-policy.test.mjs",
+    "test:firefox-v032": "node tests/firefox-v032.mjs",
     "test:firefox-fixture": "node tests/firefox-fixture.mjs",
-    "package:firefox": "node scripts/package.mjs"
+    "test:firefox-permissions": "node tests/firefox-permissions.mjs",
+    "test:firefox-addon-lifecycle": "node tests/firefox-addon-lifecycle.mjs",
+    "test:firefox-renderers": "node tests/firefox-renderers.mjs",
+    "test:firefox-seen-cache": "node tests/firefox-seen-cache.mjs",
+    "test:firefox-navigation-speed": "node tests/firefox-navigation-speed.mjs",
+    "test:firefox-scroll-mechanism": "node tests/firefox-scroll-mechanism.mjs",
+    "test:firefox-anchor-walk": "node tests/firefox-anchor-walk.mjs",
+    "test:firefox-compact-ui": "node tests/firefox-compact-ui.mjs",
+    "test:firefox-collection-boundary": "node tests/firefox-collection-boundary.mjs",
+    "package:firefox": "node scripts/package.mjs",
+    "test:firefox-v033": "node tests/firefox-v033.mjs",
+    "test:settings": "node --test tests/settings.test.mjs",
+    "test:firefox-v034": "node tests/firefox-v034.mjs"
   },
   "devDependencies": {
     "@types/firefox-webext-browser": "143.0.1",

@@ -1,0 +1,76 @@
+{
+  "metadata": {
+    "date": "2026-10-03T12:25:38.328Z",
+    "executor": "primary-agent",
+    "firefox": "157.0",
+    "sample": "synthetic-manual-disable-enable-uninstall",
+    "build": {
+      "version": "0.3.0",
+      "fixture": true,
+      "hashes": {
+        "background.js": "8081a2f22c734deba874c64b5d68ac5e07814eac29efb4cc1a26e7a4e01bb7ff",
+        "content.js": "52ce502c4537711ca3474d60a0a074c7ba8ea6658b4cb3fc575893f51d30bc60",
+        "options.js": "febbd740915f6b41763d8549492ccb5177796dff2d6cf3477e3f2e021e419443",
+        "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+        "host.css": "fbc849f0af4b24c89360b59ca8b55d0ccd423429f737b0db422a651d57a5c6a4",
+        "manifest.json": "5ece1031d42199f956c77f05217cc733a8b1dbe0b027febcd7031d28b5ded119"
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "FF-01:addon-disable",
+      "expected": "Native add-on disable removes managed CSS: no visible UI or highlight remains",
+      "actual": {
+        "addon": {
+          "active": false,
+          "disabled": true
+        },
+        "highlight": "none",
+        "markers": 1,
+        "roots": 1,
+        "visible": false,
+        "remaining_dom": "inert hidden node until reload/re-enable"
+      },
+      "status": "PASS",
+      "elapsed_ms": 125.46960000000036
+    },
+    {
+      "id": "FF-01:addon-reenable",
+      "expected": "Re-enable/action cleans the old isolated context DOM and creates exactly one usable UI",
+      "actual": {
+        "addon": {
+          "active": true,
+          "disabled": false
+        },
+        "highlight": "none",
+        "markers": 0,
+        "roots": 1,
+        "visible": true,
+        "located_after_reenable": true
+      },
+      "status": "PASS",
+      "elapsed_ms": 1157.6435999999994
+    },
+    {
+      "id": "FF-01:addon-uninstall",
+      "expected": "Native uninstall removes visible UI/highlight; a page reload removes inert DOM",
+      "actual": {
+        "before_reload": {
+          "highlight": "none",
+          "markers": 1,
+          "roots": 1,
+          "visible": false
+        },
+        "after_reload": {
+          "highlight": "none",
+          "markers": 0,
+          "roots": 0,
+          "visible": false
+        }
+      },
+      "status": "PASS",
+      "elapsed_ms": 277.65490000000136
+    }
+  ]
+}

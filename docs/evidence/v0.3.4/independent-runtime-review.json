@@ -1,0 +1,143 @@
+{
+  "date": "2026-10-08T03:02:20.884Z",
+  "sourceCommit": "a1ff15a7535cb7bf08cff683ff69104be17f1efb",
+  "source": "Independent local git archive, core.autocrlf=false; existing dependencies reused through local junction; no browser or network Git executed",
+  "status": "PASS_WITH_NATIVE_ASSERTION_COVERAGE_GAP",
+  "version": "0.3.4",
+  "revision": "2026-10-08-v034",
+  "checks": {
+    "pure": {
+      "pass": 94,
+      "fail": 0,
+      "skipped": 0,
+      "log": "pure-tests.log"
+    },
+    "typecheck": {
+      "status": "PASS",
+      "log": "typecheck.log"
+    },
+    "build": {
+      "production": "PASS",
+      "fixture": "PASS"
+    },
+    "lint": {
+      "production": {
+        "errors": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "fixture": {
+        "errors": 0,
+        "warnings": 0,
+        "notices": 0
+      }
+    },
+    "hashes": [
+      {
+        "mode": "firefox",
+        "file": "background.js",
+        "sha256": "d706ec6dc262723ced2d56edcf80079945b1e34a041a4b78d68b57d852485fd5",
+        "status": "PASS"
+      },
+      {
+        "mode": "firefox",
+        "file": "content.js",
+        "sha256": "5e854661b492054b7fde199c15360715f4a10560c8a8caeb9685fbce2f2c0912",
+        "status": "PASS"
+      },
+      {
+        "mode": "firefox",
+        "file": "options.js",
+        "sha256": "ad5578f7c20fc63367d132b3c7bebd7755c8a46213a5d28291393d953e3e737f",
+        "status": "PASS"
+      },
+      {
+        "mode": "firefox",
+        "file": "options.html",
+        "sha256": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+        "status": "PASS"
+      },
+      {
+        "mode": "firefox",
+        "file": "host.css",
+        "sha256": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+        "status": "PASS"
+      },
+      {
+        "mode": "firefox",
+        "file": "manifest.json",
+        "sha256": "afe1846c085bfbc085b7d49803c4659247f5eb794a9cb4023779e9018b409ab1",
+        "status": "PASS"
+      },
+      {
+        "mode": "fixture",
+        "file": "background.js",
+        "sha256": "58c117acd1e7a59f0afee5fdd5194725e65da8508a02a47e3b739d2810aaacab",
+        "status": "PASS"
+      },
+      {
+        "mode": "fixture",
+        "file": "content.js",
+        "sha256": "387e2a3dadc6628a40889ae6cd4c8d8b64a8ed80d870a7b84ff4d9b0ffc224da",
+        "status": "PASS"
+      },
+      {
+        "mode": "fixture",
+        "file": "options.js",
+        "sha256": "e22fed134baab47f4310977db5e26693896485fbee3ca43684b9847866ab7081",
+        "status": "PASS"
+      },
+      {
+        "mode": "fixture",
+        "file": "options.html",
+        "sha256": "1b06f2ac7aaec2e6ea46535d285b610058258156a17fe5f54ea97f0181552482",
+        "status": "PASS"
+      },
+      {
+        "mode": "fixture",
+        "file": "host.css",
+        "sha256": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+        "status": "PASS"
+      },
+      {
+        "mode": "fixture",
+        "file": "manifest.json",
+        "sha256": "87ecd0f868cc8dcbf637f2c3951dcb5009ac53523eb0efe31d15c52794bef8c7",
+        "status": "PASS"
+      }
+    ],
+    "nativeReport": {
+      "reviewed": true,
+      "rerun": false,
+      "firefox": "157.0.1",
+      "pass": 8,
+      "fail": 0,
+      "fixtureHashesMatch": true
+    }
+  },
+  "review": {
+    "runtime": "reorder uses graph evidence independently of recovery IDs; verifyComplete explicitly blocks recovery IDs; actual contradictions still isolate generations and invalidate navigation epoch",
+    "compatibility": "StoredIndex version 1 and toc-index-v1 unchanged; v033 candidate metadata and v032 restored-unverified prefix remain accepted",
+    "coverage": [
+      "Repeated null branch F5 with exact ID order, local/global ordering and current mounts",
+      "Known branch recovery cannot produce complete proof until exact witnesses retire candidates",
+      "Disconnected groups preserve local order without invented bridge",
+      "Legacy archived prefix preserves local order without invented bridge",
+      "Broker overlapping windows and repeated writes preserve order",
+      "Persistent SPA A to B to A with empty mount preserves ordering",
+      "Existing text, order, known branch conflict and strict validation regressions"
+    ],
+    "nativeAssertions": {
+      "F5": "V034-03 checks groups=[] and saved-order scope before navigation",
+      "repeatedRefresh": "V034-07 checks exact ordered IDs, groups=[], archived=0, partial scope and unchanged renderer start 23 across three refreshes",
+      "emptyMountSPA": "V034-08 checks exact ordered IDs, groups=[], archived=0, mounted count zero and saved-order scope",
+      "ordinarySPA": "V034-02 currently checks count 30, archived=0 and exact offscreen highlight, but no direct ID order/groups/saved-order assertion"
+    }
+  },
+  "limitations": [
+    "Native Firefox report inspected and fixture hashes matched; independent agent did not launch browser",
+    "Ordinary SPA V034-02 should add direct exact ID order, groups=[] and saved-order assertions",
+    "ChatGPT LIVE, private Firefox, permanent installation, signing and AMO not performed",
+    "Existing partial-order graph serialization limitation remains outside this minimal fix"
+  ]
+}

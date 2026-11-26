@@ -1,0 +1,332 @@
+{
+  "source": "Codex IAB localhost exact fixture bundle + runtime shim; not Firefox addon or ChatGPT LIVE",
+  "frames": [
+    {
+      "expanded": "false",
+      "cache": 120,
+      "marks": [
+        "iab:u-0",
+        "iab:u-1",
+        "iab:u-2",
+        "iab:u-3",
+        "iab:u-4",
+        "iab:u-5",
+        "iab:u-6",
+        "iab:u-7",
+        "iab:u-8",
+        "iab:u-9",
+        "iab:u-10",
+        "iab:u-11",
+        "iab:u-12",
+        "iab:u-13",
+        "iab:u-14",
+        "iab:u-15",
+        "iab:u-16",
+        "iab:u-17",
+        "iab:u-18",
+        "iab:u-19",
+        "iab:u-20",
+        "iab:u-21",
+        "iab:u-22",
+        "iab:u-23",
+        "iab:u-24",
+        "iab:u-25",
+        "iab:u-26",
+        "iab:u-27",
+        "iab:u-28",
+        "iab:u-29",
+        "iab:u-30",
+        "iab:u-31",
+        "iab:u-32",
+        "iab:u-33",
+        "iab:u-34",
+        "iab:u-35",
+        "iab:u-36",
+        "iab:u-37",
+        "iab:u-38",
+        "iab:u-39",
+        "iab:u-40",
+        "iab:u-41",
+        "iab:u-42",
+        "iab:u-43",
+        "iab:u-44",
+        "iab:u-45",
+        "iab:u-46",
+        "iab:u-47",
+        "iab:u-48",
+        "iab:u-49",
+        "iab:u-50",
+        "iab:u-51",
+        "iab:u-52",
+        "iab:u-53",
+        "iab:u-54",
+        "iab:u-55",
+        "iab:u-56",
+        "iab:u-57",
+        "iab:u-58",
+        "iab:u-59",
+        "iab:u-60",
+        "iab:u-61",
+        "iab:u-62",
+        "iab:u-63",
+        "iab:u-64",
+        "iab:u-65",
+        "iab:u-66",
+        "iab:u-67",
+        "iab:u-68",
+        "iab:u-69",
+        "iab:u-70",
+        "iab:u-71",
+        "iab:u-72",
+        "iab:u-73",
+        "iab:u-74",
+        "iab:u-75",
+        "iab:u-76",
+        "iab:u-77",
+        "iab:u-78",
+        "iab:u-79",
+        "iab:u-80",
+        "iab:u-81",
+        "iab:u-82",
+        "iab:u-83",
+        "iab:u-84",
+        "iab:u-85",
+        "iab:u-86",
+        "iab:u-87",
+        "iab:u-88",
+        "iab:u-89",
+        "iab:u-90",
+        "iab:u-91",
+        "iab:u-92",
+        "iab:u-93",
+        "iab:u-94",
+        "iab:u-95",
+        "iab:u-96",
+        "iab:u-97",
+        "iab:u-98",
+        "iab:u-99",
+        "iab:u-100",
+        "iab:u-101",
+        "iab:u-102",
+        "iab:u-103",
+        "iab:u-104",
+        "iab:u-105",
+        "iab:u-106",
+        "iab:u-107",
+        "iab:u-108",
+        "iab:u-109",
+        "iab:u-110",
+        "iab:u-111",
+        "iab:u-112",
+        "iab:u-113",
+        "iab:u-114",
+        "iab:u-115",
+        "iab:u-116",
+        "iab:u-117",
+        "iab:u-118",
+        "iab:u-119"
+      ],
+      "highlight": null,
+      "searchFocused": false
+    },
+    {
+      "expanded": "false",
+      "cache": 120,
+      "marks": [
+        "iab:u-111",
+        "iab:u-112",
+        "iab:u-113",
+        "iab:u-114",
+        "iab:u-115",
+        "iab:u-116"
+      ],
+      "highlight": null,
+      "searchFocused": false
+    },
+    {
+      "expanded": "true",
+      "cache": 120,
+      "marks": [
+        "iab:u-111",
+        "iab:u-112",
+        "iab:u-113",
+        "iab:u-114",
+        "iab:u-115",
+        "iab:u-116"
+      ],
+      "highlight": null,
+      "searchFocused": true
+    },
+    {
+      "expanded": "false",
+      "cache": 120,
+      "marks": [
+        "iab:u-111",
+        "iab:u-112",
+        "iab:u-113",
+        "iab:u-114",
+        "iab:u-115",
+        "iab:u-116"
+      ],
+      "highlight": null,
+      "searchFocused": false
+    },
+    {
+      "expanded": "false",
+      "cache": 120,
+      "marks": [],
+      "highlight": null,
+      "searchFocused": false
+    },
+    {
+      "expanded": "false",
+      "cache": 120,
+      "marks": [
+        "iab:u-20",
+        "iab:u-21",
+        "iab:u-22",
+        "iab:u-23",
+        "iab:u-24"
+      ],
+      "highlight": null,
+      "searchFocused": false
+    },
+    {
+      "expanded": "false",
+      "cache": 120,
+      "marks": [
+        "iab:u-20",
+        "iab:u-21",
+        "iab:u-22",
+        "iab:u-23",
+        "iab:u-24"
+      ],
+      "navigation": "loading",
+      "highlight": null,
+      "searchFocused": false
+    },
+    {
+      "expanded": "true",
+      "cache": 120,
+      "marks": [
+        "iab:u-20",
+        "iab:u-21",
+        "iab:u-22",
+        "iab:u-23",
+        "iab:u-24"
+      ],
+      "navigation": "located",
+      "highlight": "iab:u-24",
+      "searchFocused": true
+    },
+    {
+      "expanded": "true",
+      "cache": 1,
+      "marks": [
+        "iab:u-20",
+        "iab:u-21",
+        "iab:u-22",
+        "iab:u-23",
+        "iab:u-24"
+      ],
+      "navigation": "located",
+      "highlight": "iab:u-24",
+      "searchFocused": true
+    },
+    {
+      "expanded": "true",
+      "cache": 1,
+      "marks": [
+        "iab:u-20",
+        "iab:u-21",
+        "iab:u-22",
+        "iab:u-23",
+        "iab:u-24"
+      ],
+      "navigation": "located",
+      "highlight": null,
+      "searchFocused": true
+    },
+    {
+      "expanded": "true",
+      "cache": 1,
+      "marks": [
+        "iab:u-20",
+        "iab:u-21",
+        "iab:u-22",
+        "iab:u-23",
+        "iab:u-24"
+      ],
+      "navigation": "loading",
+      "highlight": null,
+      "searchFocused": false
+    },
+    {
+      "expanded": "true",
+      "cache": 1,
+      "marks": [
+        "iab:u-20",
+        "iab:u-21",
+        "iab:u-22",
+        "iab:u-23",
+        "iab:u-24"
+      ],
+      "navigation": "located",
+      "highlight": "iab:u-24",
+      "searchFocused": false
+    },
+    {
+      "expanded": "true",
+      "cache": 120,
+      "marks": [
+        "iab:u-20",
+        "iab:u-21",
+        "iab:u-22",
+        "iab:u-23",
+        "iab:u-24"
+      ],
+      "navigation": "located",
+      "highlight": "iab:u-24",
+      "searchFocused": true
+    }
+  ],
+  "keys": [
+    {
+      "trusted": true,
+      "shift": true,
+      "editing": false,
+      "prevented": false
+    },
+    {
+      "trusted": true,
+      "shift": true,
+      "editing": true,
+      "prevented": false
+    },
+    {
+      "trusted": true,
+      "shift": true,
+      "editing": true,
+      "prevented": false
+    },
+    {
+      "trusted": true,
+      "shift": true,
+      "editing": false,
+      "prevented": false
+    }
+  ],
+  "build": {
+    "version": "0.3.1",
+    "revision": "2026-10-06-r5",
+    "fixture": true,
+    "hashes": {
+      "background.js": "07eae504d50a8ca596b840d6ebceab8b19eed271c1d09cf76c9603d44198e149",
+      "content.js": "48a3ac02cfd1d8151084e3a1c24208d0a4893c8028474806b2a8211a586916d1",
+      "options.js": "516b2d6bdd051df9ad32b887b04b87576f4d471239a1c92b8fbcb3ac44f02b5d",
+      "options.html": "163c1dfbc82b785e03b0075dfaac686bcfbf544d1a69a0439297e9902c43bbbf",
+      "host.css": "bcf154a2a27fb819ab5c8aee1a315fc2799f949b24d68d8a199d8f05ca4e3f52",
+      "manifest.json": "9796621f5f92d9f5bd21be044ccac59f0cb88df18c78a4db72ad411a66505dbf"
+    }
+  }
+}
